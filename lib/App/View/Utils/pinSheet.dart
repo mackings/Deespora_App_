@@ -202,19 +202,6 @@ class _OtpSheetState extends State<_OtpSheet> {
             ),
             const SizedBox(height: 20),
 
-
-            if (_error.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: CustomText(
-                  text: _error,
-                  fontSize: 13,
-                  color: Colors.red,
-                ),
-              ),
-
-
-
            // const SizedBox(height: 24),
 
             CustomTextField(
