@@ -1,4 +1,4 @@
-import 'package:dspora/App/View/Auth/View/resetPassword.dart';
+import 'package:dspora/App/View/Utils/emailSuccess.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
 import 'package:dspora/App/View/Widgets/Textfield.dart';
@@ -7,24 +7,19 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SignIn extends ConsumerStatefulWidget {
-  const SignIn({super.key});
+class ResetPassword extends ConsumerStatefulWidget {
+  const ResetPassword({super.key});
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _SignInState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _ResetPasswordState();
 }
 
-class _SignInState extends ConsumerState<SignIn> {
+class _ResetPasswordState extends ConsumerState<ResetPassword> {
   TextEditingController email = TextEditingController();
-  TextEditingController password = TextEditingController();
   TextEditingController phone = TextEditingController();
+  TextEditingController password = TextEditingController();
 
   int _selectedIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,12 +57,6 @@ class _SignInState extends ConsumerState<SignIn> {
                       controller: email,
                     ),
                     const SizedBox(height: 20),
-                    CustomTextField(
-                      title: "Password",
-                      hintText: "Enter password",
-                      controller: password,
-                      isPassword: true,
-                    ),
                   ] else ...[
                     CustomTextField(
                       title: "Phone",
@@ -77,35 +66,18 @@ class _SignInState extends ConsumerState<SignIn> {
                     ),
 
                     const SizedBox(height: 20),
-
-                    CustomTextField(
-                      title: "Password",
-                      hintText: "Enter password",
-                      controller: password,
-                      isPassword: true,
-                    ),
                   ],
 
-                  const SizedBox(height: 40),
-
                   CustomBtn(
-                    text: "Login",
+                    text: "Reset Password",
                     onPressed: () {
                       if (_selectedIndex == 0) {
+                        Nav.push(EmailSuccess());
                         // email login
                       } else {
                         // phone login
                       }
                     },
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  GestureDetector(
-                    onTap: () {
-                      Nav.push(ResetPassword());
-                    },
-                    child: CustomText(text: "Forgot Password"),
                   ),
                 ],
               ),
