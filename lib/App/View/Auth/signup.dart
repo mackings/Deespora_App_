@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/passvalidator.dart';
 import 'package:dspora/App/View/Widgets/Textfield.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:dspora/App/View/Widgets/indicator.dart';
+import 'package:dspora/App/View/Widgets/success.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -78,10 +80,7 @@ class _SignUpState extends ConsumerState<SignUp> {
 
                 const SizedBox(height: 20),
 
-                StepIndicator(
-                  totalSteps: totalSteps,
-                  currentStep: currentStep,
-                ),
+                StepIndicator(totalSteps: totalSteps, currentStep: currentStep),
 
                 const SizedBox(height: 40),
 
@@ -120,15 +119,14 @@ class _SignUpState extends ConsumerState<SignUp> {
                     strengthPercent < 0.3
                         ? Colors.red
                         : strengthPercent < 0.6
-                            ? Colors.orange
-                            : Colors.green,
+                        ? Colors.orange
+                        : Colors.green,
                   ),
                   minHeight: 8,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 const SizedBox(height: 15),
 
-     
                 if (!PasswordValidator.isStrong(password.text))
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +146,11 @@ class _SignUpState extends ConsumerState<SignUp> {
                 else
                   Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                      const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 18,
+                      ),
                       const SizedBox(width: 6),
                       CustomText(
                         text: "Password set to go ",
@@ -163,7 +165,10 @@ class _SignUpState extends ConsumerState<SignUp> {
                   text: "Continue",
                   onPressed: allComplete
                       ? () {
-                          debugPrint("✅ Step $currentStep / $totalSteps complete!");
+                          debugPrint(
+                            "✅ Step $currentStep / $totalSteps complete!",
+                          );
+                          Nav.push(Success());
                         }
                       : () {},
                 ),
@@ -184,10 +189,7 @@ class _SignUpState extends ConsumerState<SignUp> {
           color: passed ? Colors.green : Colors.red,
         ),
         const SizedBox(width: 6),
-        CustomText(
-          text: text,
-          color: passed ? Colors.green : Colors.red,
-        ),
+        CustomText(text: text, color: passed ? Colors.green : Colors.red),
       ],
     );
   }
