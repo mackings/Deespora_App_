@@ -1,3 +1,5 @@
+import 'package:dspora/App/View/Auth/View/Signin.dart';
+import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +23,10 @@ class _SuccessState extends ConsumerState<Success> {
           children: [
             // 🔹 Logo at the top with less spacing
             Padding(
-              padding: const EdgeInsets.only(top: 5, bottom: 5), // closer to section
+              padding: const EdgeInsets.only(
+                top: 5,
+                bottom: 5,
+              ), // closer to section
               child: Image.asset(
                 "assets/img/image.png",
                 width: 170,
@@ -43,16 +48,32 @@ class _SuccessState extends ConsumerState<Success> {
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children:  [
-
+                  children: [
                     SvgPicture.asset("assets/svg/check.svg"),
-                    CustomText(text: "Welcome to Deespora! 👋",color: Colors.white,title: true,textAlign: TextAlign.center,fontSize: 33,),
-                    CustomText(text: "Your account has been created. Let’s explore your community.",textAlign: TextAlign.center,color: const Color.fromARGB(255, 184, 201, 197),),
+                    CustomText(
+                      text: "Welcome to Deespora! 👋",
+                      color: Colors.white,
+                      title: true,
+                      textAlign: TextAlign.center,
+                      fontSize: 33,
+                    ),
+                    CustomText(
+                      text:
+                          "Your account has been created. Let’s explore your community.",
+                      textAlign: TextAlign.center,
+                      color: const Color.fromARGB(255, 184, 201, 197),
+                    ),
 
-                    SizedBox(height: 30,),
+                    SizedBox(height: 30),
 
-                    CustomBtn(text: "Go to Home", onPressed: (){},outlined: true,color: Colors.white70,)
-
+                    CustomBtn(
+                      text: "Go to Home",
+                      onPressed: () {
+                        Nav.push(SignIn());
+                      },
+                      outlined: true,
+                      color: Colors.white70,
+                    ),
                   ],
                 ),
               ),

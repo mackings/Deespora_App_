@@ -1,4 +1,4 @@
-import 'package:dspora/App/View/Auth/signup.dart';
+import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Utils/socialSignin.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
