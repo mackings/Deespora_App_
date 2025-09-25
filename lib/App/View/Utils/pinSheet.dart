@@ -131,8 +131,8 @@ class _OtpSheetState extends State<_OtpSheet> {
 
   void _checkComplete() {
     if (_controllers.every((c) => c.text.isNotEmpty)) {
-      setState(() => _isVerified = true);
-      widget.onCompleted(_controllers.map((c) => c.text).join());
+     // setState(() => _isVerified = true);
+    //  widget.onCompleted(_controllers.map((c) => c.text).join());
     }
   }
 
