@@ -1,3 +1,4 @@
+import 'package:dspora/App/View/Auth/View/Signin.dart';
 import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Utils/socialSignin.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
@@ -5,7 +6,9 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
+
+
 
 class Second_Onboarding extends ConsumerStatefulWidget {
   const Second_Onboarding({super.key});
@@ -50,7 +53,7 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                   CustomBtn(
                     text: "Sign in using Password",
                     onPressed: () {
-                      Nav.push(SignUp());
+                      Nav.push(SignIn());
                     },
                   ),
                   SizedBox(height: 20),
@@ -60,10 +63,18 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         CustomText(text: "New To Deespora"),
                         SizedBox(width: 4),
-                        CustomText(text: "Register Now", color: Colors.teal),
+                        GestureDetector(
+                          onTap: () {
+                            Nav.push(SignUp());
+                          },
+                          child: CustomText(
+                            text: "Register Now",
+                            color: Colors.teal,
+                          ),
+                        ),
                       ],
                     ),
                   ),

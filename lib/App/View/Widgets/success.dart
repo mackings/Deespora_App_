@@ -1,4 +1,5 @@
 import 'package:dspora/App/View/Auth/View/Signin.dart';
+import 'package:dspora/App/View/Auth/View/verifyAccount.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
@@ -6,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-
-
 class Success extends ConsumerStatefulWidget {
-  const Success({super.key});
+  final String email; // Received from SignUp
+
+  const Success({super.key, required this.email});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _SuccessState();
@@ -23,20 +24,14 @@ class _SuccessState extends ConsumerState<Success> {
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 Logo at the top with less spacing
             Padding(
-              padding: const EdgeInsets.only(
-                top: 5,
-                bottom: 5,
-              ), // closer to section
+              padding: const EdgeInsets.only(top: 5, bottom: 5),
               child: Image.asset(
                 "assets/img/image.png",
                 width: 170,
                 height: 150,
               ),
             ),
-
-            // 🔹 Curved section filling bottom space
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -60,18 +55,18 @@ class _SuccessState extends ConsumerState<Success> {
                       fontSize: 33,
                     ),
                     CustomText(
-                      text:
-                          "Your account has been created. Let’s explore your community.",
+                      text: "Your account has been created. Let’s explore your community.",
                       textAlign: TextAlign.center,
                       color: const Color.fromARGB(255, 184, 201, 197),
                     ),
-
-                    SizedBox(height: 30),
-
+                    const SizedBox(height: 30),
                     CustomBtn(
-                      text: "Go to Home",
+                      text: "Continue",
                       onPressed: () {
-                        Nav.push(SignIn());
+                        // Pass email to VerifyAccount
+                        Nav.pushReplacement(
+                          VerifyAccount(email: widget.email),
+                        );
                       },
                       outlined: true,
                       color: Colors.white70,

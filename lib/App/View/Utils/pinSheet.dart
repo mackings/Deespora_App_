@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:dspora/App/View/Widgets/Textfield.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+
+
 
 
 Future<void> showOtpModalSheet({
@@ -136,20 +138,7 @@ class _OtpSheetState extends State<_OtpSheet> {
     }
   }
 
-  void _onReset() {
-    if (_newPass.text.isEmpty || _confirmPass.text.isEmpty) {
-      setState(() => _error = 'Please fill in both fields');
-      return;
-    }
-    if (_newPass.text != _confirmPass.text) {
-      setState(() => _error = 'Passwords do not match');
-      return;
-    }
 
-    setState(() => _error = '');
-    print('✅ Reset with: ${_newPass.text}');
-    // Navigator.pop(context);
-  }
 
   Widget _field(int i) => SizedBox(
     width: 55,
@@ -202,15 +191,11 @@ class _OtpSheetState extends State<_OtpSheet> {
             ),
             const SizedBox(height: 20),
 
-           // const SizedBox(height: 24),
-
             CustomTextField(
               title: "New Password",
               hintText: "Enter new password",
               controller: _newPass,
               isPassword: true,
-              // Optionally disable until verified
-              // enabled: _isVerified,
             ),
             const SizedBox(height: 16),
 
@@ -227,7 +212,8 @@ class _OtpSheetState extends State<_OtpSheet> {
               ),
 
             const SizedBox(height: 20),
-            CustomBtn(text: "Reset Password", onPressed: _onReset),
+
+            CustomBtn(text: "Reset Password", onPressed: (){}),
 
              const SizedBox(height: 40),
           ],

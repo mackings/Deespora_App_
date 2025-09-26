@@ -12,6 +12,7 @@ class CustomTextField extends StatefulWidget {
   final bool isPassword;
   final bool isPhone;
   final TextEditingController controller;
+    final ValueChanged<String>? onCountrySelected;
 
   const CustomTextField({
     super.key,
@@ -20,6 +21,7 @@ class CustomTextField extends StatefulWidget {
     this.isPassword = false,
     this.isPhone = false,
     required this.controller,
+     this.onCountrySelected,
   });
 
   @override
@@ -191,6 +193,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     if (result != null) {
       setState(() => _selectedCountry = result);
+      widget.onCountrySelected?.call(result.code);
       print("🏁 Country selected: ${result.name} ${result.code}");
     }
   }
