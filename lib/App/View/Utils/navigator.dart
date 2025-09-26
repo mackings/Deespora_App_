@@ -13,8 +13,7 @@ class Nav {
 
   /// Push and remove all previous
   static Future<T?> pushReplacement<T>(Widget page) {
-    return _navigator!.pushReplacement(
-        MaterialPageRoute(builder: (_) => page));
+    return _navigator!.pushReplacement(MaterialPageRoute(builder: (_) => page));
   }
 
   /// Pop current page

@@ -55,7 +55,8 @@ class _SuccessState extends ConsumerState<Success> {
                       fontSize: 33,
                     ),
                     CustomText(
-                      text: "Your account has been created. Let’s explore your community.",
+                      text:
+                          "Your account has been created. Let’s explore your community.",
                       textAlign: TextAlign.center,
                       color: const Color.fromARGB(255, 184, 201, 197),
                     ),
@@ -64,9 +65,7 @@ class _SuccessState extends ConsumerState<Success> {
                       text: "Continue",
                       onPressed: () {
                         // Pass email to VerifyAccount
-                        Nav.pushReplacement(
-                          VerifyAccount(email: widget.email),
-                        );
+                        Nav.pushReplacement(VerifyAccount(email: widget.email));
                       },
                       outlined: true,
                       color: Colors.white70,

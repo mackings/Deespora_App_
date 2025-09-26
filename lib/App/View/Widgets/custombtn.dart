@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class CustomBtn extends StatelessWidget {
   final String text;
-  final VoidCallback? onPressed;     // <-- made it nullable
+  final VoidCallback? onPressed; // <-- made it nullable
   final bool outlined;
   final double width;
   final double height;
@@ -12,7 +12,7 @@ class CustomBtn extends StatelessWidget {
   const CustomBtn({
     super.key,
     required this.text,
-    this.onPressed,                  // <-- not required anymore
+    this.onPressed, // <-- not required anymore
     this.outlined = false,
     this.width = 390,
     this.height = 60,
@@ -24,14 +24,16 @@ class CustomBtn extends StatelessWidget {
     final bool isDisabled = onPressed == null;
 
     return GestureDetector(
-      onTap: isDisabled ? null : onPressed,   // <-- disables tap when null
+      onTap: isDisabled ? null : onPressed, // <-- disables tap when null
       child: Container(
         width: width,
         height: height,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isDisabled
-              ? Colors.grey.shade400          // <-- disabled look
+              ? Colors
+                    .grey
+                    .shade400 // <-- disabled look
               : (outlined ? Colors.transparent : color),
           borderRadius: BorderRadius.circular(12),
           border: outlined

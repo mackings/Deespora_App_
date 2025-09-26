@@ -5,14 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
-
 class CustomTextField extends StatefulWidget {
   final String title;
   final String hintText;
   final bool isPassword;
   final bool isPhone;
   final TextEditingController controller;
-    final ValueChanged<String>? onCountrySelected;
+  final ValueChanged<String>? onCountrySelected;
 
   const CustomTextField({
     super.key,
@@ -21,7 +20,7 @@ class CustomTextField extends StatefulWidget {
     this.isPassword = false,
     this.isPhone = false,
     required this.controller,
-     this.onCountrySelected,
+    this.onCountrySelected,
   });
 
   @override
@@ -83,21 +82,25 @@ class _CustomTextFieldState extends State<CustomTextField> {
       setState(() {
         _countries = [
           Country(
-              name: 'Nigeria',
-              code: '+234',
-              flag: 'https://flagcdn.com/w320/ng.png'),
+            name: 'Nigeria',
+            code: '+234',
+            flag: 'https://flagcdn.com/w320/ng.png',
+          ),
           Country(
-              name: 'United States',
-              code: '+1',
-              flag: 'https://flagcdn.com/w320/us.png'),
+            name: 'United States',
+            code: '+1',
+            flag: 'https://flagcdn.com/w320/us.png',
+          ),
           Country(
-              name: 'United Kingdom',
-              code: '+44',
-              flag: 'https://flagcdn.com/w320/gb.png'),
+            name: 'United Kingdom',
+            code: '+44',
+            flag: 'https://flagcdn.com/w320/gb.png',
+          ),
           Country(
-              name: 'Ghana',
-              code: '+233',
-              flag: 'https://flagcdn.com/w320/gh.png'),
+            name: 'Ghana',
+            code: '+233',
+            flag: 'https://flagcdn.com/w320/gh.png',
+          ),
         ];
         _selectedCountry = _countries.first;
       });
@@ -214,8 +217,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword ? _obscureText : false,
-          keyboardType:
-              widget.isPhone ? TextInputType.phone : TextInputType.text,
+          keyboardType: widget.isPhone
+              ? TextInputType.phone
+              : TextInputType.text,
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: GoogleFonts.plusJakartaSans(
@@ -303,5 +307,3 @@ class _CustomTextFieldState extends State<CustomTextField> {
     );
   }
 }
-
-

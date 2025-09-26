@@ -51,10 +51,6 @@ class CustomText extends StatelessWidget {
       );
     }
 
-    return Text(
-      text,
-      textAlign: textAlign,
-      style: style,
-    );
+    return Text(text, textAlign: textAlign, style: style);
   }
 }

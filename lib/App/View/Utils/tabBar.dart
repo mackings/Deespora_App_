@@ -18,9 +18,7 @@ class Bar extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: ShapeDecoration(
         color: const Color(0xFFF8F8F8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -33,7 +31,9 @@ class Bar extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: ShapeDecoration(
-                color: isSelected ? const Color(0xFF37B6AF) : Colors.transparent,
+                color: isSelected
+                    ? const Color(0xFF37B6AF)
+                    : Colors.transparent,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -43,7 +43,7 @@ class Bar extends StatelessWidget {
                           color: Color(0x14000000),
                           blurRadius: 16,
                           offset: Offset(1, 4),
-                        )
+                        ),
                       ]
                     : [],
               ),

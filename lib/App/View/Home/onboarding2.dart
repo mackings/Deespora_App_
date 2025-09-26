@@ -7,9 +7,6 @@ import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-
-
 class Second_Onboarding extends ConsumerStatefulWidget {
   const Second_Onboarding({super.key});
 

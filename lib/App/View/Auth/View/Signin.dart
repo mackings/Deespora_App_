@@ -9,9 +9,6 @@ import 'package:dspora/App/View/Widgets/loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-
-
 class SignIn extends ConsumerStatefulWidget {
   const SignIn({super.key});
 
@@ -29,72 +26,68 @@ class _SignInState extends ConsumerState<SignIn> {
   int _selectedIndex = 0;
   bool _isLoading = false;
 
-
-
   /// Login handler
-Future<void> _handleLogin() async {
-  if (_selectedIndex == 0) {
-    // Email login
-    if (email.text.isEmpty || password.text.isEmpty) {
-      _showSnackBar("Please enter email and password");
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final result = await _authApi.login(
-        email: email.text.trim(),
-        password: password.text.trim(),
-      );
-
-      if (result['success']) {
-        _showSnackBar("✅ Login Successful!");
-      } else {
-        _showSnackBar(result['message'] ?? "Login failed");
+  Future<void> _handleLogin() async {
+    if (_selectedIndex == 0) {
+      // Email login
+      if (email.text.isEmpty || password.text.isEmpty) {
+        _showSnackBar("Please enter email and password");
+        return;
       }
-    } catch (e) {
-      _showSnackBar("An error occurred: $e");
-    } finally {
-      // ALWAYS turn off loading
-      if (mounted) setState(() => _isLoading = false);
-    }
-  } else {
-    // Phone login
-    if (phone.text.isEmpty || password.text.isEmpty) {
-      _showSnackBar("Please enter phone and password");
-      return;
-    }
 
-    setState(() => _isLoading = true);
+      setState(() => _isLoading = true);
 
-    try {
-      final result = await _authApi.login(
-        email: phone.text.trim(), // using phone as email for now
-        password: password.text.trim(),
-      );
+      try {
+        final result = await _authApi.login(
+          email: email.text.trim(),
+          password: password.text.trim(),
+        );
 
-      if (result['success']) {
-        _showSnackBar("✅ Login Successful!");
-
-      } else {
-        _showSnackBar(result['message'] ?? "Login failed");
+        if (result['success']) {
+          _showSnackBar("✅ Login Successful!");
+        } else {
+          _showSnackBar(result['message'] ?? "Login failed");
+        }
+      } catch (e) {
+        _showSnackBar("An error occurred: $e");
+      } finally {
+        // ALWAYS turn off loading
+        if (mounted) setState(() => _isLoading = false);
       }
-    } catch (e) {
-      _showSnackBar("An error occurred: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    } else {
+      // Phone login
+      if (phone.text.isEmpty || password.text.isEmpty) {
+        _showSnackBar("Please enter phone and password");
+        return;
+      }
+
+      setState(() => _isLoading = true);
+
+      try {
+        final result = await _authApi.login(
+          email: phone.text.trim(),
+          password: password.text.trim(),
+        );
+
+        if (result['success']) {
+          _showSnackBar("✅ Login Successful!");
+        } else {
+          _showSnackBar(result['message'] ?? "Login failed");
+        }
+      } catch (e) {
+        _showSnackBar("An error occurred: $e");
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
-}
-
-
-
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: CustomText(text: message,color: Colors.white,),backgroundColor: Colors.teal,),
-      
+      SnackBar(
+        content: CustomText(text: message, color: Colors.white),
+        backgroundColor: Colors.teal,
+      ),
     );
   }
 
@@ -108,8 +101,10 @@ Future<void> _handleLogin() async {
           child: SingleChildScrollView(
             child: Center(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 30,
+                ),
                 child: Column(
                   children: [
                     CustomText(
@@ -166,10 +161,7 @@ Future<void> _handleLogin() async {
                     const SizedBox(height: 40),
 
                     /// Login Button
-                    CustomBtn(
-                      text: "Login",
-                      onPressed: _handleLogin,
-                    ),
+                    CustomBtn(text: "Login", onPressed: _handleLogin),
 
                     const SizedBox(height: 20),
 
@@ -189,4 +181,3 @@ Future<void> _handleLogin() async {
     );
   }
 }
-

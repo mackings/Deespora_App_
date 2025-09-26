@@ -16,12 +16,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      navigatorKey: Nav.navigatorKey, 
+      navigatorKey: Nav.navigatorKey,
       theme: ThemeData(
-
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: Onboarding()
+      home: Onboarding(),
     );
   }
 }
@@ -36,7 +35,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,14 +44,11 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Column(
-
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            CustomBtn(text: "Get Started >>>", onPressed: () {}),
 
-            CustomBtn(text: "Get Started >>>", onPressed: (){}),
-
-            CustomText(text: "Deespora App",content: true,)
-
+            CustomText(text: "Deespora App", content: true),
           ],
         ),
       ),

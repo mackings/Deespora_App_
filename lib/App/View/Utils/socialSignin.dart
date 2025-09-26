@@ -2,7 +2,6 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-
 class SocialSigninButton extends StatelessWidget {
   final String text;
   final String svgAsset;
@@ -42,10 +41,7 @@ class SocialSigninButton extends StatelessWidget {
             SizedBox(
               width: 40,
               height: 40,
-              child: SvgPicture.asset(
-                svgAsset,
-                fit: BoxFit.contain,
-              ),
+              child: SvgPicture.asset(svgAsset, fit: BoxFit.contain),
             ),
 
             const SizedBox(width: 12),
@@ -54,7 +50,7 @@ class SocialSigninButton extends StatelessWidget {
             Expanded(
               child: CustomText(
                 text: text,
-                content: true, 
+                content: true,
                 textAlign: TextAlign.center,
               ),
             ),
@@ -64,4 +60,3 @@ class SocialSigninButton extends StatelessWidget {
     );
   }
 }
-

@@ -90,7 +90,10 @@ class _PinInputFieldsState extends State<PinInputFields> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: widget.focusedBorderColor, width: 2),
+                borderSide: BorderSide(
+                  color: widget.focusedBorderColor,
+                  width: 2,
+                ),
               ),
             ),
             onChanged: (value) => _onChanged(index, value),

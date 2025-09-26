@@ -1,6 +1,4 @@
-
 import 'package:flutter/material.dart';
-
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
@@ -30,9 +28,7 @@ class LoadingOverlay extends StatelessWidget {
                     trackGap: 1.5,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
                   ),
-                  if (text != null) ...[
-                    const SizedBox(height: 16),
-                  ]
+                  if (text != null) ...[const SizedBox(height: 16)],
                 ],
               ),
             ),

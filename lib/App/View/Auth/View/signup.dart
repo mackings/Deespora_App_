@@ -12,9 +12,6 @@ import 'package:dspora/App/View/Widgets/success.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-
-
 class SignUp extends ConsumerStatefulWidget {
   const SignUp({super.key});
 
@@ -79,60 +76,59 @@ class _SignUpState extends ConsumerState<SignUp> {
   void _onChanged() => setState(() {});
 
   Future<void> _handleContinue() async {
-  if (!allComplete) return;
+    if (!allComplete) return;
 
-  final fullPhone = '$_selectedCountryCode${phone.text.trim()}';
-  debugPrint("📞 Final phone to send: $fullPhone");
+    final fullPhone = '$_selectedCountryCode${phone.text.trim()}';
+    debugPrint("📞 Final phone to send: $fullPhone");
 
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  try {
-    final result = await AuthApi().register(
-      firstname: firstname.text.trim(),
-      lastname: lastname.text.trim(),
-      email: email.text.trim(),
-      phone: fullPhone,
-      password: password.text.trim(),
-    );
-
-    setState(() => _isLoading = false);
-
-    if (result['success']) {
-      Nav.push(Success(email: email.text.trim()));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? "Something went wrong")),
+    try {
+      final result = await AuthApi().register(
+        firstname: firstname.text.trim(),
+        lastname: lastname.text.trim(),
+        email: email.text.trim(),
+        phone: fullPhone,
+        password: password.text.trim(),
       );
+
+      setState(() => _isLoading = false);
+
+      if (result['success']) {
+        Nav.push(Success(email: email.text.trim()));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? "Something went wrong")),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: ${e.toString()}")));
     }
-  } catch (e) {
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: ${e.toString()}")),
-    );
   }
-}
 
-double get strengthPercent {
-  final pwd = password.text;
+  double get strengthPercent {
+    final pwd = password.text;
 
-  if (pwd.isEmpty) return 0.0;
+    if (pwd.isEmpty) return 0.0;
 
-  double strength = 0.0;
+    double strength = 0.0;
 
-  if (pwd.length >= 8) strength += 0.2;
-  if (pwd.contains(RegExp(r'[A-Z]'))) strength += 0.2;
-  if (pwd.contains(RegExp(r'[a-z]'))) strength += 0.2;
-  if (pwd.contains(RegExp(r'[0-9]'))) strength += 0.2;
-  if (pwd.contains(RegExp(r'[!@#\$&*~]'))) strength += 0.2;
+    if (pwd.length >= 8) strength += 0.2;
+    if (pwd.contains(RegExp(r'[A-Z]'))) strength += 0.2;
+    if (pwd.contains(RegExp(r'[a-z]'))) strength += 0.2;
+    if (pwd.contains(RegExp(r'[0-9]'))) strength += 0.2;
+    if (pwd.contains(RegExp(r'[!@#\$&*~]'))) strength += 0.2;
 
-  return strength; 
-}
-
-
+    return strength;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return LoadingOverlay( // <--- Wrap Scaffold with overlay
+    return LoadingOverlay(
+      // <--- Wrap Scaffold with overlay
       isLoading: _isLoading,
       text: "Registering...",
       child: Scaffold(
@@ -143,10 +139,13 @@ double get strengthPercent {
               child: Column(
                 children: [
                   CustomText(
-                      text:
-                          "Complete Registration $currentStep / $totalSteps"),
+                    text: "Complete Registration $currentStep / $totalSteps",
+                  ),
                   const SizedBox(height: 20),
-                  StepIndicator(totalSteps: totalSteps, currentStep: currentStep),
+                  StepIndicator(
+                    totalSteps: totalSteps,
+                    currentStep: currentStep,
+                  ),
                   const SizedBox(height: 40),
 
                   CustomTextField(
@@ -199,8 +198,8 @@ double get strengthPercent {
                       strengthPercent < 0.3
                           ? Colors.red
                           : strengthPercent < 0.6
-                              ? Colors.orange
-                              : Colors.green,
+                          ? Colors.orange
+                          : Colors.green,
                     ),
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
@@ -228,21 +227,25 @@ double get strengthPercent {
                   else
                     Row(
                       children: [
-                        const Icon(Icons.check_circle,
-                            color: Colors.green, size: 18),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         CustomText(
-                            text: "Password set to go ", color: Colors.green),
+                          text: "Password set to go ",
+                          color: Colors.green,
+                        ),
                       ],
                     ),
 
                   const SizedBox(height: 40),
 
-CustomBtn(
-  text: "Continue",
-  onPressed: allComplete ? _handleContinue : null,
-)
-
+                  CustomBtn(
+                    text: "Continue",
+                    onPressed: allComplete ? _handleContinue : null,
+                  ),
                 ],
               ),
             ),
@@ -255,8 +258,11 @@ CustomBtn(
   Widget _ruleCheck(String text, bool passed) {
     return Row(
       children: [
-        Icon(passed ? Icons.check_circle : Icons.cancel,
-            size: 18, color: passed ? Colors.green : Colors.red),
+        Icon(
+          passed ? Icons.check_circle : Icons.cancel,
+          size: 18,
+          color: passed ? Colors.green : Colors.red,
+        ),
         const SizedBox(width: 6),
         CustomText(text: text, color: passed ? Colors.green : Colors.red),
       ],

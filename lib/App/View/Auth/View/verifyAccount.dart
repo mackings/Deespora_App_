@@ -8,7 +8,6 @@ import 'package:dspora/App/View/Widgets/loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 class VerifyAccount extends ConsumerStatefulWidget {
   final String email; // Passed from Success page
 
@@ -69,7 +68,10 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
           child: SingleChildScrollView(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 30,
+                ),
                 child: Column(
                   children: [
                     CustomText(
@@ -78,7 +80,9 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
                       fontSize: 20,
                     ),
                     const SizedBox(height: 20),
-                    CustomText(text: "Enter the five-digit OTP sent to your email"),
+                    CustomText(
+                      text: "Enter the five-digit OTP sent to your email",
+                    ),
                     const SizedBox(height: 20),
 
                     PinInputFields(
@@ -96,7 +100,9 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("Please enter a valid 5-digit code"),
+                              content: Text(
+                                "Please enter a valid 5-digit code",
+                              ),
                             ),
                           );
                         }
@@ -112,4 +118,3 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
     );
   }
 }
-
