@@ -6,7 +6,7 @@ const List<String> cities = [
   "Toronto",
   "Sydney",
   "Lagos",
-  "Nairobi",
+
   "Cape Town",
   "Accra",
 ];

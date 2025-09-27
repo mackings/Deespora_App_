@@ -1,7 +1,10 @@
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/storeDetail.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
+
+
 class RestaurantDetailScreen extends StatelessWidget {
   final Restaurant restaurant;
 
@@ -9,13 +12,22 @@ class RestaurantDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ fallback image if no photos available
+    final List<String> imageUrls = (restaurant.photoReferences.isNotEmpty)
+        ? restaurant.photoReferences
+        : [
+            Images.Store,
+          ];
+
     return Scaffold(
-      appBar: AppBar(title: CustomText(text: restaurant.name)),
+      appBar: AppBar(
+        title: CustomText(text: restaurant.name),
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Existing RestaurantDetailWidget
+            // ✅ Restaurant Details with fallback images
             RestaurantDetailWidget(
               storeName: restaurant.name,
               rating: restaurant.rating.toString(),
@@ -24,7 +36,7 @@ class RestaurantDetailScreen extends StatelessWidget {
               status: restaurant.openNow ? "Open now" : "Closed",
               description:
                   "Discover ${restaurant.name} located at ${restaurant.vicinity}.",
-              imageUrls: restaurant.photoReferences,
+              imageUrls: imageUrls,
               onReviewPressed: () {},
               onSavePressed: () {},
               onSharePressed: () {},
@@ -45,10 +57,24 @@ class RestaurantDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            // List of Reviews
-            ...restaurant.reviews.map((review) => ListTile(
+            // ✅ Handle empty reviews gracefully
+            if (restaurant.reviews.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  "No reviews yet.",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+            else
+              ...restaurant.reviews.map(
+                (review) => ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: NetworkImage(review.profilePhotoUrl),
+                    // ✅ fallback avatar if photo is empty or null
+                    backgroundImage: review.profilePhotoUrl.isNotEmpty
+                        ? NetworkImage(review.profilePhotoUrl)
+                        : const NetworkImage(
+                            Images.Store),
                   ),
                   title: Text(
                     review.authorName,
@@ -57,6 +83,7 @@ class RestaurantDetailScreen extends StatelessWidget {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ✅ Star rating row
                       Row(
                         children: List.generate(
                           5,
@@ -75,16 +102,20 @@ class RestaurantDetailScreen extends StatelessWidget {
                       Text(
                         review.relativeTime,
                         style: const TextStyle(
-                            fontSize: 12, color: Colors.grey),
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
-                )),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 }
+
 
 

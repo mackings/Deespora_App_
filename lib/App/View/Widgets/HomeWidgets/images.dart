@@ -7,4 +7,7 @@ class Images {
 
   static const Tiwa =
       "https://tribuneonlineng.com/wp-content/uploads/2025/08/Tiwa-savage1-860x515.jpg";
+
+  static const Store =
+      "https://cdn.shopify.com/s/files/1/1246/6441/articles/Storefront_Design.png?v=1727354588";
 }
