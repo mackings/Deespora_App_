@@ -1,6 +1,6 @@
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
 import 'package:dspora/App/View/Auth/View/resetPassword.dart';
-import 'package:dspora/App/View/Home/dashboard.dart';
+import 'package:dspora/App/dashboard.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';

@@ -1,3 +1,4 @@
+import 'package:dspora/App/View/Events/Views/eventHome.dart';
 import 'package:dspora/App/View/Restaurants/View/restHome.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/carouselHome.dart';
@@ -9,6 +10,10 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+
+
+
 
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
@@ -44,7 +49,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
       svgAsset: 'assets/img/event.png',
       backgroundColor: const Color(0xFFDA763F),
       onTap: () {
-        print('Events tapped');
+          Nav.push(EventHome());
       },
     ),
 

@@ -1,4 +1,4 @@
-import 'package:dspora/App/View/Home/dashboard.dart';
+import 'package:dspora/App/dashboard.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/NavBar.dart';
 import 'package:flutter/material.dart';
 
