@@ -3,6 +3,7 @@ import 'package:dspora/App/View/Auth/View/resetPassword.dart';
 import 'package:dspora/App/View/Home/dashboard.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';
 import 'package:dspora/App/View/Widgets/Textfield.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
@@ -45,7 +46,7 @@ class _SignInState extends ConsumerState<SignIn> {
         );
 
         if (result['success']) {
-           Nav.pushReplacement(Dashboard());
+           Nav.pushReplacement(HomePage());
          // _showSnackBar("✅ Login Successful!");
         } else {
           _showSnackBar(result['message'] ?? "Login failed");

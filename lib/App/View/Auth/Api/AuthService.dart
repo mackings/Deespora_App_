@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:dspora/App/View/Constants/BaseUrl.dart';
+import 'package:dspora/Constants/BaseUrl.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

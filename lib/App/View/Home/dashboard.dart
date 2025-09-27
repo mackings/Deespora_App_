@@ -1,5 +1,6 @@
 import 'package:dspora/App/View/Widgets/HomeWidgets/carouselHome.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/categoryGrid.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/eventCarousel.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/header.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/homeSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
@@ -23,37 +24,49 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
     CategoryItem(
       title: 'Restaurants',
-      svgAsset: 'assets/icons/restaurant.svg',
+      svgAsset: 'assets/img/restaurant.png',
       backgroundColor: const Color(0xFFF1CD59),
       onTap: () {
         print('Restaurants tapped');
       },
     ),
+
     CategoryItem(
       title: 'Catering',
-      svgAsset: 'assets/icons/catering.svg',
+      svgAsset: 'assets/img/catering.png',
       backgroundColor: const Color(0xFF32871F),
       onTap: () {
         print('Catering tapped');
       },
     ),
+
     CategoryItem(
       title: 'Events',
-      svgAsset: 'assets/icons/events.svg',
+      svgAsset: 'assets/img/event.png',
       backgroundColor: const Color(0xFFDA763F),
       onTap: () {
         print('Events tapped');
       },
     ),
+
     CategoryItem(
       title: 'Real Estate',
-      svgAsset: 'assets/icons/real_estate.svg',
+      svgAsset: 'assets/img/realestate.png',
       backgroundColor: const Color(0xFFB287EE),
       onTap: () {
         print('Real Estate tapped');
       },
     ),
+    
   ];
+
+final List<String> eventImages = [
+  'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg',  // concert / crowd
+  'https://images.pexels.com/photos/167964/pexels-photo-167964.jpeg',  // stage lights
+  'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg', // party / dance
+  'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg', // event hall
+];
+
 
   final TextEditingController searchController = TextEditingController();
 
@@ -113,6 +126,15 @@ Align(
 
   CategoryGrid(items: categories),
 
+  Align(
+  alignment: AlignmentGeometry.centerLeft,
+  child: CustomText(text: "Events Near You",title: true,fontSize: 18,)),
+SizedBox(height: 20,),
+  EventCarousel(
+          imageUrls: eventImages,
+          height: 200,            
+          autoPlay: true, 
+        ),
 
 
               ],

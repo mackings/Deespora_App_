@@ -19,6 +19,7 @@ class CategoryItem {
 }
 
 
+
 class CategoryGrid extends StatelessWidget {
   final List<CategoryItem> items;
 
@@ -63,19 +64,21 @@ class _CategoryCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // SVG Icon
+           
             SizedBox(
-              height: 30,
-              width: 30,
-              child: SvgPicture.asset(
+              height: 50,
+              width: 50,
+              child: Image.asset(
                 item.svgAsset,
                 fit: BoxFit.contain,
               ),
             ),
+
             const SizedBox(height: 10),
 
             // Label
 CustomText(text: item.title,content: true,),
+
           ],
         ),
       ),
