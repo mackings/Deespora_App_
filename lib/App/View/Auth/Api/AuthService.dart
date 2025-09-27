@@ -13,7 +13,10 @@ class AuthApi {
     ),
   );
 
+
   // ---------------- REGISTER ----------------
+
+
   Future<Map<String, dynamic>> register({
     required String firstname,
     required String lastname,
@@ -55,7 +58,10 @@ class AuthApi {
     }
   }
 
+
   // ---------------- SEND OTP ----------------
+
+
   Future<Map<String, dynamic>> sendOtp({required String email}) async {
     final payload = {"email": email};
     debugPrint("➡️ [SEND OTP] POST ${Baseurl.Url}send-otp");
@@ -77,6 +83,8 @@ class AuthApi {
   }
 
   // ---------------- VERIFY OTP ----------------
+
+
   Future<Map<String, dynamic>> verifyOtp({
     required String email,
     required String code,
@@ -101,6 +109,7 @@ class AuthApi {
   }
 
   // ---------------- LOGIN ----------------
+
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -149,6 +158,7 @@ class AuthApi {
   }
 
   // ---------------- REQUEST PASSWORD RESET ----------------
+
   Future<Map<String, dynamic>> requestPasswordReset({
     required String email,
   }) async {
@@ -178,6 +188,7 @@ class AuthApi {
   }
 
   // ---------------- RESET PASSWORD ----------------
+
   Future<Map<String, dynamic>> resetPassword({
     required String email,
     required String token,

@@ -1,4 +1,4 @@
-import 'package:dspora/App/View/Home/onboarding.dart';
+import 'package:dspora/App/View/Auth/View/onboarding.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';

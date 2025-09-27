@@ -1,4 +1,4 @@
-import 'package:dspora/App/View/Home/onboarding2.dart';
+import 'package:dspora/App/View/Auth/View/onboarding2.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';

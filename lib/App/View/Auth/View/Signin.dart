@@ -1,5 +1,6 @@
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
 import 'package:dspora/App/View/Auth/View/resetPassword.dart';
+import 'package:dspora/App/View/Home/dashboard.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
 import 'package:dspora/App/View/Widgets/Textfield.dart';
@@ -44,7 +45,8 @@ class _SignInState extends ConsumerState<SignIn> {
         );
 
         if (result['success']) {
-          _showSnackBar("✅ Login Successful!");
+           Nav.pushReplacement(Dashboard());
+         // _showSnackBar("✅ Login Successful!");
         } else {
           _showSnackBar(result['message'] ?? "Login failed");
         }
@@ -70,7 +72,8 @@ class _SignInState extends ConsumerState<SignIn> {
         );
 
         if (result['success']) {
-          _showSnackBar("✅ Login Successful!");
+        //  Nav.pushReplacement(Dashboard());
+          // _showSnackBar("✅ Login Successful!");
         } else {
           _showSnackBar(result['message'] ?? "Login failed");
         }
