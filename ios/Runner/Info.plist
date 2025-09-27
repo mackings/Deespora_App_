@@ -2,6 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+
+    <key>GOOGLE_MAPS_API_KEY</key>
+    <string>$(GOOGLE_MAPS_API_KEY)</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app needs your location to show routes and navigation.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app needs your location to show routes and navigation.</string>
+    <key>GMSServiceAPIKey</key>
+    <string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
