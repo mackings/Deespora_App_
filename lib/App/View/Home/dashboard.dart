@@ -1,3 +1,5 @@
+import 'package:dspora/App/View/Restaurants/View/restHome.dart';
+import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/carouselHome.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/categoryGrid.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/eventCarousel.dart';
@@ -8,8 +10,6 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
 
@@ -18,16 +18,15 @@ class Dashboard extends ConsumerStatefulWidget {
 }
 
 class _DashboardState extends ConsumerState<Dashboard> {
-
-
   final List<CategoryItem> categories = [
-
     CategoryItem(
       title: 'Restaurants',
       svgAsset: 'assets/img/restaurant.png',
       backgroundColor: const Color(0xFFF1CD59),
       onTap: () {
+         Nav.push(RestaurantHome());
         print('Restaurants tapped');
+    
       },
     ),
 
@@ -57,16 +56,14 @@ class _DashboardState extends ConsumerState<Dashboard> {
         print('Real Estate tapped');
       },
     ),
-    
   ];
 
-final List<String> eventImages = [
-  'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg',  // concert / crowd
-  'https://images.pexels.com/photos/167964/pexels-photo-167964.jpeg',  // stage lights
-  'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg', // party / dance
-  'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg', // event hall
-];
-
+  final List<String> eventImages = [
+    'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg', // concert / crowd
+    'https://images.pexels.com/photos/167964/pexels-photo-167964.jpeg', // stage lights
+    'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg', // party / dance
+    'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg', // event hall
+  ];
 
   final TextEditingController searchController = TextEditingController();
 
@@ -74,74 +71,84 @@ final List<String> eventImages = [
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(child: SingleChildScrollView(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 30),
-            child: Column(
-              children: [
-                HomeHeader(name: "Mac Kingsley", location: "Lagos Nigeria"),
-                SizedBox(height: 10,),
-                HomeSearch(
-  controller: searchController,
-  hintText: 'Search Deespora',
-  onChanged: (value) {
-    print('User typing: $value');
-  },
-  validator: (value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter something to search';
-    }
-    return null;
-  },
-),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
+              child: Column(
+                children: [
+                  HomeHeader(name: "Mac Kingsley", location: "Lagos Nigeria"),
+                  SizedBox(height: 10),
+                  HomeSearch(
+                    controller: searchController,
+                    hintText: 'Search Deespora',
+                    onChanged: (value) {
+                      print('User typing: $value');
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter something to search';
+                      }
+                      return null;
+                    },
+                  ),
 
-SizedBox(height: 10,),
+                  SizedBox(height: 10),
 
-HomeCarousel(
-  items: [
-    CarouselItem(
-      imageUrl: Images.Davido,
-      title: 'Davido in TEXAS!',
-      date: '12/07/2025',
-    ),
-    CarouselItem(
-      imageUrl: Images.BurnaBoy,
-      title: 'Burna Boy World Tour',
-      date: '15/09/2025',
-    ),
-    CarouselItem(
-      imageUrl: Images.Tiwa,
-      title: 'Tiwa Savage Live',
-      date: '20/10/2025',
-    ),
-  ],
-),
+                  HomeCarousel(
+                    items: [
+                      CarouselItem(
+                        imageUrl: Images.Davido,
+                        title: 'Davido in TEXAS!',
+                        date: '12/07/2025',
+                      ),
+                      CarouselItem(
+                        imageUrl: Images.BurnaBoy,
+                        title: 'Burna Boy World Tour',
+                        date: '15/09/2025',
+                      ),
+                      CarouselItem(
+                        imageUrl: Images.Tiwa,
+                        title: 'Tiwa Savage Live',
+                        date: '20/10/2025',
+                      ),
+                    ],
+                  ),
 
-SizedBox(height: 20,),
+                  SizedBox(height: 20),
 
-Align(
-  alignment: AlignmentGeometry.centerLeft,
-  child: CustomText(text: "Categories",title: true,fontSize: 18,)),
+                  Align(
+                    alignment: AlignmentGeometry.centerLeft,
+                    child: CustomText(
+                      text: "Categories",
+                      title: true,
+                      fontSize: 18,
+                    ),
+                  ),
 
-  CategoryGrid(items: categories),
+                  CategoryGrid(items: categories),
 
-  Align(
-  alignment: AlignmentGeometry.centerLeft,
-  child: CustomText(text: "Events Near You",title: true,fontSize: 18,)),
-SizedBox(height: 20,),
-  EventCarousel(
-          imageUrls: eventImages,
-          height: 200,            
-          autoPlay: true, 
-        ),
-
-
-              ],
+                  Align(
+                    alignment: AlignmentGeometry.centerLeft,
+                    child: CustomText(
+                      text: "Events Near You",
+                      title: true,
+                      fontSize: 18,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  EventCarousel(
+                    imageUrls: eventImages,
+                    height: 200,
+                    autoPlay: true,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 }
