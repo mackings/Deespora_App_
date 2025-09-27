@@ -97,7 +97,6 @@ RestaurantDetailWidget(
       onOpenInMapsPressed: () {
         // Handle open in maps action
       },
-      primaryColor: const Color(0xFF37B6AF),
     )
 
                 ],
