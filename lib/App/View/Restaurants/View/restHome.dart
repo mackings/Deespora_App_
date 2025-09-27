@@ -1,110 +1,59 @@
+import 'package:dspora/App/View/Restaurants/Providers/resProvider.dart';
+import 'package:dspora/App/View/Restaurants/View/Details.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/storeDetail.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/storefront.dart';
+import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RestaurantHome extends ConsumerStatefulWidget {
+
+
+class RestaurantHome extends ConsumerWidget {
   const RestaurantHome({super.key});
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _RestaurantHomeState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final restaurantsAsync = ref.watch(restaurantsProvider);
 
-class _RestaurantHomeState extends ConsumerState<RestaurantHome> {
-
-  TextEditingController searchController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: FeatureHeader(
         title: "Restaurants",
-        location: "Houston TX",
-        onBack: () {
-          Navigator.pop(context);
-        },
-        onLocationTap: () {
-          print("Location dropdown tapped");
-        },
+        location: "London, UK",
+        onBack: () => Navigator.pop(context),
+        onLocationTap: () {},
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20,horizontal: 20),
-              child: Column(
-                children: [
-                  FeatureSearch(
-                    controller: searchController,
-                    hintText: 'Search Deespora',
-                    onChanged: (value) {
-                      print('Search text: $value');
-                    },
-                    onFilterTap: () {
-                      print('Filter tapped');
-                    },
+      body: restaurantsAsync.when(
+        data: (restaurants) => ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: restaurants.length,
+          itemBuilder: (context, index) {
+            final r = restaurants[index];
+            return StoreFront(
+              imageUrl: r.photoReferences.isNotEmpty
+                  ? r.photoReferences.first
+                  : 'https://placehold.co/600x400',
+              storeName: r.name,
+              category: "Restaurant",
+              location: r.vicinity,
+              rating: r.rating,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RestaurantDetailScreen(restaurant: r),
                   ),
-
-                  SizedBox(height: 30,),
-
-//                   StoreFront(
-//   imageUrl: Images.Davido,
-//   storeName: "Mama K’s Kitchen",
-//   category: "Restaurant",
-//   location: "Bed-Stuy, Brooklyn, NY",
-//   rating: 4.5,
-//   onTap: () {
-//     print("Store tapped!");
-  
-//   },
-// ),
-
-RestaurantDetailWidget(
-      storeName: "Mama K'S Kitchen",
-      rating: "4.9",
-      ratingsCount: "72 ratings",
-      location: "Bed-Stuy, Brooklyn, NY",
-      status: "Open now",
-      description: "Integer id augue iaculis, iaculis orci ut, blandit quam. Donec in elit auctor, finibus quam in, phar. Proin id ligula dictum, covalis enim ut, facilisis massa.",
-      imageUrls: [
-        Images.Davido,
-        Images.Tiwa,
-        Images.BurnaBoy
-        // Add more image URLs as needed
-      ],
-      onReviewPressed: () {
-        // Handle review action
-      },
-      onSavePressed: () {
-        // Handle save action
-      },
-      onSharePressed: () {
-        // Handle share action
-      },
-      onUberEatsPressed: () {
-        // Handle Uber Eats action
-      },
-      onGrubhubPressed: () {
-        // Handle Grubhub action
-      },
-      onDoorDashPressed: () {
-        // Handle DoorDash action
-      },
-      onOpenInMapsPressed: () {
-        // Handle open in maps action
-      },
-    )
-
-                ],
-              ),
-            ),
-          ),
+                );
+              },
+            );
+          },
         ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text("Error: $e")),
       ),
     );
   }
 }
+

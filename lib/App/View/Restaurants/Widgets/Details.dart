@@ -1,3 +1,4 @@
+import 'package:dspora/App/View/Restaurants/Widgets/expText.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
@@ -72,31 +73,23 @@ class RestaurantDetailsSection extends StatelessWidget {
         ),
 
         // DESCRIPTION
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CustomText(text: 'Description', title: true, fontSize: 16),
-              const SizedBox(height: 4),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: description,
-                      style: const TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                    TextSpan(
-                      text: '  Read More..',
-                      style: TextStyle(fontSize: 14, color: primaryColor),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.symmetric(horizontal: 12),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      CustomText(text: 'Description', title: true, fontSize: 16),
+      const SizedBox(height: 4),
+      ExpandableText(
+        text: description,
+        trimLines: 3, // optional
+        readMoreColor: primaryColor,
+      ),
+    ],
+  ),
+),
+
         const SizedBox(height: 20),
 
         // VENUE MAP
@@ -110,19 +103,6 @@ class RestaurantDetailsSection extends StatelessWidget {
           ),
           child: const Center(
             child: Icon(Icons.map, size: 48, color: Colors.grey),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // DELIVERY BUTTONS
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              _buildDeliveryButton('Uber Eats', onUberEatsPressed),
-              _buildDeliveryButton('Grubhub', onGrubhubPressed),
-              _buildDeliveryButton('DoorDash', onDoorDashPressed),
-            ],
           ),
         ),
         const SizedBox(height: 20),
