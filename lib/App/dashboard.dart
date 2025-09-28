@@ -74,6 +74,8 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
   final TextEditingController searchController = TextEditingController();
 
+    String _selectedCity = "Lagos, Nigeria"; 
+
 @override
 void initState() {
   super.initState();
@@ -109,10 +111,16 @@ Future<void> _loadUserName() async {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
               child: Column(
                 children: [
-                  HomeHeader(
+HomeHeader(
   name: _userName ?? '',
-  location: "Lagos Nigeria",
+  location: _selectedCity,
+  onLocationSelected: (city) {
+    setState(() {
+      _selectedCity = city;
+    });
+  },
 ),
+
 
                   const SizedBox(height: 10),
 
