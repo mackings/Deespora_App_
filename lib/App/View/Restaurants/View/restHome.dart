@@ -91,7 +91,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
                     Navigator.pop(context);
                     _loadRestaurants(city);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Selected: $city')),
+                      SnackBar(content: Text('Selected $city')),
                     );
                   },
                 ),
@@ -128,6 +128,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
   Widget _buildListView(List<Restaurant> restaurants) {
     return RefreshIndicator(
+      color: Colors.teal,
       onRefresh: _onRefresh,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
