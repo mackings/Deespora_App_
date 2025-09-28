@@ -10,8 +10,8 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
 
 
 
@@ -24,7 +24,10 @@ class Dashboard extends ConsumerStatefulWidget {
 }
 
 class _DashboardState extends ConsumerState<Dashboard> {
+
   bool _loading = true;
+  String? _userName;
+
 
   final List<CategoryItem> categories = [
     CategoryItem(
@@ -35,12 +38,14 @@ class _DashboardState extends ConsumerState<Dashboard> {
         Nav.push(RestaurantHome());
       },
     ),
+
     CategoryItem(
       title: 'Catering',
       svgAsset: 'assets/img/catering.png',
       backgroundColor: const Color(0xFF32871F),
       onTap: () {},
     ),
+
     CategoryItem(
       title: 'Events',
       svgAsset: 'assets/img/event.png',
@@ -49,12 +54,15 @@ class _DashboardState extends ConsumerState<Dashboard> {
         Nav.push(EventHome());
       },
     ),
+
     CategoryItem(
       title: 'Real Estate',
       svgAsset: 'assets/img/realestate.png',
       backgroundColor: const Color(0xFFB287EE),
       onTap: () {},
     ),
+
+
   ];
 
   final List<String> eventImages = [
@@ -66,16 +74,29 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
   final TextEditingController searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    // Simulate loading (like fetching or image preloading)
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _loading = false;
-      });
+@override
+void initState() {
+  super.initState();
+
+  // Load user name
+  _loadUserName();
+
+  // Simulate loading skeleton
+  Future.delayed(const Duration(seconds: 2), () {
+    setState(() {
+      _loading = false;
     });
-  }
+  });
+}
+
+Future<void> _loadUserName() async {
+  final prefs = await SharedPreferences.getInstance();
+  final savedName = prefs.getString('userName');
+  setState(() {
+    _userName = savedName ?? 'Guest';
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +109,11 @@ class _DashboardState extends ConsumerState<Dashboard> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
               child: Column(
                 children: [
-                  HomeHeader(name: "Mac Kingsley", location: "Lagos Nigeria"),
+                  HomeHeader(
+  name: _userName ?? '',
+  location: "Lagos Nigeria",
+),
+
                   const SizedBox(height: 10),
 
                   HomeSearch(
@@ -137,7 +162,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
                   ),
 
                   CategoryGrid(items: categories),
-                  
+
                    const SizedBox(height: 20),
 
                   Align(

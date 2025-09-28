@@ -13,9 +13,7 @@ class AuthApi {
     ),
   );
 
-
   // ---------------- REGISTER ----------------
-
 
   Future<Map<String, dynamic>> register({
     required String firstname,
@@ -58,9 +56,7 @@ class AuthApi {
     }
   }
 
-
   // ---------------- SEND OTP ----------------
-
 
   Future<Map<String, dynamic>> sendOtp({required String email}) async {
     final payload = {"email": email};
@@ -83,7 +79,6 @@ class AuthApi {
   }
 
   // ---------------- VERIFY OTP ----------------
-
 
   Future<Map<String, dynamic>> verifyOtp({
     required String email,
@@ -125,14 +120,17 @@ class AuthApi {
         final data = response.data['data'];
         final token = data['token'];
         final user = data['user'];
+        final username = data['username'];
 
-        // ✅ Save token & user to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
+        await prefs.setString('userName', user['username']);
         await prefs.setString('userId', user['id']);
         await prefs.setString('userEmail', user['email']);
         await prefs.setBool('emailVerified', user['emailVerified'] ?? false);
         await prefs.setBool('phoneVerified', user['phoneVerified'] ?? false);
+
+        print(response.data);
 
         return {
           "success": true,

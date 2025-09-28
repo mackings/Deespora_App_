@@ -12,6 +12,7 @@ import 'package:dspora/App/View/Widgets/success.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+
 class SignUp extends ConsumerStatefulWidget {
   const SignUp({super.key});
 

@@ -1,6 +1,5 @@
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
 import 'package:dspora/App/View/Auth/View/resetPassword.dart';
-import 'package:dspora/App/dashboard.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';
@@ -11,6 +10,9 @@ import 'package:dspora/App/View/Widgets/loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+
+
+
 class SignIn extends ConsumerStatefulWidget {
   const SignIn({super.key});
 
@@ -19,6 +21,7 @@ class SignIn extends ConsumerStatefulWidget {
 }
 
 class _SignInState extends ConsumerState<SignIn> {
+  
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
   final TextEditingController phone = TextEditingController();
