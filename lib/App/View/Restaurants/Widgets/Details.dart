@@ -1,12 +1,15 @@
+import 'package:dspora/App/View/Events/widgets/WebView.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/expText.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
 
 
-class RestaurantDetailsSection extends StatelessWidget {
+class RestaurantDetailsSection extends StatefulWidget {
   final String storeName;
-  final String location;
+  final String location; // Use this as query in Google Maps
   final String status;
   final String description;
   final VoidCallback? onUberEatsPressed;
@@ -27,6 +30,35 @@ class RestaurantDetailsSection extends StatelessWidget {
     this.onOpenInMapsPressed,
     this.primaryColor = const Color(0xFF37B6AF),
   });
+
+  @override
+  State<RestaurantDetailsSection> createState() => _RestaurantDetailsSectionState();
+}
+
+class _RestaurantDetailsSectionState extends State<RestaurantDetailsSection> {
+  LatLng? _coordinates;
+
+  @override
+  void initState() {
+    super.initState();
+    _geocodeLocation();
+  }
+
+  Future<void> _geocodeLocation() async {
+    try {
+      // Convert the location string into latitude/longitude
+      List<Location> locations = await locationFromAddress(widget.location);
+      if (locations.isNotEmpty) {
+        setState(() {
+          _coordinates = LatLng(locations.first.latitude, locations.first.longitude);
+        });
+      } else {
+        debugPrint("No coordinates found for ${widget.location}");
+      }
+    } catch (e) {
+      debugPrint("Failed to geocode location: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +83,13 @@ class RestaurantDetailsSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CustomText(text: storeName, title: true, fontSize: 18),
+              CustomText(text: widget.storeName, title: true, fontSize: 18),
               const SizedBox(height: 8),
               Row(
                 children: [
                   const Icon(Icons.location_on, size: 16, color: Colors.grey),
                   const SizedBox(width: 6),
-                  Expanded(child: CustomText(text: location, fontSize: 14)),
+                  Expanded(child: CustomText(text: widget.location, fontSize: 14)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -65,7 +97,7 @@ class RestaurantDetailsSection extends StatelessWidget {
                 children: [
                   const Icon(Icons.access_time, size: 16, color: Colors.green),
                   const SizedBox(width: 6),
-                  CustomText(text: status, fontSize: 14),
+                  CustomText(text: widget.status, fontSize: 14),
                 ],
               ),
             ],
@@ -73,38 +105,58 @@ class RestaurantDetailsSection extends StatelessWidget {
         ),
 
         // DESCRIPTION
-Container(
-  width: double.infinity,
-  padding: const EdgeInsets.symmetric(horizontal: 12),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      CustomText(text: 'Description', title: true, fontSize: 16),
-      const SizedBox(height: 4),
-      ExpandableText(
-        text: description,
-        trimLines: 3, // optional
-        readMoreColor: primaryColor,
-      ),
-    ],
-  ),
-),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CustomText(text: 'Description', title: true, fontSize: 16),
+              const SizedBox(height: 4),
+              ExpandableText(
+                text: widget.description,
+                trimLines: 3,
+                readMoreColor: widget.primaryColor,
+              ),
+            ],
+          ),
+        ),
 
         const SizedBox(height: 20),
 
-        // VENUE MAP
+        // VENUE MAP using geocoded coordinates
         Container(
           width: double.infinity,
           height: 212,
           margin: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
             borderRadius: BorderRadius.circular(16),
+            color: Colors.grey.shade200,
           ),
-          child: const Center(
-            child: Icon(Icons.map, size: 48, color: Colors.grey),
-          ),
+          child: _coordinates == null
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.teal),
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: _coordinates!,
+                      zoom: 14,
+                    ),
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('restaurant'),
+                        position: _coordinates!,
+                        infoWindow: InfoWindow(title: widget.storeName),
+                      ),
+                    },
+                    zoomControlsEnabled: false,
+                    myLocationButtonEnabled: false,
+                  ),
+                ),
         ),
+
         const SizedBox(height: 20),
 
         // OPEN IN MAPS BUTTON
@@ -112,12 +164,15 @@ Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: CustomBtn(
             text: "Open in Maps",
-            onPressed: onOpenInMapsPressed,
+            onPressed: widget.onOpenInMapsPressed,
           ),
         ),
       ],
     );
   }
+}
+
+
 
   Widget _buildDeliveryButton(String text, VoidCallback? onPressed) {
     return Expanded(
@@ -143,4 +198,4 @@ Container(
       ),
     );
   }
-}
+

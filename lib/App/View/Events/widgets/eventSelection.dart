@@ -90,7 +90,9 @@ class EventDetailsSection extends StatelessWidget {
 
         const SizedBox(height: 20),
 
-        // VENUE MAP
+    
+
+
 // VENUE MAP
 Container(
   width: double.infinity,
