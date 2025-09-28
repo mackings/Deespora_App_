@@ -121,6 +121,7 @@ class _EventHomeState extends State<EventHome> {
 
 Widget _buildListView(List<Event> events) {
   return RefreshIndicator(
+    color: Colors.teal,
     onRefresh: _onRefresh,
     child: ListView.builder(
       padding: const EdgeInsets.all(16),

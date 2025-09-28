@@ -32,6 +32,7 @@ class _HomeCarouselState extends State<HomeCarousel> {
         children: [
           // Carousel Slides
           PageView.builder(
+            
             controller: _pageController,
             itemCount: widget.items.length,
             onPageChanged: (index) {
@@ -88,13 +89,16 @@ class CarouselItem {
   final String imageUrl;
   final String title;
   final String date;
+  final VoidCallback? onTap;
 
   CarouselItem({
     required this.imageUrl,
     required this.title,
     required this.date,
+    this.onTap,
   });
 }
+
 
 /// Internal widget to display each slide
 class _CarouselCard extends StatelessWidget {
@@ -104,63 +108,67 @@ class _CarouselCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: ShapeDecoration(
-        image: DecorationImage(
-          image: NetworkImage(item.imageUrl),
-          fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: item.onTap, // 👈 Make the card clickable
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: ShapeDecoration(
+          image: DecorationImage(
+            image: NetworkImage(item.imageUrl),
+            fit: BoxFit.cover,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Highlight bar
-          Container(
-            width: 57,
-            height: 4,
-            decoration: ShapeDecoration(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Highlight bar
+            Container(
+              width: 57,
+              height: 4,
+              decoration: ShapeDecoration(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
 
-          // Event Title
-          SizedBox(
-            width: 200,
-            child: Text(
-              item.title,
+            // Event Title
+            SizedBox(
+              width: 200,
+              child: Text(
+                item.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w700,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // Event Date
+            Text(
+              item.date,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 12,
                 fontFamily: 'Plus Jakarta Sans',
-                fontWeight: FontWeight.w700,
-                height: 1.5,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-
-          // Event Date
-          Text(
-            item.date,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
 

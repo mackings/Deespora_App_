@@ -11,6 +11,9 @@ class EventDetailWidget extends StatelessWidget {
   final String description;
   final List<String> imageUrls;
 
+  final double latitude;       
+  final double longitude;      
+
   final VoidCallback? onReviewPressed;
   final VoidCallback? onSavePressed;
   final VoidCallback? onSharePressed;
@@ -26,12 +29,15 @@ class EventDetailWidget extends StatelessWidget {
     required this.status,
     required this.description,
     required this.imageUrls,
+    required this.latitude,    
+    required this.longitude,   
     this.onReviewPressed,
     this.onSavePressed,
     this.onSharePressed,
     this.onTicketPressed,
     this.onVenueMapPressed,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -51,12 +57,15 @@ class EventDetailWidget extends StatelessWidget {
 
           /// 🟩 Event Details Section
           EventDetailsSection(
+            
             eventName: eventName,
             location: location,
             status: status,
             description: description,
             onTicketPressed: onTicketPressed,
-            onVenueMapPressed: onVenueMapPressed,
+            onVenueMapPressed: onVenueMapPressed, 
+            latitude: latitude, 
+            longitude: longitude,
           ),
         ],
       ),
