@@ -10,6 +10,7 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 
 
@@ -23,54 +24,58 @@ class Dashboard extends ConsumerStatefulWidget {
 }
 
 class _DashboardState extends ConsumerState<Dashboard> {
+  bool _loading = true;
+
   final List<CategoryItem> categories = [
     CategoryItem(
       title: 'Restaurants',
       svgAsset: 'assets/img/restaurant.png',
       backgroundColor: const Color(0xFFF1CD59),
       onTap: () {
-         Nav.push(RestaurantHome());
-        print('Restaurants tapped');
-    
+        Nav.push(RestaurantHome());
       },
     ),
-
     CategoryItem(
       title: 'Catering',
       svgAsset: 'assets/img/catering.png',
       backgroundColor: const Color(0xFF32871F),
-      onTap: () {
-        print('Catering tapped');
-      },
+      onTap: () {},
     ),
-
     CategoryItem(
       title: 'Events',
       svgAsset: 'assets/img/event.png',
       backgroundColor: const Color(0xFFDA763F),
       onTap: () {
-          Nav.push(EventHome());
+        Nav.push(EventHome());
       },
     ),
-
     CategoryItem(
       title: 'Real Estate',
       svgAsset: 'assets/img/realestate.png',
       backgroundColor: const Color(0xFFB287EE),
-      onTap: () {
-        print('Real Estate tapped');
-      },
+      onTap: () {},
     ),
   ];
 
   final List<String> eventImages = [
-    'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg', // concert / crowd
-    'https://images.pexels.com/photos/167964/pexels-photo-167964.jpeg', // stage lights
-    'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg', // party / dance
-    'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg', // event hall
+    'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg',
+    'https://images.pexels.com/photos/167964/pexels-photo-167964.jpeg',
+    'https://images.pexels.com/photos/196634/pexels-photo-196634.jpeg',
+    'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg',
   ];
 
   final TextEditingController searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Simulate loading (like fetching or image preloading)
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        _loading = false;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,47 +89,46 @@ class _DashboardState extends ConsumerState<Dashboard> {
               child: Column(
                 children: [
                   HomeHeader(name: "Mac Kingsley", location: "Lagos Nigeria"),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
+
                   HomeSearch(
                     controller: searchController,
                     hintText: 'Search Deespora',
-                    onChanged: (value) {
-                      print('User typing: $value');
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter something to search';
-                      }
-                      return null;
-                    },
+                    onChanged: (value) {},
+                    validator: (value) =>
+                        value == null || value.isEmpty ? 'Enter search text' : null,
                   ),
 
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                  HomeCarousel(
-                    items: [
-                      CarouselItem(
-                        imageUrl: Images.Davido,
-                        title: 'Davido in TEXAS!',
-                        date: '12/07/2025',
-                      ),
-                      CarouselItem(
-                        imageUrl: Images.BurnaBoy,
-                        title: 'Burna Boy World Tour',
-                        date: '15/09/2025',
-                      ),
-                      CarouselItem(
-                        imageUrl: Images.Tiwa,
-                        title: 'Tiwa Savage Live',
-                        date: '20/10/2025',
-                      ),
-                    ],
+                  // ✅ Skeleton for Carousel
+                  Skeletonizer(
+                    enabled: _loading,
+                    child: HomeCarousel(
+                      items: [
+                        CarouselItem(
+                          imageUrl: Images.Davido,
+                          title: 'Davido in TEXAS!',
+                          date: '12/07/2025',
+                        ),
+                        CarouselItem(
+                          imageUrl: Images.BurnaBoy,
+                          title: 'Burna Boy World Tour',
+                          date: '15/09/2025',
+                        ),
+                        CarouselItem(
+                          imageUrl: Images.Tiwa,
+                          title: 'Tiwa Savage Live',
+                          date: '20/10/2025',
+                        ),
+                      ],
+                    ),
                   ),
 
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   Align(
-                    alignment: AlignmentGeometry.centerLeft,
+                    alignment: Alignment.centerLeft,
                     child: CustomText(
                       text: "Categories",
                       title: true,
@@ -133,20 +137,26 @@ class _DashboardState extends ConsumerState<Dashboard> {
                   ),
 
                   CategoryGrid(items: categories),
+                  
+                   const SizedBox(height: 20),
 
                   Align(
-                    alignment: AlignmentGeometry.centerLeft,
+                    alignment: Alignment.centerLeft,
                     child: CustomText(
                       text: "Events Near You",
                       title: true,
                       fontSize: 18,
                     ),
                   ),
-                  SizedBox(height: 20),
-                  EventCarousel(
-                    imageUrls: eventImages,
-                    height: 200,
-                    autoPlay: true,
+                  const SizedBox(height: 20),
+
+                  Skeletonizer(
+                    enabled: _loading,
+                    child: EventCarousel(
+                      imageUrls: eventImages,
+                      height: 200,
+                      autoPlay: true,
+                    ),
                   ),
                 ],
               ),
