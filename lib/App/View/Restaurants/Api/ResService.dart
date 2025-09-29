@@ -10,7 +10,7 @@ class ApiService {
     String? keyword,
   }) async {
     final endpoint = (keyword == null || keyword.isEmpty)
-        ? 'https://deesporabackend.vercel.app/restaurants?city=$city'
+        ? 'https://deesporabackend.vercel.app/restaurants'
         : 'https://deesporabackend.vercel.app/search-restaurants?city=$city&keyword=$keyword';
 
     print('📡 Fetching: $endpoint');

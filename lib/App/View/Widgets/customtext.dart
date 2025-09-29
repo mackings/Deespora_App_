@@ -7,8 +7,11 @@ class CustomText extends StatelessWidget {
   final bool content;
   final TextAlign textAlign;
   final Color? color;
-  final double? fontSize; // optional custom font size
-  final bool underline; // optional underline
+  final double? fontSize;
+  final bool underline;
+  final int? maxLines;           // 👈 Add maxLines
+  final bool ellipsis;           // 👈 Add ellipsis option
+  final int? truncateLength;     // 👈 Optional manual truncation
 
   const CustomText({
     super.key,
@@ -19,6 +22,9 @@ class CustomText extends StatelessWidget {
     this.color,
     this.fontSize,
     this.underline = false,
+    this.maxLines,               // 👈 new
+    this.ellipsis = true,        // 👈 new
+    this.truncateLength,         // 👈 new
   });
 
   @override
@@ -51,6 +57,19 @@ class CustomText extends StatelessWidget {
       );
     }
 
-    return Text(text, textAlign: textAlign, style: style);
+    // 👇 Optionally shorten the text before rendering
+    String displayText = text;
+    if (truncateLength != null && text.length > truncateLength!) {
+      displayText = text.substring(0, truncateLength!) + '...';
+    }
+
+    return Text(
+      displayText,
+      textAlign: textAlign,
+      style: style,
+      maxLines: maxLines,                          // 👈 limit lines
+      overflow: ellipsis ? TextOverflow.ellipsis   // 👈 show "..." if overflow
+                         : TextOverflow.visible,
+    );
   }
 }
