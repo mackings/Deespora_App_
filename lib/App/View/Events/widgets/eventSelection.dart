@@ -4,6 +4,8 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+
+
 class EventDetailsSection extends StatelessWidget {
   final String eventName;
   final String location;
@@ -88,42 +90,68 @@ class EventDetailsSection extends StatelessWidget {
           ),
         ),
 
+
         const SizedBox(height: 20),
 
     
-
-
-// VENUE MAP
-Container(
-  width: double.infinity,
-  height: 212,
-  margin: const EdgeInsets.symmetric(horizontal: 12),
-  decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(16),
-    color: Colors.grey.shade200,
-  ),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(16),
-    child: GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: LatLng(latitude, longitude),
-        zoom: 14,
-      ),
-      markers: {
-        Marker(
-          markerId: const MarkerId('venue'),
-          position: LatLng(latitude, longitude),
-          infoWindow: InfoWindow(title: eventName),
+// // VENUE MAP
+/// VENUE MAP (iOS-safe)
+if (latitude != null && longitude != null && 
+    latitude >= -90 && latitude <= 90 && 
+    longitude >= -180 && longitude <= 180)
+  Container(
+    width: double.infinity,
+    height: 212,
+    margin: const EdgeInsets.symmetric(horizontal: 12),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      color: Colors.grey.shade200,
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: LatLng(latitude, longitude),
+          zoom: 14,
         ),
-      },
-      zoomControlsEnabled: false,
-      myLocationButtonEnabled: false,
-      onMapCreated: (controller) {
-        // Optionally store controller if you need to interact later
-      },
+        markers: {
+          Marker(
+            markerId: const MarkerId('venue'),
+            position: LatLng(latitude, longitude),
+            infoWindow: InfoWindow(title: eventName),
+          ),
+        },
+        zoomControlsEnabled: false,
+        myLocationButtonEnabled: false,
+        myLocationEnabled: false, // Set to false to prevent iOS simulator issues
+        onMapCreated: (GoogleMapController controller) {
+          // No crash: controller available if needed
+        },
+      ),
+    ),
+  )
+else
+  // Fallback widget for invalid coordinates
+  Container(
+    width: double.infinity,
+    height: 212,
+    margin: const EdgeInsets.symmetric(horizontal: 12),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      color: Colors.grey.shade200,
+    ),
+    child: const Center(
+      child: Text(
+        'Map unavailable',
+        style: TextStyle(
+          color: Colors.grey,
+          fontSize: 16,
+        ),
+      ),
     ),
   ),
-),
+
+
 
         const SizedBox(height: 20),
 

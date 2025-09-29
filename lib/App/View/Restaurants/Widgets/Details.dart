@@ -125,6 +125,7 @@ class _RestaurantDetailsSectionState extends State<RestaurantDetailsSection> {
         const SizedBox(height: 20),
 
         // VENUE MAP using geocoded coordinates
+        
         Container(
           width: double.infinity,
           height: 212,

@@ -39,7 +39,6 @@ void _openInWebView(BuildContext context, String url, {String title = 'Page'}) {
 }
 
 
-
   @override
   Widget build(BuildContext context) {
     // ✅ fallback image if no images available
@@ -61,7 +60,8 @@ void _openInWebView(BuildContext context, String url, {String title = 'Page'}) {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ Event Details with fallback images
+            
+            
             EventDetailWidget(
               eventName: event.name,
               rating: "N/A", // Ticketmaster events don't have ratings

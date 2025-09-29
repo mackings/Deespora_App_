@@ -53,6 +53,7 @@ dependencies:
   url_launcher: ^6.3.2
   webview_flutter: ^4.13.0
   device_info_plus: ^12.1.0
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

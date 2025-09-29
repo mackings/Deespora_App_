@@ -19,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 
+
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
 
@@ -31,7 +32,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
   bool _loading = true;
   String? _userName;
-  String _selectedCity = "";            // 👈 default will be device location
+  String _selectedCity = "";
   List<Event> _events = [];
 
   final TextEditingController searchController = TextEditingController();
@@ -70,9 +71,11 @@ class _DashboardState extends ConsumerState<Dashboard> {
   }
 
   Future<void> _initDashboard() async {
+    setState(() => _loading = true);
+    
     await _loadUserName();
-    await _loadUserLocation(); // ✅ set default location
-    await _fetchEvents();      // ✅ fetch events after we know location
+    await _loadUserLocation();
+    await _fetchEvents();
   }
 
   Future<void> _loadUserName() async {
@@ -84,7 +87,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
   Future<void> _loadUserLocation() async {
     try {
-      // Request location permission
       LocationPermission permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
@@ -95,7 +97,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
       final pos = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.medium);
 
-      // Get city name
       final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
       if (placemarks.isNotEmpty) {
         setState(() {
@@ -110,25 +111,34 @@ class _DashboardState extends ConsumerState<Dashboard> {
     }
   }
 
-Future<void> _fetchEvents() async {
-  try {
-    setState(() => _loading = true);
+  Future<void> _fetchEvents() async {
+    try {
+      final events = await _eventService.fetchAllEvents(
+        city: _selectedCity.isNotEmpty ? _selectedCity : null,
+      );
 
-    final events = await _eventService.fetchAllEvents(
-      city: _selectedCity.isNotEmpty ? _selectedCity : null,
-    );
-
-    setState(() {
-      _events = events;
-      _loading = false;
-    });
-  } catch (e) {
-    debugPrint('Error fetching events: $e');
-    setState(() => _loading = false);
+      setState(() {
+        _events = events;
+        _loading = false; // Only set loading to false after all data is loaded
+      });
+    } catch (e) {
+      debugPrint('Error fetching events: $e');
+      setState(() {
+        _events = []; // Set empty list on error
+        _loading = false;
+      });
+    }
   }
-}
 
-
+  // Helper method to create skeleton placeholders
+  List<CarouselItem> _buildSkeletonCarouselItems() {
+    return List.generate(4, (index) => CarouselItem(
+      imageUrl: '', // Empty URL for skeleton
+      title: 'Loading Event ${index + 1}',
+      date: '2024-01-01',
+      onTap: () {},
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,8 +156,11 @@ Future<void> _fetchEvents() async {
                     name: _userName ?? '',
                     location: _selectedCity,
                     onLocationSelected: (city) {
-                      setState(() => _selectedCity = city);
-                      _fetchEvents(); // reload events for selected city
+                      setState(() {
+                        _selectedCity = city;
+                        _loading = true; // Show loading when changing location
+                      });
+                      _fetchEvents();
                     },
                   ),
 
@@ -167,20 +180,27 @@ Future<void> _fetchEvents() async {
                   /// ---------- Top Carousel ------------
                   Skeletonizer(
                     enabled: _loading,
-                    child: _events.isNotEmpty
-                        ? HomeCarousel(
-                            items: _events.take(4).map((event) {
-                              return CarouselItem(
-                                imageUrl: event.images.isNotEmpty
-                                    ? event.images.first.url
-                                    : 'https://via.placeholder.com/400x200',
-                                title: event.name,
-                                date: event.dates.start.localDate,
-                                onTap: () => Nav.push(EventDetailScreen(event: event)),
-                              );
-                            }).toList(),
-                          )
-                        : const SizedBox.shrink(),
+                    child: HomeCarousel(
+                      items: _loading 
+                          ? _buildSkeletonCarouselItems() // Show skeleton items while loading
+                          : _events.isNotEmpty
+                              ? _events.take(4).map((event) {
+                                  return CarouselItem(
+                                    imageUrl: event.images.isNotEmpty
+                                        ? event.images.first.url
+                                        : 'https://via.placeholder.com/400x200',
+                                    title: event.name,
+                                    date: event.dates.start.localDate,
+                                    onTap: () => Nav.push(EventDetailScreen(event: event)),
+                                  );
+                                }).toList()
+                              : [CarouselItem(
+                                  imageUrl: 'https://via.placeholder.com/400x200',
+                                  title: 'No events available',
+                                  date: '',
+                                  onTap: () {},
+                                )],
+                    ),
                   ),
 
                   const SizedBox(height: 20),
@@ -213,23 +233,30 @@ Future<void> _fetchEvents() async {
 
                   Skeletonizer(
                     enabled: _loading,
-                    child: _events.length > 1
-                        ? EventCarousel(
-                            imageUrls: _events
-                                .skip(1)
-                                .take(8)
-                                .map((e) => e.images.isNotEmpty
-                                    ? e.images.first.url
-                                    : 'https://via.placeholder.com/400x200')
-                                .toList(),
-                            height: 100,
-                            autoPlay: true, // ✅ autoplay enabled
-                            onTap: (index) {
-                              final event = _events.skip(1).toList()[index];
-                              Nav.push(EventDetailScreen(event: event));
+                    child: EventCarousel(
+                      imageUrls: _loading
+                          ? List.generate(8, (index) => '') // Empty URLs for skeleton
+                          : _events.length > 1
+                              ? _events
+                                  .skip(1)
+                                  .take(8)
+                                  .map((e) => e.images.isNotEmpty
+                                      ? e.images.first.url
+                                      : 'https://via.placeholder.com/400x200')
+                                  .toList()
+                              : ['https://via.placeholder.com/400x200'], // Default when no events
+                      height: 100,
+                      autoPlay: !_loading, // Don't autoplay while loading
+                      onTap: _loading 
+                          ? (index) {} // Empty callback while loading
+                          : (index) {
+                              if (_events.length > index + 1) {
+                                final event = _events.skip(1).toList()[index];
+                                Nav.push(EventDetailScreen(event: event));
+                              }
                             },
-                          )
-                        : const SizedBox.shrink(),
+                      loading: _loading,
+                    ),
                   ),
                 ],
               ),
