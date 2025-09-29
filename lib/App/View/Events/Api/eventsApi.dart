@@ -15,9 +15,9 @@ class EventApiService {
     try {
       final response = await _dio.get(
         "$_baseUrl/all-events",
-        queryParameters: city != null && city.isNotEmpty
-            ? {'city': city}     // <-- match your backend query key
-            : null,
+        // queryParameters: city != null && city.isNotEmpty
+        //     ? {'city': city}     // <-- match your backend query key
+        //     : null,
       );
 
       if (response.statusCode == 200) {
