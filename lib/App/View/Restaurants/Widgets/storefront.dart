@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 
 class StoreFront extends StatelessWidget {
+  
   final String imageUrl;
   final String storeName;
   final String category;
@@ -68,6 +69,7 @@ class StoreFront extends StatelessWidget {
                         text: storeName,
                         title: true,
                         fontSize: 16,
+                        shorten: true,
                         
                       ),
         

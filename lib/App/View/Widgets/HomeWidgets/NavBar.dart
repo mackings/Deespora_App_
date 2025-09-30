@@ -57,7 +57,7 @@ class CustomBottomNavBar extends StatelessWidget {
               onTap: item.onTap,
               child: Padding(
                 // 👉 This padding creates space above and below the active item
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0,horizontal: 5.0),
                 child: Container(
                   decoration: BoxDecoration(
                     color: isActive ? activeColor : Colors.transparent,

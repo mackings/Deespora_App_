@@ -4,6 +4,7 @@ import 'package:dspora/App/View/Restaurants/Providers/resProvider.dart';
 import 'package:dspora/App/View/Restaurants/View/Details.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/storefront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
@@ -20,11 +21,13 @@ class RestaurantHome extends StatefulWidget {
 
 class _RestaurantHomeState extends State<RestaurantHome> {
   final ApiService _apiService = ApiService();
+  final TextEditingController _searchController = TextEditingController();
 
-  String _selectedCity = 'London';
+  String _selectedCity = 'US';
 
   // ✅ Cache for all cities
   final Map<String, List<Restaurant>> _restaurantsCache = {};
+  List<Restaurant> _filteredRestaurants = [];
 
   late Future<List<Restaurant>> _restaurantsFuture;
 
@@ -32,18 +35,26 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   void initState() {
     super.initState();
     _restaurantsFuture = _fetchAndCacheRestaurants(_selectedCity);
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
   }
 
   /// ✅ Fetch from cache first, otherwise call API
   Future<List<Restaurant>> _fetchAndCacheRestaurants(String city) async {
-    // if we have the city cached, return it immediately
     if (_restaurantsCache.containsKey(city)) {
+      _filteredRestaurants = _restaurantsCache[city]!;
       return _restaurantsCache[city]!;
     }
 
-    // otherwise fetch from API
     final result = await _apiService.fetchRestaurants(city: city);
-    _restaurantsCache[city] = result; // save to cached
+    _restaurantsCache[city] = result;
+    _filteredRestaurants = result;
     return result;
   }
 
@@ -51,6 +62,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     setState(() {
       _selectedCity = city;
       _restaurantsFuture = _fetchAndCacheRestaurants(city);
+      _searchController.clear();
     });
   }
 
@@ -59,8 +71,21 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     final freshData = await _apiService.fetchRestaurants(city: _selectedCity);
     setState(() {
       _restaurantsCache[_selectedCity] = freshData;
+      _filteredRestaurants = freshData;
       _restaurantsFuture = Future.value(freshData);
     });
+  }
+
+  /// ✅ Filter restaurants based on search input
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    if (_restaurantsCache.containsKey(_selectedCity)) {
+      setState(() {
+        _filteredRestaurants = _restaurantsCache[_selectedCity]!
+            .where((r) => r.name.toLowerCase().contains(query))
+            .toList();
+      });
+    }
   }
 
   @override
@@ -83,9 +108,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
                 height: MediaQuery.of(context).size.height * 0.7,
                 child: CitySelector(
                   cities: [
-                    'London','Lagos','New York','Paris','Tokyo',
-                    'Dubai','Johannesburg','Cairo','Nairobi',
-                    'Toronto','Sydney','Berlin','Moscow','Rio de Janeiro',
+                    'US',
                   ],
                   onCitySelected: (city) {
                     Navigator.pop(context);
@@ -100,28 +123,40 @@ class _RestaurantHomeState extends State<RestaurantHome> {
           );
         },
       ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: FeatureSearch(
+              controller: _searchController,
+              hintText: 'Search Restaurants',
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Restaurant>>(
+              future: _restaurantsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (_restaurantsCache.containsKey(_selectedCity)) {
+                    return _buildListView(_filteredRestaurants);
+                  }
+                  return const Center(
+                      child: CircularProgressIndicator(color: Colors.teal));
+                }
 
-      body: FutureBuilder<List<Restaurant>>(
-        future: _restaurantsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            // show cached data if available while loading new data
-            if (_restaurantsCache.containsKey(_selectedCity)) {
-              return _buildListView(_restaurantsCache[_selectedCity]!);
-            }
-            return const Center(child: CircularProgressIndicator(color: Colors.teal));
-          }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  return _buildListView(_filteredRestaurants);
+                }
 
-          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-            return _buildListView(snapshot.data!);
-          }
-
-          return const Center(child: Text('No restaurants found.'));
-        },
+                return const Center(child: Text('No restaurants found.'));
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
