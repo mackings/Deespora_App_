@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+
 class CustomText extends StatelessWidget {
   final String text;
   final bool title;
@@ -9,9 +10,10 @@ class CustomText extends StatelessWidget {
   final Color? color;
   final double? fontSize;
   final bool underline;
-  final int? maxLines;           // 👈 Add maxLines
-  final bool ellipsis;           // 👈 Add ellipsis option
-  final int? truncateLength;     // 👈 Optional manual truncation
+
+  // ✅ New props for shortening
+  final bool shorten;
+  final int maxLength;
 
   const CustomText({
     super.key,
@@ -22,13 +24,19 @@ class CustomText extends StatelessWidget {
     this.color,
     this.fontSize,
     this.underline = false,
-    this.maxLines,               // 👈 new
-    this.ellipsis = true,        // 👈 new
-    this.truncateLength,         // 👈 new
+
+    // ✅ Defaults
+    this.shorten = false,
+    this.maxLength = 50,
   });
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Apply shortening
+    final displayText = (shorten && text.length > maxLength)
+        ? '${text.substring(0, maxLength)}…'
+        : text;
+
     TextStyle style;
 
     if (title) {
@@ -57,19 +65,6 @@ class CustomText extends StatelessWidget {
       );
     }
 
-    // 👇 Optionally shorten the text before rendering
-    String displayText = text;
-    if (truncateLength != null && text.length > truncateLength!) {
-      displayText = text.substring(0, truncateLength!) + '...';
-    }
-
-    return Text(
-      displayText,
-      textAlign: textAlign,
-      style: style,
-      maxLines: maxLines,                          // 👈 limit lines
-      overflow: ellipsis ? TextOverflow.ellipsis   // 👈 show "..." if overflow
-                         : TextOverflow.visible,
-    );
+    return Text(displayText, textAlign: textAlign, style: style);
   }
 }

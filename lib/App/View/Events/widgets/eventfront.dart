@@ -69,6 +69,7 @@ class EventFront extends StatelessWidget {
                         text: eventName,
                         title: true,
                         fontSize: 16,
+                        shorten: true,
                       ),
 
                       // Category
@@ -89,6 +90,7 @@ class EventFront extends StatelessWidget {
                               text: location,
                               content: true,
                               fontSize: 12,
+                              shorten: true,
                             ),
                           ),
                         ],
