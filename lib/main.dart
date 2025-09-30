@@ -2,6 +2,7 @@ import 'package:dspora/App/View/Auth/View/onboarding.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
+import 'package:dspora/SplashScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,7 +25,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: Onboarding(),
+      home: SplashScreen()
     );
   }
 }

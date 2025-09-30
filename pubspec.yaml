@@ -54,8 +54,10 @@ dependencies:
   webview_flutter: ^4.13.0
   device_info_plus: ^12.1.0
   cached_network_image: ^3.4.1
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
 
@@ -65,6 +67,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/img/logo.png"  # your logo
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
