@@ -24,14 +24,22 @@ class RestaurantGalleryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayImages = imageUrls.isNotEmpty
-        ? imageUrls
-        : [
+    // ✅ Adjust the image list
+    final displayImages = imageUrls.isEmpty
+        ? [
             "https://placehold.co/233x93",
             "https://placehold.co/122x151",
             "https://placehold.co/175x93",
             "https://placehold.co/175x93",
-          ];
+          ]
+        : (imageUrls.length == 1
+            ? [
+                // If there’s only ONE image, repeat it to fill the gallery
+                imageUrls[0],
+                imageUrls[0],
+                imageUrls[0],
+              ]
+            : imageUrls);
 
     return Column(
       children: [
@@ -45,9 +53,19 @@ class RestaurantGalleryHeader extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Expanded(child: Image.network(displayImages[0], fit: BoxFit.cover)),
+                    Expanded(
+                      child: Image.network(
+                        displayImages[0],
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                     if (displayImages.length > 1)
-                      Image.network(displayImages[1], width: 122.33, height: 151, fit: BoxFit.cover),
+                      Image.network(
+                        displayImages[1],
+                        width: 122.33,
+                        height: 151,
+                        fit: BoxFit.cover,
+                      ),
                   ],
                 ),
               ),
@@ -55,9 +73,19 @@ class RestaurantGalleryHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     if (displayImages.length > 2)
-                      Expanded(child: Image.network(displayImages[2], fit: BoxFit.cover)),
+                      Expanded(
+                        child: Image.network(
+                          displayImages[2],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     if (displayImages.length > 3)
-                      Expanded(child: Image.network(displayImages[3], fit: BoxFit.cover)),
+                      Expanded(
+                        child: Image.network(
+                          displayImages[3],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                   ],
                 ),
               ),

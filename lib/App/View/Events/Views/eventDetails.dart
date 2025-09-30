@@ -55,7 +55,8 @@ void _openInWebView(BuildContext context, String url, {String title = 'Page'}) {
         : "Location not available";
 
     return Scaffold(
-      appBar: AppBar(title: CustomText(text: event.name)),
+      backgroundColor: Colors.white,
+      appBar: AppBar(title: CustomText(text: event.name,),backgroundColor: Colors.white,),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

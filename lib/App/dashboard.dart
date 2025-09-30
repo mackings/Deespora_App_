@@ -9,7 +9,6 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/categoryGrid.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/eventCarousel.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/header.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/homeSearch.dart';
-import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,3 +1,4 @@
+import 'package:dspora/App/View/Events/widgets/VenueMap.dart';
 import 'package:dspora/App/View/Events/widgets/WebView.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/expText.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
@@ -32,7 +33,8 @@ class RestaurantDetailsSection extends StatefulWidget {
   });
 
   @override
-  State<RestaurantDetailsSection> createState() => _RestaurantDetailsSectionState();
+  State<RestaurantDetailsSection> createState() =>
+      _RestaurantDetailsSectionState();
 }
 
 class _RestaurantDetailsSectionState extends State<RestaurantDetailsSection> {
@@ -47,10 +49,11 @@ class _RestaurantDetailsSectionState extends State<RestaurantDetailsSection> {
   Future<void> _geocodeLocation() async {
     try {
       // Convert the location string into latitude/longitude
-      List<Location> locations = await locationFromAddress(widget.location);
+      final locations = await locationFromAddress(widget.location);
       if (locations.isNotEmpty) {
         setState(() {
-          _coordinates = LatLng(locations.first.latitude, locations.first.longitude);
+          _coordinates =
+              LatLng(locations.first.latitude, locations.first.longitude);
         });
       } else {
         debugPrint("No coordinates found for ${widget.location}");
@@ -89,7 +92,8 @@ class _RestaurantDetailsSectionState extends State<RestaurantDetailsSection> {
                 children: [
                   const Icon(Icons.location_on, size: 16, color: Colors.grey),
                   const SizedBox(width: 6),
-                  Expanded(child: CustomText(text: widget.location, fontSize: 14)),
+                  Expanded(
+                      child: CustomText(text: widget.location, fontSize: 14)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -124,82 +128,39 @@ class _RestaurantDetailsSectionState extends State<RestaurantDetailsSection> {
 
         const SizedBox(height: 20),
 
-        // VENUE MAP using geocoded coordinates
-        
-        Container(
-          width: double.infinity,
-          height: 212,
-          margin: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.grey.shade200,
+        // ✅ VENUE MAP using your new VenueMap widget
+        if (_coordinates != null)
+          VenueMap(
+            latitude: _coordinates!.latitude,
+            longitude: _coordinates!.longitude,
+            eventName: widget.storeName,
+          )
+        else
+          Container(
+            width: double.infinity,
+            height: 212,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.grey.shade200,
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.teal),
+            ),
           ),
-          child: _coordinates == null
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.teal),
-                )
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: _coordinates!,
-                      zoom: 14,
-                    ),
-                    markers: {
-                      Marker(
-                        markerId: const MarkerId('restaurant'),
-                        position: _coordinates!,
-                        infoWindow: InfoWindow(title: widget.storeName),
-                      ),
-                    },
-                    zoomControlsEnabled: false,
-                    myLocationButtonEnabled: false,
-                  ),
-                ),
-        ),
+
 
         const SizedBox(height: 20),
 
         // OPEN IN MAPS BUTTON
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: CustomBtn(
-            text: "Open in Maps",
-            onPressed: widget.onOpenInMapsPressed,
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 12),
+        //   child: CustomBtn(
+        //     text: "Open in Maps",
+        //     onPressed: widget.onOpenInMapsPressed,
+        //   ),
+        // ),
       ],
     );
   }
 }
-
-
-
-
-
-
-  Widget _buildDeliveryButton(String text, VoidCallback? onPressed) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          height: 48,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              )
-            ],
-          ),
-          child: Center(child: CustomText(text: text, fontSize: 14)),
-        ),
-      ),
-    );
-  }
-

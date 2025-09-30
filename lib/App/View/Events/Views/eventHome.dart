@@ -17,7 +17,7 @@ class EventHome extends StatefulWidget {
 class _EventHomeState extends State<EventHome> {
   final EventApiService _apiService = EventApiService();
 
-  String _selectedCity = 'Madrid';
+  String _selectedCity = 'US';
 
   // ✅ Cache for all cities
   final Map<String, List<Event>> _eventsCache = {};
@@ -77,9 +77,7 @@ class _EventHomeState extends State<EventHome> {
                 height: MediaQuery.of(context).size.height * 0.7,
                 child: CitySelector(
                   cities: [
-                    'Madrid','London','New York','Paris','Tokyo',
-                    'Dubai','Johannesburg','Cairo','Nairobi','Toronto',
-                    'Sydney','Berlin','Moscow','Rio de Janeiro',
+                    'US'
                   ],
                   onCitySelected: (city) {
                     Navigator.pop(context);

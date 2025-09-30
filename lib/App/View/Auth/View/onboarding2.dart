@@ -4,6 +4,7 @@ import 'package:dspora/App/View/Utils/socialSignin.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
+import 'package:dspora/App/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -78,7 +79,15 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
 
                   SizedBox(height: 20),
 
-                  CustomText(text: "Continue as Guest", underline: true),
+                  GestureDetector(
+                    onTap: () {
+                      Nav.push(Dashboard());
+                    },
+                    child: CustomText(
+                      text: "Continue as Guest",
+                      underline: true,
+                    ),
+                  ),
                   SizedBox(height: 80),
 
                   CustomText(text: "By using Deespora,you agree to the"),
