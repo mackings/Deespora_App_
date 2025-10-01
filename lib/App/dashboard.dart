@@ -70,11 +70,17 @@ class _DashboardState extends ConsumerState<Dashboard> {
   }
 
   Future<void> _initDashboard() async {
+    debugPrint('🔵 Init dashboard start');
     setState(() => _loading = true);
-    
+
     await _loadUserName();
+    debugPrint('✅ User loaded: $_userName');
+
     await _loadUserLocation();
+    debugPrint('✅ Location loaded: $_selectedCity');
+
     await _fetchEvents();
+    debugPrint('✅ Events fetched');
   }
 
   Future<void> _loadUserName() async {
@@ -87,43 +93,50 @@ class _DashboardState extends ConsumerState<Dashboard> {
   Future<void> _loadUserLocation() async {
     try {
       LocationPermission permission = await Geolocator.requestPermission();
+
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        setState(() => _selectedCity = "Unknown City");
+        debugPrint('⚠️ Location permission denied');
+        setState(() => _selectedCity = "London"); 
         return;
       }
 
       final pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium);
+        desiredAccuracy: LocationAccuracy.medium,
+      ).timeout(const Duration(seconds: 10));
 
-      final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      final placemarks =
+          await placemarkFromCoordinates(pos.latitude, pos.longitude);
+
       if (placemarks.isNotEmpty) {
         setState(() {
-          _selectedCity = placemarks.first.locality ?? "Your City";
+          _selectedCity = placemarks.first.locality ?? "New York";
         });
       } else {
-        setState(() => _selectedCity = "Your City");
+        setState(() => _selectedCity = "New York");
       }
     } catch (e) {
-      debugPrint("Error getting location: $e");
-      setState(() => _selectedCity = "Your City");
+      debugPrint("❌ Error getting location: $e");
+      setState(() => _selectedCity = "New York"); // fallback
     }
   }
 
   Future<void> _fetchEvents() async {
+    debugPrint('🔵 Fetching events for city: $_selectedCity');
     try {
       final events = await _eventService.fetchAllEvents(
-        city: _selectedCity.isNotEmpty ? _selectedCity : null,
+       // city: _selectedCity.isNotEmpty ? _selectedCity : null,
       );
 
+      debugPrint('✅ Got ${events.length} events');
       setState(() {
         _events = events;
-        _loading = false; // Only set loading to false after all data is loaded
+        _loading = false;
       });
     } catch (e) {
-      debugPrint('Error fetching events: $e');
+      debugPrint('❌ Error fetching events: $e');
       setState(() {
-        _events = []; // Set empty list on error
+        _events = [];
         _loading = false;
       });
     }
@@ -131,12 +144,15 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
   // Helper method to create skeleton placeholders
   List<CarouselItem> _buildSkeletonCarouselItems() {
-    return List.generate(4, (index) => CarouselItem(
-      imageUrl: '', // Empty URL for skeleton
-      title: 'Loading Event ${index + 1}',
-      date: '2024-01-01',
-      onTap: () {},
-    ));
+    return List.generate(
+      4,
+      (index) => CarouselItem(
+        imageUrl: '',
+        title: 'Loading Event ${index + 1}',
+        date: '2024-01-01',
+        onTap: () {},
+      ),
+    );
   }
 
   @override
@@ -157,7 +173,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
                     onLocationSelected: (city) {
                       setState(() {
                         _selectedCity = city;
-                        _loading = true; // Show loading when changing location
+                        _loading = true;
                       });
                       _fetchEvents();
                     },
@@ -180,8 +196,8 @@ class _DashboardState extends ConsumerState<Dashboard> {
                   Skeletonizer(
                     enabled: _loading,
                     child: HomeCarousel(
-                      items: _loading 
-                          ? _buildSkeletonCarouselItems() // Show skeleton items while loading
+                      items: _loading
+                          ? _buildSkeletonCarouselItems()
                           : _events.isNotEmpty
                               ? _events.take(4).map((event) {
                                   return CarouselItem(
@@ -190,15 +206,19 @@ class _DashboardState extends ConsumerState<Dashboard> {
                                         : 'https://via.placeholder.com/400x200',
                                     title: event.name,
                                     date: event.dates.start.localDate,
-                                    onTap: () => Nav.push(EventDetailScreen(event: event)),
+                                    onTap: () => Nav.push(
+                                        EventDetailScreen(event: event)),
                                   );
                                 }).toList()
-                              : [CarouselItem(
-                                  imageUrl: 'https://via.placeholder.com/400x200',
-                                  title: 'No events available',
-                                  date: '',
-                                  onTap: () {},
-                                )],
+                              : [
+                                  CarouselItem(
+                                    imageUrl:
+                                        'https://via.placeholder.com/400x200',
+                                    title: 'No events available',
+                                    date: '',
+                                    onTap: () {},
+                                  )
+                                ],
                     ),
                   ),
 
@@ -234,7 +254,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
                     enabled: _loading,
                     child: EventCarousel(
                       imageUrls: _loading
-                          ? List.generate(8, (index) => '') // Empty URLs for skeleton
+                          ? List.generate(8, (index) => '')
                           : _events.length > 1
                               ? _events
                                   .skip(1)
@@ -243,11 +263,11 @@ class _DashboardState extends ConsumerState<Dashboard> {
                                       ? e.images.first.url
                                       : 'https://via.placeholder.com/400x200')
                                   .toList()
-                              : ['https://via.placeholder.com/400x200'], // Default when no events
+                              : ['https://via.placeholder.com/400x200'],
                       height: 100,
-                      autoPlay: !_loading, // Don't autoplay while loading
-                      onTap: _loading 
-                          ? (index) {} // Empty callback while loading
+                      autoPlay: !_loading,
+                      onTap: _loading
+                          ? (index) {}
                           : (index) {
                               if (_events.length > index + 1) {
                                 final event = _events.skip(1).toList()[index];

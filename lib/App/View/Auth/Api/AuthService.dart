@@ -105,32 +105,33 @@ class AuthApi {
 
   // ---------------- LOGIN ----------------
 
-  Future<Map<String, dynamic>> login({
-    required String email,
-    required String password,
-  }) async {
-    final payload = {"email": email, "password": password};
-    debugPrint("➡️ [LOGIN] POST ${Baseurl.Url}login");
+Future<Map<String, dynamic>> login({
+  required String email,
+  required String password,
+}) async {
+  final payload = {"email": email, "password": password};
+  debugPrint("➡️ [LOGIN] POST ${Baseurl.Url}login");
 
+  const int maxRetries = 3;
+  const Duration initialDelay = Duration(seconds: 2);
+  int attempt = 0;
+
+  while (true) {
     try {
       final response = await _dio.post('login', data: payload);
       debugPrint("✅ [LOGIN] Status: ${response.statusCode}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data['data'];
-        final token = data['token'];
         final user = data['user'];
-        final username = data['username'];
 
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
+        await prefs.setString('token', data['token']);
         await prefs.setString('userName', user['username']);
         await prefs.setString('userId', user['id']);
         await prefs.setString('userEmail', user['email']);
         await prefs.setBool('emailVerified', user['emailVerified'] ?? false);
         await prefs.setBool('phoneVerified', user['phoneVerified'] ?? false);
-
-        print(response.data);
 
         return {
           "success": true,
@@ -143,17 +144,34 @@ class AuthApi {
         "success": false,
         "message": response.data['message'] ?? 'Login failed',
       };
+
     } on DioException catch (e) {
-      debugPrint("❌ [LOGIN] Error: ${e.message}");
-      return {
-        "success": false,
-        "message": e.response?.data['message'] ?? e.message,
-      };
+      attempt++;
+      final statusCode = e.response?.statusCode;
+
+      debugPrint(
+          "❌ [LOGIN] Attempt $attempt failed: ${e.message} (Status: $statusCode)");
+
+      // If it's a client error (4xx) or we've hit max retries, stop retrying
+      if ((statusCode != null && statusCode >= 400 && statusCode < 500) ||
+          attempt >= maxRetries) {
+        return {
+          "success": false,
+          "message": e.response?.data['message'] ?? e.message,
+        };
+      }
+
+      // Exponential backoff delay
+      final delay = initialDelay * attempt;
+      debugPrint("🔁 Retrying in ${delay.inSeconds}s...");
+      await Future.delayed(delay);
     } catch (e) {
       debugPrint("🔥 [LOGIN] Unexpected error: $e");
       return {"success": false, "message": e.toString()};
     }
   }
+}
+
 
   // ---------------- REQUEST PASSWORD RESET ----------------
 
