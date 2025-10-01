@@ -8,9 +8,12 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
+
+
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class RestaurantHome extends StatefulWidget {
   const RestaurantHome({super.key});
@@ -23,18 +26,56 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 
-  String _selectedCity = 'US';
-
-  // ✅ Cache for all cities
+  String _selectedCity = 'US'; // default to load all
   final Map<String, List<Restaurant>> _restaurantsCache = {};
   List<Restaurant> _filteredRestaurants = [];
 
   late Future<List<Restaurant>> _restaurantsFuture;
+  
+final List<String> usCities = [
+  "New York",
+  "Los Angeles",
+  "Chicago",
+  "Houston",
+  "Miami",
+  "San Francisco",
+  "Boston",
+  "Washington",
+  "Seattle",
+  "Atlanta",
+  "Las Vegas",
+  "Orlando",
+  "Dallas",
+  "Denver",
+  "Philadelphia",
+  "Phoenix",
+  "San Diego",
+  "Austin",
+  "Nashville",
+  "Portland",
+  "Detroit",
+  "Minneapolis",
+  "Charlotte",
+  "Indianapolis",
+  "Columbus",
+  "San Antonio",
+  "Tampa",
+  "Baltimore",
+  "Cleveland",
+  "Kansas City",
+];
+
 
   @override
   void initState() {
     super.initState();
-    _restaurantsFuture = _fetchAndCacheRestaurants(_selectedCity);
+
+    // ✅ Load all US restaurants first
+    _restaurantsFuture = _fetchAndCacheRestaurants('US');
+
+    // ✅ Detect user’s location, but don’t override the list yet
+    _loadUserLocation();
+
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -45,19 +86,69 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     super.dispose();
   }
 
-  /// ✅ Fetch from cache first, otherwise call API
+  /// ✅ Detect user’s location (but do not reload restaurants automatically)
+  Future<void> _loadUserLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.requestPermission();
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        debugPrint('⚠️ Location permission denied');
+        return; // stay on US restaurants
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      ).timeout(const Duration(seconds: 10));
+
+      final placemarks = await placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final detectedCity = placemarks.first.locality ?? 'US';
+        debugPrint("📍 User city detected: $detectedCity");
+
+        // ✅ just update the header display
+        setState(() {
+          _selectedCity = detectedCity;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Error getting location: $e");
+      // keep default US
+    }
+  }
+
+  /// ✅ Fetch from cache or API
   Future<List<Restaurant>> _fetchAndCacheRestaurants(String city) async {
     if (_restaurantsCache.containsKey(city)) {
-      _filteredRestaurants = _restaurantsCache[city]!;
+      _applyCityFilter(city);
       return _restaurantsCache[city]!;
     }
 
     final result = await _apiService.fetchRestaurants(city: city);
     _restaurantsCache[city] = result;
-    _filteredRestaurants = result;
+    _applyCityFilter(city);
     return result;
   }
 
+  /// ✅ Apply filtering
+  void _applyCityFilter(String city) {
+    final allRestaurants = _restaurantsCache[city] ?? [];
+    _filteredRestaurants = allRestaurants
+        .where((r) =>
+            r.vicinity.toLowerCase().contains(city.toLowerCase()) ||
+            r.name.toLowerCase().contains(city.toLowerCase()))
+        .toList();
+
+    if (_filteredRestaurants.isEmpty) {
+      _filteredRestaurants = allRestaurants;
+    }
+  }
+
+  /// ✅ Called when user selects city
   void _loadRestaurants(String city) {
     setState(() {
       _selectedCity = city;
@@ -66,23 +157,25 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     });
   }
 
-  /// ✅ Force refresh (ignore cache)
+  /// ✅ Refresh ignoring cache
   Future<void> _onRefresh() async {
     final freshData = await _apiService.fetchRestaurants(city: _selectedCity);
     setState(() {
       _restaurantsCache[_selectedCity] = freshData;
-      _filteredRestaurants = freshData;
+      _applyCityFilter(_selectedCity);
       _restaurantsFuture = Future.value(freshData);
     });
   }
 
-  /// ✅ Filter restaurants based on search input
+  /// ✅ Search filtering
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
     if (_restaurantsCache.containsKey(_selectedCity)) {
       setState(() {
         _filteredRestaurants = _restaurantsCache[_selectedCity]!
-            .where((r) => r.name.toLowerCase().contains(query))
+            .where((r) =>
+                r.name.toLowerCase().contains(query) ||
+                r.vicinity.toLowerCase().contains(query))
             .toList();
       });
     }
@@ -107,9 +200,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
               return SizedBox(
                 height: MediaQuery.of(context).size.height * 0.7,
                 child: CitySelector(
-                  cities: [
-                    'US',
-                  ],
+                  cities: usCities,
                   onCitySelected: (city) {
                     Navigator.pop(context);
                     _loadRestaurants(city);
@@ -141,7 +232,8 @@ class _RestaurantHomeState extends State<RestaurantHome> {
                     return _buildListView(_filteredRestaurants);
                   }
                   return const Center(
-                      child: CircularProgressIndicator(color: Colors.teal));
+                    child: CircularProgressIndicator(color: Colors.teal),
+                  );
                 }
 
                 if (snapshot.hasError) {

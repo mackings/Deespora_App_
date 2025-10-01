@@ -90,6 +90,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
     });
   }
 
+
   Future<void> _loadUserLocation() async {
     try {
       LocationPermission permission = await Geolocator.requestPermission();
@@ -120,6 +121,8 @@ class _DashboardState extends ConsumerState<Dashboard> {
       setState(() => _selectedCity = "New York"); // fallback
     }
   }
+
+
 
   Future<void> _fetchEvents() async {
     debugPrint('🔵 Fetching events for city: $_selectedCity');

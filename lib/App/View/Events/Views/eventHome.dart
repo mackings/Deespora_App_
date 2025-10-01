@@ -6,7 +6,11 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
+import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+
 
 
 
@@ -23,16 +27,51 @@ class _EventHomeState extends State<EventHome> {
 
   String _selectedCity = 'US';
 
-  // ✅ Cache for all cities
-  final Map<String, List<Event>> _eventsCache = {};
+  /// Store all events from the initial API call
+  List<Event> _allEvents = [];
+
+  /// Displayed events after filtering
   List<Event> _filteredEvents = [];
 
-  late Future<List<Event>> _eventsFuture;
+  late Future<void> _initialLoadFuture;
+
+  final List<String> usCities = [
+  "New York",
+  "Los Angeles",
+  "Chicago",
+  "Houston",
+  "Miami",
+  "San Francisco",
+  "Boston",
+  "Washington",
+  "Seattle",
+  "Atlanta",
+  "Las Vegas",
+  "Orlando",
+  "Dallas",
+  "Denver",
+  "Philadelphia",
+  "Phoenix",
+  "San Diego",
+  "Austin",
+  "Nashville",
+  "Portland",
+  "Detroit",
+  "Minneapolis",
+  "Charlotte",
+  "Indianapolis",
+  "Columbus",
+  "San Antonio",
+  "Tampa",
+  "Baltimore",
+  "Cleveland",
+  "Kansas City",
+];
 
   @override
   void initState() {
     super.initState();
-    _eventsFuture = _fetchAndCacheEvents(_selectedCity);
+    _initialLoadFuture = _fetchInitialEvents(); // fetch once
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -43,47 +82,66 @@ class _EventHomeState extends State<EventHome> {
     super.dispose();
   }
 
-  /// ✅ Fetch from cache first, otherwise call API
-  Future<List<Event>> _fetchAndCacheEvents(String city) async {
-    if (_eventsCache.containsKey(city)) {
-      _filteredEvents = _eventsCache[city]!;
-      return _eventsCache[city]!;
+  /// ✅ Fetch all events only once
+  Future<void> _fetchInitialEvents() async {
+    try {
+      final events = await _apiService.fetchAllEvents(); // Single API call
+      setState(() {
+        _allEvents = events;
+      });
+      _applyCityFilter(_selectedCity);
+    } catch (e) {
+      debugPrint("❌ Error loading events: $e");
     }
-
-    final result = await _apiService.fetchAllEvents(); // Filter by city if API supports
-    _eventsCache[city] = result;
-    _filteredEvents = result;
-    return result;
   }
 
+  /// ✅ Filter events by selected city
+  void _applyCityFilter(String city) {
+    final lowerCity = city.toLowerCase();
+
+    setState(() {
+      _filteredEvents = _allEvents.where((e) {
+        final venueMatch = e.venues.any((v) => v.name.toLowerCase().contains(lowerCity));
+        final nameMatch = e.name.toLowerCase().contains(lowerCity);
+        return venueMatch || nameMatch || city == 'US';
+      }).toList();
+    });
+  }
+
+  /// ✅ Change city without API call
   void _loadEvents(String city) {
     setState(() {
       _selectedCity = city;
-      _eventsFuture = _fetchAndCacheEvents(city);
-      _searchController.clear();
     });
+    _applyCityFilter(city);
+    _onSearchChanged(); // reapply any search query
   }
 
-  /// ✅ Force refresh (ignore cache)
+  /// ✅ Refresh just re-applies filters (no API call)
   Future<void> _onRefresh() async {
-    final freshData = await _apiService.fetchAllEvents();
-    setState(() {
-      _eventsCache[_selectedCity] = freshData;
-      _filteredEvents = freshData;
-      _eventsFuture = Future.value(freshData);
-    });
+    _applyCityFilter(_selectedCity);
+    _onSearchChanged();
   }
 
-  /// ✅ Filter events based on search input
+  /// ✅ Apply search on top of current city filter
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
-    if (_eventsCache.containsKey(_selectedCity)) {
-      setState(() {
-        _filteredEvents = _eventsCache[_selectedCity]!
-            .where((e) => e.name.toLowerCase().contains(query))
-            .toList();
-      });
-    }
+    setState(() {
+      final cityFiltered = _allEvents.where((e) {
+        final venueMatch = e.venues.any((v) => v.name.toLowerCase().contains(_selectedCity.toLowerCase()));
+        final nameMatch = e.name.toLowerCase().contains(_selectedCity.toLowerCase());
+        return venueMatch || nameMatch || _selectedCity == 'US';
+      }).toList();
+
+      if (query.isEmpty) {
+        _filteredEvents = cityFiltered;
+      } else {
+        _filteredEvents = cityFiltered.where((e) {
+          return e.name.toLowerCase().contains(query) ||
+              e.venues.any((v) => v.name.toLowerCase().contains(query));
+        }).toList();
+      }
+    });
   }
 
   @override
@@ -105,12 +163,12 @@ class _EventHomeState extends State<EventHome> {
               return SizedBox(
                 height: MediaQuery.of(context).size.height * 0.7,
                 child: CitySelector(
-                  cities: ['US'],
+                  cities: usCities,
                   onCitySelected: (city) {
                     Navigator.pop(context);
                     _loadEvents(city);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Selected: $city')),
+                      SnackBar(content: Text('Selected $city')),
                     );
                   },
                 ),
@@ -130,26 +188,25 @@ class _EventHomeState extends State<EventHome> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<Event>>(
-              future: _eventsFuture,
+            child: FutureBuilder<void>(
+              future: _initialLoadFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  if (_eventsCache.containsKey(_selectedCity)) {
-                    return _buildListView(_filteredEvents);
-                  }
                   return const Center(
-                      child: CircularProgressIndicator(color: Colors.teal));
+                    child: CircularProgressIndicator(color: Colors.teal),
+                  );
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                   return Center(child: CustomText(text: "Network Error, Please retry"));
+                 // return Center(child: Text('Error: ${snapshot.error}'));
                 }
 
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                if (_filteredEvents.isNotEmpty) {
                   return _buildListView(_filteredEvents);
                 }
 
-                return const Center(child: Text('No events found.'));
+                return const Center(child: CustomText(text: "No events found"));
               },
             ),
           ),
