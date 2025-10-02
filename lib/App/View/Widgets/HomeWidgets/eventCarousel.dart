@@ -56,7 +56,7 @@ class _EventCarouselState extends State<EventCarousel> {
             itemCount: widget.imageUrls.length,
             options: CarouselOptions(
               height: widget.height,
-              autoPlay: widget.autoPlay,
+             // autoPlay: widget.autoPlay,
               enlargeCenterPage: false,
               viewportFraction: 0.7,
               onPageChanged: (index, reason) {

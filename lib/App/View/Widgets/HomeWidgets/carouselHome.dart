@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
+import 'dart:async'; // 👈 for Timer
+
 class HomeCarousel extends StatefulWidget {
   final List<CarouselItem> items;
-  final bool loading; // 👈 New flag
+  final bool loading;
 
   const HomeCarousel({
     super.key,
@@ -20,9 +22,32 @@ class HomeCarousel extends StatefulWidget {
 class _HomeCarouselState extends State<HomeCarousel> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  Timer? _autoScrollTimer; // 👈 timer for auto scroll
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ Start auto-scroll only if there are items
+    if (widget.items.isNotEmpty) {
+      _autoScrollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+        if (_pageController.hasClients && widget.items.isNotEmpty) {
+          int nextPage = _currentIndex + 1;
+          if (nextPage >= widget.items.length) nextPage = 0; // loop back
+
+          _pageController.animateToPage(
+            nextPage,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _autoScrollTimer?.cancel(); // 👈 cancel timer
     _pageController.dispose();
     super.dispose();
   }
@@ -30,7 +55,7 @@ class _HomeCarouselState extends State<HomeCarousel> {
   @override
   Widget build(BuildContext context) {
     if (widget.loading) {
-
+      // ✅ Loading skeleton
       return SizedBox(
         height: 130,
         child: ListView.separated(
@@ -49,12 +74,12 @@ class _HomeCarouselState extends State<HomeCarousel> {
       );
     }
 
+    // ✅ Carousel with auto-scroll
     return SizedBox(
       height: 130,
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
-          // Carousel Slides
           PageView.builder(
             controller: _pageController,
             itemCount: widget.items.length,
@@ -67,7 +92,7 @@ class _HomeCarouselState extends State<HomeCarousel> {
             },
           ),
 
-          // Indicators
+          // ✅ Indicators
           Positioned(
             bottom: 12,
             child: Container(
@@ -106,6 +131,9 @@ class _HomeCarouselState extends State<HomeCarousel> {
     );
   }
 }
+
+
+
 
 class _CarouselCard extends StatelessWidget {
   final CarouselItem item;

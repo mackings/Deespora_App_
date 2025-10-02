@@ -19,6 +19,8 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 
 
+
+
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
 
@@ -29,7 +31,7 @@ class Dashboard extends ConsumerStatefulWidget {
 class _DashboardState extends ConsumerState<Dashboard> {
   final EventApiService _eventService = EventApiService();
 
-  bool _loading = true;
+  bool _loading = false;
   String? _userName;
   String _selectedCity = "";
   List<Event> _events = [];
