@@ -34,7 +34,6 @@ class RestaurantGalleryHeader extends StatelessWidget {
           ]
         : (imageUrls.length == 1
             ? [
-                // If there’s only ONE image, repeat it to fill the gallery
                 imageUrls[0],
                 imageUrls[0],
                 imageUrls[0],
@@ -43,7 +42,7 @@ class RestaurantGalleryHeader extends StatelessWidget {
 
     return Column(
       children: [
-        // IMAGE GALLERY
+        // 🖼 IMAGE GALLERY
         Container(
           width: double.infinity,
           height: 306,
@@ -53,18 +52,12 @@ class RestaurantGalleryHeader extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Image.network(
-                        displayImages[0],
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    Expanded(child: _buildSafeImage(displayImages[0])),
                     if (displayImages.length > 1)
-                      Image.network(
+                      _buildSafeImage(
                         displayImages[1],
                         width: 122.33,
                         height: 151,
-                        fit: BoxFit.cover,
                       ),
                   ],
                 ),
@@ -73,19 +66,9 @@ class RestaurantGalleryHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     if (displayImages.length > 2)
-                      Expanded(
-                        child: Image.network(
-                          displayImages[2],
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      Expanded(child: _buildSafeImage(displayImages[2])),
                     if (displayImages.length > 3)
-                      Expanded(
-                        child: Image.network(
-                          displayImages[3],
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      Expanded(child: _buildSafeImage(displayImages[3])),
                   ],
                 ),
               ),
@@ -93,11 +76,11 @@ class RestaurantGalleryHeader extends StatelessWidget {
           ),
         ),
 
-        // HEADER
+        // 🏷 HEADER
         CustomText(text: storeName, title: true, fontSize: 24),
         CustomText(text: '$rating • $ratingsCount ratings', fontSize: 14),
 
-        // ACTION BUTTONS
+        // ⚙️ ACTION BUTTONS
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
@@ -113,6 +96,42 @@ class RestaurantGalleryHeader extends StatelessWidget {
     );
   }
 
+  // ✅ Safe Image Loader (handles 404s, broken URLs, etc.)
+  Widget _buildSafeImage(String url, {double? width, double? height}) {
+    return Image.network(
+      url,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: SizedBox(
+            width: 30,
+            height: 30,
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      (loadingProgress.expectedTotalBytes ?? 1)
+                  : null,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => Container(
+        width: width,
+        height: height,
+        color: Colors.grey[200],
+        child: const Icon(
+          Icons.broken_image,
+          color: Colors.grey,
+          size: 40,
+        ),
+      ),
+    );
+  }
+
+  // ✅ Reusable Action Button
   Widget _buildActionButton(IconData icon, String text, VoidCallback? onTap) {
     return GestureDetector(
       onTap: onTap,
