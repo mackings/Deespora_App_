@@ -1,6 +1,5 @@
 import 'package:dspora/App/View/Restaurants/Api/ResService.dart';
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
-import 'package:dspora/App/View/Restaurants/Providers/resProvider.dart';
 import 'package:dspora/App/View/Restaurants/View/Details.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/storefront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
@@ -8,12 +7,10 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
-
-
-
-
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+
+
 
 class RestaurantHome extends StatefulWidget {
   const RestaurantHome({super.key});
@@ -26,7 +23,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 
-  String _selectedCity = 'US'; // default to load all
+  String _selectedCity = 'US';
   final Map<String, List<Restaurant>> _restaurantsCache = {};
   List<Restaurant> _filteredRestaurants = [];
 

@@ -1,3 +1,4 @@
+import 'package:dspora/App/View/Catering/View/cateringHome.dart';
 import 'package:dspora/App/View/Events/Api/eventsApi.dart';
 import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/Events/Views/eventDetails.dart';
@@ -16,10 +17,6 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-
-
-
 
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
@@ -45,18 +42,23 @@ class _DashboardState extends ConsumerState<Dashboard> {
       backgroundColor: const Color(0xFFF1CD59),
       onTap: () => Nav.push(const RestaurantHome()),
     ),
+
     CategoryItem(
       title: 'Catering',
       svgAsset: 'assets/img/catering.png',
       backgroundColor: const Color(0xFF32871F),
-      onTap: () {},
+      onTap: () {
+        Nav.push(CateringHome());
+      },
     ),
+
     CategoryItem(
       title: 'Events',
       svgAsset: 'assets/img/event.png',
       backgroundColor: const Color(0xFFDA763F),
       onTap: () => Nav.push(const EventHome()),
     ),
+
     CategoryItem(
       title: 'Real Estate',
       svgAsset: 'assets/img/realestate.png',
@@ -92,7 +94,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
     });
   }
 
-
   Future<void> _loadUserLocation() async {
     try {
       LocationPermission permission = await Geolocator.requestPermission();
@@ -100,7 +101,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         debugPrint('⚠️ Location permission denied');
-        setState(() => _selectedCity = "London"); 
+        setState(() => _selectedCity = "London");
         return;
       }
 
@@ -108,8 +109,10 @@ class _DashboardState extends ConsumerState<Dashboard> {
         desiredAccuracy: LocationAccuracy.medium,
       ).timeout(const Duration(seconds: 10));
 
-      final placemarks =
-          await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      final placemarks = await placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
 
       if (placemarks.isNotEmpty) {
         setState(() {
@@ -124,13 +127,11 @@ class _DashboardState extends ConsumerState<Dashboard> {
     }
   }
 
-
-
   Future<void> _fetchEvents() async {
     debugPrint('🔵 Fetching events for city: $_selectedCity');
     try {
       final events = await _eventService.fetchAllEvents(
-       // city: _selectedCity.isNotEmpty ? _selectedCity : null,
+        // city: _selectedCity.isNotEmpty ? _selectedCity : null,
       );
 
       debugPrint('✅ Got ${events.length} events');
@@ -171,7 +172,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
               child: Column(
                 children: [
-                  /// ---------- Header ------------
                   HomeHeader(
                     name: _userName ?? '',
                     location: _selectedCity,
@@ -191,8 +191,9 @@ class _DashboardState extends ConsumerState<Dashboard> {
                     controller: searchController,
                     hintText: 'Search Deespora',
                     onChanged: (value) {},
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'Enter search text' : null,
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Enter search text'
+                        : null,
                   ),
 
                   const SizedBox(height: 20),
@@ -204,26 +205,25 @@ class _DashboardState extends ConsumerState<Dashboard> {
                       items: _loading
                           ? _buildSkeletonCarouselItems()
                           : _events.isNotEmpty
-                              ? _events.take(4).map((event) {
-                                  return CarouselItem(
-                                    imageUrl: event.images.isNotEmpty
-                                        ? event.images.first.url
-                                        : 'https://via.placeholder.com/400x200',
-                                    title: event.name,
-                                    date: event.dates.start.localDate,
-                                    onTap: () => Nav.push(
-                                        EventDetailScreen(event: event)),
-                                  );
-                                }).toList()
-                              : [
-                                  CarouselItem(
-                                    imageUrl:
-                                        'https://via.placeholder.com/400x200',
-                                    title: 'No events available',
-                                    date: '',
-                                    onTap: () {},
-                                  )
-                                ],
+                          ? _events.take(4).map((event) {
+                              return CarouselItem(
+                                imageUrl: event.images.isNotEmpty
+                                    ? event.images.first.url
+                                    : 'https://via.placeholder.com/400x200',
+                                title: event.name,
+                                date: event.dates.start.localDate,
+                                onTap: () =>
+                                    Nav.push(EventDetailScreen(event: event)),
+                              );
+                            }).toList()
+                          : [
+                              CarouselItem(
+                                imageUrl: 'https://via.placeholder.com/400x200',
+                                title: 'No events available',
+                                date: '',
+                                onTap: () {},
+                              ),
+                            ],
                     ),
                   ),
 
@@ -261,14 +261,16 @@ class _DashboardState extends ConsumerState<Dashboard> {
                       imageUrls: _loading
                           ? List.generate(8, (index) => '')
                           : _events.length > 1
-                              ? _events
-                                  .skip(1)
-                                  .take(8)
-                                  .map((e) => e.images.isNotEmpty
+                          ? _events
+                                .skip(1)
+                                .take(8)
+                                .map(
+                                  (e) => e.images.isNotEmpty
                                       ? e.images.first.url
-                                      : 'https://via.placeholder.com/400x200')
-                                  .toList()
-                              : ['https://via.placeholder.com/400x200'],
+                                      : 'https://via.placeholder.com/400x200',
+                                )
+                                .toList()
+                          : ['https://via.placeholder.com/400x200'],
                       height: 100,
                       autoPlay: !_loading,
                       onTap: _loading
