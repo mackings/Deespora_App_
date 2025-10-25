@@ -3,6 +3,7 @@ import 'package:dspora/App/View/Events/Api/eventsApi.dart';
 import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/Events/Views/eventDetails.dart';
 import 'package:dspora/App/View/Events/Views/eventHome.dart';
+import 'package:dspora/App/View/RealEstate/View/RealestateHome.dart';
 import 'package:dspora/App/View/Restaurants/View/restHome.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/carouselHome.dart';
@@ -63,7 +64,9 @@ class _DashboardState extends ConsumerState<Dashboard> {
       title: 'Real Estate',
       svgAsset: 'assets/img/realestate.png',
       backgroundColor: const Color(0xFFB287EE),
-      onTap: () {},
+      onTap: () {
+        Nav.push(RealEstateHome());
+      },
     ),
   ];
 

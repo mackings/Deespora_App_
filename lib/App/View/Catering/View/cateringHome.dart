@@ -1,7 +1,6 @@
 import 'package:dspora/App/View/Catering/Api/cateringService.dart';
 import 'package:dspora/App/View/Catering/Model/cateringModel.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
-import 'package:dspora/App/View/Widgets/GLOBAL/FDetailwidget.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/FrontDetails.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';

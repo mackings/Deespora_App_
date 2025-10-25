@@ -80,7 +80,7 @@ class GlobalStoreFront extends StatelessWidget {
                       CustomText(
                         text: storeName,
                         title: true,
-                        fontSize: 16,
+                        fontSize: 13,
                         shorten: true,
                       ),
 
@@ -105,6 +105,7 @@ class GlobalStoreFront extends StatelessWidget {
                               text: location,
                               content: true,
                               fontSize: 12,
+                              shorten: true,
                             ),
                           ),
                         ],
