@@ -324,7 +324,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 25),
 
                   Skeletonizer(
                     enabled: _loading,

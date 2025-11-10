@@ -129,10 +129,10 @@ class _SignUpState extends ConsumerState<SignUp> {
   @override
   Widget build(BuildContext context) {
     return LoadingOverlay(
-      // <--- Wrap Scaffold with overlay
       isLoading: _isLoading,
       text: "Registering...",
       child: Scaffold(
+        backgroundColor: Colors.white,
         body: SafeArea(
           child: SingleChildScrollView(
             child: Padding(

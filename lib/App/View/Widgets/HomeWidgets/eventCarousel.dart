@@ -8,7 +8,7 @@ class EventCarousel extends StatefulWidget {
   final double height;
   final bool autoPlay;
   final ValueChanged<int>? onTap;
-  final bool loading; // 👈 new flag
+  final bool loading;
 
   const EventCarousel({
     super.key,
@@ -16,7 +16,7 @@ class EventCarousel extends StatefulWidget {
     this.height = 200,
     this.autoPlay = true,
     this.onTap,
-    this.loading = false, // default false
+    this.loading = false,
   });
 
   @override
@@ -29,16 +29,16 @@ class _EventCarouselState extends State<EventCarousel> {
   @override
   Widget build(BuildContext context) {
     if (widget.loading) {
-      // Show skeleton placeholder
+      // Skeleton loader when loading
       return SizedBox(
         height: widget.height,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: 3, // show 3 placeholders
+          itemCount: 2, // Show 2 placeholders per screen
           separatorBuilder: (_, __) => const SizedBox(width: 12),
           itemBuilder: (_, __) => Container(
-            width: MediaQuery.of(context).size.width * 0.7,
+            width: MediaQuery.of(context).size.width * 0.45,
             decoration: BoxDecoration(
               color: Colors.grey.shade300,
               borderRadius: BorderRadius.circular(12),
@@ -48,48 +48,67 @@ class _EventCarouselState extends State<EventCarousel> {
       );
     }
 
+    // ✅ Group images into chunks of 2
+    final List<List<String>> groupedImages = [];
+    for (int i = 0; i < widget.imageUrls.length; i += 2) {
+      groupedImages.add(
+        widget.imageUrls.sublist(
+          i,
+          i + 2 > widget.imageUrls.length ? widget.imageUrls.length : i + 2,
+        ),
+      );
+    }
+
     return Column(
       children: [
         SizedBox(
           height: widget.height,
           child: CarouselSlider.builder(
-            itemCount: widget.imageUrls.length,
+            itemCount: groupedImages.length,
             options: CarouselOptions(
               height: widget.height,
-             // autoPlay: widget.autoPlay,
               enlargeCenterPage: false,
-              viewportFraction: 0.7,
+              viewportFraction: 1, // full width
+              enableInfiniteScroll: true,
+              autoPlay: widget.autoPlay,
               onPageChanged: (index, reason) {
                 setState(() => _currentIndex = index);
               },
             ),
             itemBuilder: (context, index, realIndex) {
-              final url = widget.imageUrls[index];
-              return GestureDetector(
-                onTap: () => widget.onTap?.call(index),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-  imageUrl: url,
-  fit: BoxFit.cover,
-  width: double.infinity,
-  placeholder: (context, url) => Container(
-    color: Colors.grey.shade300,
-  ),
-  errorWidget: (context, url, error) => Container(
-    color: Colors.grey.shade300,
-    child: const Icon(Icons.error, color: Colors.red),
-  ),
-),
-                  ),
-                ),
+              final pair = groupedImages[index];
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: pair.map((url) {
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => widget.onTap?.call(widget.imageUrls.indexOf(url)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: url,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: Colors.grey.shade300,
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.error, color: Colors.red),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               );
             },
           ),
         ),
-        const SizedBox(height: 12),
+       // const SizedBox(height: 8),
+
       ],
     );
   }

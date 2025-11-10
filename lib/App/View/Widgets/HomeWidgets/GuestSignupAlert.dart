@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 
 class GuestSignupDialog extends StatelessWidget {
+  
   final String title;
   final VoidCallback? onCreateAccount;
   final VoidCallback? onLogin;
@@ -51,7 +52,7 @@ class GuestSignupDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // Close button (top-right)
-              
+
               Align(
                 alignment: Alignment.topRight,
                 child: GestureDetector(

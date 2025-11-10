@@ -21,6 +21,8 @@ class RestaurantHome extends StatefulWidget {
 }
 
 class _RestaurantHomeState extends State<RestaurantHome> {
+
+  
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 

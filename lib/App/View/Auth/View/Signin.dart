@@ -101,6 +101,8 @@ class _SignInState extends ConsumerState<SignIn> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(backgroundColor: Colors.white,),
       body: LoadingOverlay(
         isLoading: _isLoading,
         text: "Logging in...",
