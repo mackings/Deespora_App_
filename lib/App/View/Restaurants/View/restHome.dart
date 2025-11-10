@@ -2,6 +2,7 @@ import 'package:dspora/App/View/Restaurants/Api/ResService.dart';
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
 import 'package:dspora/App/View/Restaurants/View/Details.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/storefront.dart';
+import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';

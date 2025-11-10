@@ -1,9 +1,10 @@
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 
+import 'package:dspora/App/View/Widgets/customtext.dart';
+import 'package:flutter/material.dart';
 
 class StoreFront extends StatelessWidget {
-  
   final String imageUrl;
   final String storeName;
   final String category;
@@ -21,8 +22,14 @@ class StoreFront extends StatelessWidget {
     this.onTap,
   });
 
+  bool _isValidUrl(String url) {
+    return url.startsWith('http') || url.startsWith('https');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool hasImage = imageUrl.isNotEmpty && _isValidUrl(imageUrl);
+
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -45,32 +52,38 @@ class StoreFront extends StatelessWidget {
           child: Row(
             children: [
               // 🟩 Store Image
-// 🟩 Store Image
-ClipRRect(
-  borderRadius: BorderRadius.circular(16),
-  child: Image.network(
-    imageUrl,
-    width: 100,
-    height: 100,
-    fit: BoxFit.cover,
-    errorBuilder: (context, error, stackTrace) {
-      // Fallback widget when image fails to load
-      return Container(
-        width: 100,
-        height: 100,
-        color: Colors.grey[200],
-        child: const Icon(
-          Icons.broken_image,
-          color: Colors.grey,
-          size: 40,
-        ),
-      );
-    },
-  ),
-),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: hasImage
+                    ? Image.network(
+                        imageUrl,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 100,
+                            height: 100,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.teal,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          print('❌ Image load error: $imageUrl');
+                          return _buildPlaceholder();
+                        },
+                      )
+                    : _buildPlaceholder(),
+              ),
 
               const SizedBox(width: 12),
-        
+
               // 🟩 Store Details
               Expanded(
                 child: Padding(
@@ -85,34 +98,31 @@ ClipRRect(
                         title: true,
                         fontSize: 16,
                         shorten: true,
-                        
                       ),
-        
+
                       // 🟨 Category
-                      CustomText(
-                        text: category,
-                        content: true,
-                        fontSize: 14,
-                       
-                      ),
-        
+                      CustomText(text: category, content: true, fontSize: 14),
+
                       // 🟨 Location
                       Row(
                         children: [
-                          const Icon(Icons.location_on,
-                              size: 14, color: Colors.grey),
+                          const Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: CustomText(
                               text: location,
                               content: true,
                               fontSize: 12,
-                              
+                              shorten: true,
                             ),
                           ),
                         ],
                       ),
-        
+
                       // 🟨 Rating
                       Row(
                         children: [
@@ -133,7 +143,6 @@ ClipRRect(
                             text: rating.toString(),
                             content: true,
                             fontSize: 12,
-                            
                           ),
                         ],
                       ),
@@ -141,7 +150,7 @@ ClipRRect(
                   ),
                 ),
               ),
-        
+
               // 🟩 Action Button
               Container(
                 margin: const EdgeInsets.only(right: 12),
@@ -159,6 +168,19 @@ ClipRRect(
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: 100,
+      height: 100,
+      color: Colors.grey[200],
+      child: const Icon(
+        Icons.restaurant,
+        color: Colors.grey,
+        size: 40,
       ),
     );
   }

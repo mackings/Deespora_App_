@@ -20,7 +20,9 @@ class RestaurantDetailScreen extends StatelessWidget {
           ];
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: CustomText(text: restaurant.name),
       ),
       body: SingleChildScrollView(
@@ -47,6 +49,7 @@ class RestaurantDetailScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 16),
+            
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: CustomText(

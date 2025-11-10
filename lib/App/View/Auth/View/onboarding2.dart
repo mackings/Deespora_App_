@@ -1,12 +1,15 @@
 import 'package:dspora/App/View/Auth/View/Signin.dart';
 import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Utils/socialSignin.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';
 import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
-import 'package:dspora/App/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+
 
 class Second_Onboarding extends ConsumerStatefulWidget {
   const Second_Onboarding({super.key});
@@ -17,6 +20,26 @@ class Second_Onboarding extends ConsumerStatefulWidget {
 }
 
 class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
+  
+  Future<void> _continueAsGuest() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Set userName to 'Guest' explicitly
+    await prefs.setString('userName', 'Guest');
+    
+    // Clear any existing auth data
+    await prefs.remove('token');
+    await prefs.remove('userId');
+    await prefs.remove('userEmail');
+    await prefs.remove('emailVerified');
+    await prefs.remove('phoneVerified');
+    
+    debugPrint('✅ Guest mode activated');
+    
+    // Navigate to HomePage
+    Nav.push(HomePage());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,31 +53,31 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                 children: [
                   Image.asset("assets/img/logo.png"),
 
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   CustomText(
                     text: "Lets get you started with Deespora",
                     fontSize: 20,
                     title: true,
                   ),
-                  SizedBox(height: 40),
+                  const SizedBox(height: 40),
                   SocialSigninButton(
                     text: "Sign in Using Google Account",
                     svgAsset: "assets/svg/google.svg",
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   SocialSigninButton(
                     text: "Sign in Using Facebook Account",
                     svgAsset: "assets/svg/facebook.svg",
                   ),
-                  SizedBox(height: 40),
+                  const SizedBox(height: 40),
                   CustomBtn(
                     text: "Sign in using Password",
                     onPressed: () {
                       Nav.push(SignIn());
                     },
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   Align(
                     alignment: Alignment.center,
@@ -63,7 +86,7 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CustomText(text: "New To Deespora"),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         GestureDetector(
                           onTap: () {
                             Nav.push(SignUp());
@@ -77,21 +100,19 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                     ),
                   ),
 
-                  SizedBox(height: 20),
+                  const SizedBox(height: 60),
 
                   GestureDetector(
-                    onTap: () {
-                      Nav.push(Dashboard());
-                    },
+                    onTap: _continueAsGuest,
                     child: CustomText(
                       text: "Continue as Guest",
                       underline: true,
                     ),
                   ),
-                  SizedBox(height: 80),
+                  const SizedBox(height: 60),
 
                   CustomText(text: "By using Deespora,you agree to the"),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
                   CustomText(
                     text: "Terms and Privacy Policy",

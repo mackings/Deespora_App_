@@ -1,3 +1,5 @@
+import 'package:dspora/App/View/Auth/View/Signin.dart';
+import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Catering/View/cateringHome.dart';
 import 'package:dspora/App/View/Events/Api/eventsApi.dart';
 import 'package:dspora/App/View/Events/Model/eventModel.dart';
@@ -6,6 +8,7 @@ import 'package:dspora/App/View/Events/Views/eventHome.dart';
 import 'package:dspora/App/View/RealEstate/View/RealestateHome.dart';
 import 'package:dspora/App/View/Restaurants/View/restHome.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/GuestSignupAlert.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/carouselHome.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/categoryGrid.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/eventCarousel.dart';
@@ -18,6 +21,9 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+
+
+
 
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
@@ -33,47 +39,46 @@ class _DashboardState extends ConsumerState<Dashboard> {
   String? _userName;
   String _selectedCity = "";
   List<Event> _events = [];
+  bool _isGuest = false; // Track if user is a guest
 
   final TextEditingController searchController = TextEditingController();
 
-  final List<CategoryItem> categories = [
-    CategoryItem(
-      title: 'Restaurants',
-      svgAsset: 'assets/img/restaurant.png',
-      backgroundColor: const Color(0xFFF1CD59),
-      onTap: () => Nav.push(const RestaurantHome()),
-    ),
-
-    CategoryItem(
-      title: 'Catering',
-      svgAsset: 'assets/img/catering.png',
-      backgroundColor: const Color(0xFF32871F),
-      onTap: () {
-        Nav.push(CateringHome());
-      },
-    ),
-
-    CategoryItem(
-      title: 'Events',
-      svgAsset: 'assets/img/event.png',
-      backgroundColor: const Color(0xFFDA763F),
-      onTap: () => Nav.push(const EventHome()),
-    ),
-
-    CategoryItem(
-      title: 'Real Estate',
-      svgAsset: 'assets/img/realestate.png',
-      backgroundColor: const Color(0xFFB287EE),
-      onTap: () {
-        Nav.push(RealEstateHome());
-      },
-    ),
-  ];
+  late final List<CategoryItem> categories;
 
   @override
   void initState() {
     super.initState();
+    _initCategories();
     _initDashboard();
+  }
+
+  void _initCategories() {
+    categories = [
+      CategoryItem(
+        title: 'Restaurants',
+        svgAsset: 'assets/img/restaurant.png',
+        backgroundColor: const Color(0xFFF1CD59),
+        onTap: () => Nav.push(const RestaurantHome()),
+      ),
+      CategoryItem(
+        title: 'Catering',
+        svgAsset: 'assets/img/catering.png',
+        backgroundColor: const Color(0xFF32871F),
+        onTap: () => _handleCategoryTap('Catering', () => Nav.push(CateringHome())),
+      ),
+      CategoryItem(
+        title: 'Events',
+        svgAsset: 'assets/img/event.png',
+        backgroundColor: const Color(0xFFDA763F),
+        onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
+      ),
+      CategoryItem(
+        title: 'Real Estate',
+        svgAsset: 'assets/img/realestate.png',
+        backgroundColor: const Color(0xFFB287EE),
+        onTap: () => _handleCategoryTap('Real Estate', () => Nav.push(RealEstateHome())),
+      ),
+    ];
   }
 
   Future<void> _initDashboard() async {
@@ -82,6 +87,9 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
     await _loadUserName();
     debugPrint('✅ User loaded: $_userName');
+
+    await _checkGuestStatus();
+    debugPrint('✅ Guest status: $_isGuest');
 
     await _loadUserLocation();
     debugPrint('✅ Location loaded: $_selectedCity');
@@ -95,6 +103,68 @@ class _DashboardState extends ConsumerState<Dashboard> {
     setState(() {
       _userName = prefs.getString('userName') ?? 'Guest';
     });
+  }
+
+  Future<void> _checkGuestStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userName = prefs.getString('userName');
+    
+    // Check if user is guest based on userName only
+    final isGuestUser = userName == null || userName.isEmpty || userName == 'Guest';
+    
+    if (isGuestUser) {
+      // Clear all auth data for guest users
+      await _clearAuthData();
+      setState(() {
+        _isGuest = true;
+      });
+    } else {
+      setState(() {
+        _isGuest = false;
+      });
+    }
+  }
+
+  Future<void> _clearAuthData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('userId');
+    await prefs.remove('userEmail');
+    await prefs.remove('emailVerified');
+    await prefs.remove('phoneVerified');
+    debugPrint('🧹 Cleared auth data for guest user');
+  }
+
+  void _handleCategoryTap(String categoryName, VoidCallback navigation) {
+    if (_isGuest) {
+      _showGuestSignupDialog();
+    } else {
+      navigation();
+    }
+  }
+
+  void _showGuestSignupDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GuestSignupDialog(
+          title: 'Want more personalized results?',
+          onCreateAccount: () {
+            Navigator.pop(context);
+            Nav.push(SignUp());
+          },
+          onLogin: () {
+            Navigator.pop(context);
+            Nav.push(SignIn());
+          },
+          onClose: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _loadUserLocation() async {
@@ -126,16 +196,14 @@ class _DashboardState extends ConsumerState<Dashboard> {
       }
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
-      setState(() => _selectedCity = "New York"); // fallback
+      setState(() => _selectedCity = "New York");
     }
   }
 
   Future<void> _fetchEvents() async {
     debugPrint('🔵 Fetching events for city: $_selectedCity');
     try {
-      final events = await _eventService.fetchAllEvents(
-        // city: _selectedCity.isNotEmpty ? _selectedCity : null,
-      );
+      final events = await _eventService.fetchAllEvents();
 
       debugPrint('✅ Got ${events.length} events');
       setState(() {
@@ -151,7 +219,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
     }
   }
 
-  // Helper method to create skeleton placeholders
   List<CarouselItem> _buildSkeletonCarouselItems() {
     return List.generate(
       4,
@@ -208,25 +275,26 @@ class _DashboardState extends ConsumerState<Dashboard> {
                       items: _loading
                           ? _buildSkeletonCarouselItems()
                           : _events.isNotEmpty
-                          ? _events.take(4).map((event) {
-                              return CarouselItem(
-                                imageUrl: event.images.isNotEmpty
-                                    ? event.images.first.url
-                                    : 'https://via.placeholder.com/400x200',
-                                title: event.name,
-                                date: event.dates.start.localDate,
-                                onTap: () =>
-                                    Nav.push(EventDetailScreen(event: event)),
-                              );
-                            }).toList()
-                          : [
-                              CarouselItem(
-                                imageUrl: 'https://via.placeholder.com/400x200',
-                                title: 'No events available',
-                                date: '',
-                                onTap: () {},
-                              ),
-                            ],
+                              ? _events.take(4).map((event) {
+                                  return CarouselItem(
+                                    imageUrl: event.images.isNotEmpty
+                                        ? event.images.first.url
+                                        : 'https://via.placeholder.com/400x200',
+                                    title: event.name,
+                                    date: event.dates.start.localDate,
+                                    onTap: () =>
+                                        Nav.push(EventDetailScreen(event: event)),
+                                  );
+                                }).toList()
+                              : [
+                                  CarouselItem(
+                                    imageUrl:
+                                        'https://via.placeholder.com/400x200',
+                                    title: 'No events available',
+                                    date: '',
+                                    onTap: () {},
+                                  ),
+                                ],
                     ),
                   ),
 
@@ -264,16 +332,16 @@ class _DashboardState extends ConsumerState<Dashboard> {
                       imageUrls: _loading
                           ? List.generate(8, (index) => '')
                           : _events.length > 1
-                          ? _events
-                                .skip(1)
-                                .take(8)
-                                .map(
-                                  (e) => e.images.isNotEmpty
-                                      ? e.images.first.url
-                                      : 'https://via.placeholder.com/400x200',
-                                )
-                                .toList()
-                          : ['https://via.placeholder.com/400x200'],
+                              ? _events
+                                  .skip(1)
+                                  .take(8)
+                                  .map(
+                                    (e) => e.images.isNotEmpty
+                                        ? e.images.first.url
+                                        : 'https://via.placeholder.com/400x200',
+                                  )
+                                  .toList()
+                              : ['https://via.placeholder.com/400x200'],
                       height: 100,
                       autoPlay: !_loading,
                       onTap: _loading

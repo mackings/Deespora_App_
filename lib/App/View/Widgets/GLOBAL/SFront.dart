@@ -85,11 +85,7 @@ class GlobalStoreFront extends StatelessWidget {
                       ),
 
                       // 🟨 Category
-                      CustomText(
-                        text: category,
-                        content: true,
-                        fontSize: 14,
-                      ),
+                      CustomText(text: category, content: true, fontSize: 14),
 
                       // 🟨 Location
                       Row(
@@ -140,17 +136,22 @@ class GlobalStoreFront extends StatelessWidget {
               ),
 
               // 🟩 Action Button
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF37B6AF),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: Colors.white,
+              GestureDetector(
+                onTap: () {
+                     print(imageUrl);
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF37B6AF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
