@@ -3,8 +3,10 @@ import 'package:dspora/App/View/Interests/Model/placemodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/UScities.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
+import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
+import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -241,80 +243,31 @@ class _InterestHomeState extends State<InterestHome> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Save places from real estate to see them here',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
+CustomText(text: "Save places on the app to preview here")
             ],
           ),
         );
       }
 
       return ListView.builder(
-        padding: const EdgeInsets.only(top: 10),
-        itemCount: savedPlaces.length,
-        itemBuilder: (context, index) {
-          final place = savedPlaces[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 1,
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: CircleAvatar(
-                backgroundImage: place.imageUrl != null
-                    ? NetworkImage(place.imageUrl!)
-                    : const NetworkImage(Images.Store),
-                radius: 28,
-              ),
-              title: Text(
-                place.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(
-                    place.address,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (place.rating != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          place.rating!.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () => _removePlace(place.name, place.address),
-              ),
-            ),
-          );
-        },
-      );
+  padding: const EdgeInsets.only(top: 10),
+  itemCount: savedPlaces.length,
+  itemBuilder: (context, index) {
+    final place = savedPlaces[index];
+
+    return GlobalStoreFront(
+      imageUrl: place.imageUrl ?? Images.Store,
+      storeName: place.name,
+      category:  '',
+      location: place.address,
+      rating: place.rating ?? 0.0,
+      onTap: () {
+
+      },
+    );
+  },
+);
+
     } else if (_selectedIndex == 2) {
       // History Tab
       if (isLoading) {
@@ -328,21 +281,9 @@ class _InterestHomeState extends State<InterestHome> {
             children: [
               Icon(Icons.history, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
-              Text(
-                'No history yet',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
-              ),
+ CustomText(text: "No saved history"),
               const SizedBox(height: 8),
-              Text(
-                'Your browsing history will appear here',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
+CustomText(text: "Your history will appear here")
             ],
           ),
         );
@@ -353,52 +294,43 @@ class _InterestHomeState extends State<InterestHome> {
         itemCount: historyItems.length,
         itemBuilder: (context, index) {
           final item = historyItems[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: _getTypeColor(item.type),
-              child: Icon(
-                _getTypeIcon(item.type),
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            title: Text(
-              item.type,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 2),
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+          return Container(
+            padding: const EdgeInsets.all(10),
+  margin: const EdgeInsets.symmetric(vertical: 6),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(
+      color: Colors.grey.shade300, // border color
+      width: 1,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.grey.withOpacity(0.1),
+        blurRadius: 3,
+        offset: const Offset(0, 2),
+      ),
+    ],
+  ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: _getTypeColor(item.type),
+                child: Icon(
+                  _getTypeIcon(item.type),
+                  color: Colors.white,
+                  size: 20,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  item.subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-            trailing: Text(
-              _formatTimestamp(item.timestamp),
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade500,
+              ),
+             // title: CustomText(text: item.type),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 2),
+            CustomText(text: item.title,fontSize: 15,),
+                  const SizedBox(height: 2),
+                 CustomText(text:  _formatTimestamp(item.timestamp),fontSize: 12,)
+                  
+                ],
               ),
             ),
           );
@@ -445,7 +377,8 @@ class _InterestHomeState extends State<InterestHome> {
       backgroundColor: Colors.white,
       appBar: FeatureHeader(
         title: "Interests",
-        location: _selectedCity,
+        showBackButton: false,
+       location: _selectedCity,
         onBack: () => Navigator.pop(context),
         onLocationTap: () {
           showModalBottomSheet(
