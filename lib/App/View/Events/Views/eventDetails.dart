@@ -1,6 +1,7 @@
 import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/Events/widgets/WebView.dart';
 import 'package:dspora/App/View/Events/widgets/eventDetails.dart';
+import 'package:dspora/App/View/Interests/Model/historymodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
@@ -10,10 +11,17 @@ import 'package:url_launcher/url_launcher.dart';
 
 
 
-class EventDetailScreen extends StatelessWidget {
+class EventDetailScreen extends StatefulWidget {
   final Event event;
 
   const EventDetailScreen({super.key, required this.event});
+
+  @override
+  State<EventDetailScreen> createState() => _EventDetailScreenState();
+}
+
+class _EventDetailScreenState extends State<EventDetailScreen> {
+
 
 Future<void> _launchInAppBrowser(BuildContext context, String url) async {
   final uri = Uri.parse(url);      
@@ -39,18 +47,35 @@ void _openInWebView(BuildContext context, String url, {String title = 'Page'}) {
   );
 }
 
+@override
+void initState() {
+  super.initState();
+  _trackHistory();
+}
+
+Future<void> _trackHistory() async {
+  final venue = widget.event.venues.isNotEmpty ? widget.event.venues[0] : null;
+  final location = venue != null ? "${venue.city}, ${venue.country}" : "Location not available";
+  
+  final historyItem = HistoryItem(
+    title:widget.event.name,
+    subtitle: location,
+    type: 'Event',
+    timestamp: DateTime.now(),
+  );
+  await HistoryService.addHistory(historyItem);
+}
+
 // Add this method to your EventDetailScreen class
 Future<void> _saveArtistFromEvent(BuildContext context) async {
-  // Extract artist name from event name (you may need to adjust this logic)
-  final artistName = event.name;
-  
-  // Get the first image or use a fallback
-  final imageUrl = event.images.isNotEmpty 
-      ? event.images[0].url 
+
+  final artistName = widget.event.name;
+  final imageUrl = widget.event.images.isNotEmpty 
+      ? widget.event.images[0].url 
       : Images.Store;
   
   // Get venue info
-  final venue = event.venues.isNotEmpty ? event.venues[0] : null;
+  final venue = widget.event.venues.isNotEmpty ? widget.event.venues[0] : null;
   final location = venue != null
       ? "${venue.city}, ${venue.country}"
       : "Location not available";
@@ -60,8 +85,8 @@ Future<void> _saveArtistFromEvent(BuildContext context) async {
     name: artistName,
     imageUrl: imageUrl,
     location: location,
-    eventDate: event.dates.start.localDate,
-    eventUrl: event.url,
+    eventDate: widget.event.dates.start.localDate,
+    eventUrl: widget.event.url,
   );
   
   // Save to SharedPreferences
@@ -84,21 +109,15 @@ Future<void> _saveArtistFromEvent(BuildContext context) async {
   }
 }
 
-// Then update your onSavePressed callback:
-// onSavePressed: () {
-//   _saveArtistFromEvent(context);
-// },
-
-
   @override
   Widget build(BuildContext context) {
     // ✅ fallback image if no images available
-    final List<String> imageUrls = event.images.isNotEmpty
-        ? event.images.map((img) => img.url).toList()
+    final List<String> imageUrls = widget.event.images.isNotEmpty
+        ? widget.event.images.map((img) => img.url).toList()
         : [Images.Store];
 
     // Use first venue if available
-    final EventVenue? venue = event.venues.isNotEmpty ? event.venues[0] : null;
+    final EventVenue? venue = widget.event.venues.isNotEmpty ? widget.event.venues[0] : null;
 
     // Construct location string
     final String location = venue != null
@@ -107,7 +126,7 @@ Future<void> _saveArtistFromEvent(BuildContext context) async {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: CustomText(text: event.name,),backgroundColor: Colors.white,),
+      appBar: AppBar(title: CustomText(text: widget.event.name,),backgroundColor: Colors.white,),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,13 +134,13 @@ Future<void> _saveArtistFromEvent(BuildContext context) async {
             
             
             EventDetailWidget(
-              eventName: event.name,
+              eventName: widget.event.name,
               rating: "N/A", // Ticketmaster events don't have ratings
               ratingsCount: "N/A",
               location: location,
-              status: event.dates.statusCode == "onsale" ? "On Sale" : "Closed",
+              status: widget.event.dates.statusCode == "onsale" ? "On Sale" : "Closed",
               description:
-                  "Discover ${event.name} happening at ${venue?.name ?? 'Unknown Venue'}.",
+                  "Discover ${widget.event.name} happening at ${venue?.name ?? 'Unknown Venue'}.",
               imageUrls: imageUrls,
 
               // 👇 Button actions
@@ -140,8 +159,8 @@ Future<void> _saveArtistFromEvent(BuildContext context) async {
                 }
               },
 onVenueMapPressed: () {
-  if (event.url.isNotEmpty) {
-    _openInWebView(context, event.url, title: "Event Tickets");
+  if (widget.event.url.isNotEmpty) {
+    _openInWebView(context, widget.event.url, title: "Event Tickets");
   }
 },
 
@@ -158,7 +177,7 @@ onVenueMapPressed: () {
             const SizedBox(height: 8),
 
             // ✅ Event classifications
-            if (event.classifications.isEmpty)
+            if (widget.event.classifications.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
@@ -167,7 +186,7 @@ onVenueMapPressed: () {
                 ),
               )
             else
-              ...event.classifications.map(
+              ...widget.event.classifications.map(
                 (cls) => Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
