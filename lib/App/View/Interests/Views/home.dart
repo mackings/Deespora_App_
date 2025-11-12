@@ -190,13 +190,7 @@ class _InterestHomeState extends State<InterestHome> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Save artists from events to see them here',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
+
             ],
           ),
         );
@@ -243,7 +237,6 @@ class _InterestHomeState extends State<InterestHome> {
                 ),
               ),
               const SizedBox(height: 8),
-CustomText(text: "Save places on the app to preview here")
             ],
           ),
         );
@@ -283,7 +276,7 @@ CustomText(text: "Save places on the app to preview here")
               const SizedBox(height: 16),
  CustomText(text: "No saved history"),
               const SizedBox(height: 8),
-CustomText(text: "Your history will appear here")
+
             ],
           ),
         );
@@ -405,27 +398,30 @@ CustomText(text: "Your history will appear here")
           );
         },
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(left: 30, right: 30),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Bar(
-              tabs: ["Artists", "Saved", "History"],
-              selectedIndex: _selectedIndex,
-              onTabSelected: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: _buildTabContent(),
-            ),
-          ],
-        ),
+body: Padding(
+  padding: const EdgeInsets.only(left: 20, right: 20),
+  child: Column(
+    children: [
+      const SizedBox(height: 20),
+      Bar(
+        tabs: ["Artists", "Saved", "History"],
+        selectedIndex: _selectedIndex,
+        onTabSelected: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
+      const SizedBox(height: 20),
+
+      // 👇 This expands correctly for scrollable content
+      Expanded(
+        child: _buildTabContent(),
+      ),
+    ],
+  ),
+),
+
     );
   }
 }

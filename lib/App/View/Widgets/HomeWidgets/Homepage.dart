@@ -20,7 +20,8 @@ class _HomePageState extends State<HomePage> {
     final List<Widget> pages = [
     const Dashboard(),
     const InterestHome(),
-    const Notification_home(),        
+    const Notification_home(),
+     const Notification_home(),         
     
   ];
 
