@@ -29,6 +29,7 @@ class HomeHeader extends StatelessWidget {
     List<String> results = [];
 
     showModalBottomSheet(
+      backgroundColor: Colors.white,
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(

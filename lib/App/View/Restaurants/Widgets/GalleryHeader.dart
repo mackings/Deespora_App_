@@ -1,8 +1,11 @@
+import 'package:dspora/App/View/Interests/Model/historymodel.dart';
+import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
+import 'package:dspora/App/View/Restaurants/Model/saveRes.dart';
+import 'package:dspora/App/View/Restaurants/Providers/resPrefPro.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 
-
-class RestaurantGalleryHeader extends StatelessWidget {
+class RestaurantGalleryHeader extends StatefulWidget {
   final String storeName;
   final String rating;
   final String ratingsCount;
@@ -23,22 +26,74 @@ class RestaurantGalleryHeader extends StatelessWidget {
   });
 
   @override
+  State<RestaurantGalleryHeader> createState() =>
+      _RestaurantGalleryHeaderState();
+}
+
+class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
+  @override
+  void initState() {
+    super.initState();
+   // _trackHistory();
+  }
+
+  Future<void> _trackHistory() async {
+    // Adjust these fields to match your restaurant object
+    //final location = "${yourRestaurant.city}, ${yourRestaurant.country}";
+
+    final historyItem = HistoryItem(
+      title: widget.storeName,
+      subtitle: "",
+      type: 'Restaurant',
+      timestamp: DateTime.now(),
+    );
+    await HistoryService.addHistory(historyItem);
+  }
+
+  Future<void> _saveRestaurant(BuildContext context) async {
+    final savedRestaurant = SavedRestaurant(
+      name: widget.storeName,
+      imageUrl: widget.imageUrls.first,
+      location: "",
+      rating: widget.rating,
+      ratingsCount: widget.ratingsCount,
+      savedDate: DateTime.now(),
+    );
+
+    final success = await RestaurantPreferencesService.saveRestaurant(
+      savedRestaurant,
+    );
+
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${widget.storeName} saved to your interests!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Restaurant already saved or error occurred'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // ✅ Adjust the image list
-    final displayImages = imageUrls.isEmpty
+    final displayImages = widget.imageUrls.isEmpty
         ? [
             "https://placehold.co/233x93",
             "https://placehold.co/122x151",
             "https://placehold.co/175x93",
             "https://placehold.co/175x93",
           ]
-        : (imageUrls.length == 1
-            ? [
-                imageUrls[0],
-                imageUrls[0],
-                imageUrls[0],
-              ]
-            : imageUrls);
+        : (widget.imageUrls.length == 1
+              ? [widget.imageUrls[0], widget.imageUrls[0], widget.imageUrls[0]]
+              : widget.imageUrls);
 
     return Column(
       children: [
@@ -77,8 +132,11 @@ class RestaurantGalleryHeader extends StatelessWidget {
         ),
 
         // 🏷 HEADER
-        CustomText(text: storeName, title: true, fontSize: 24),
-        CustomText(text: '$rating • $ratingsCount ratings', fontSize: 14),
+        CustomText(text: widget.storeName, title: true, fontSize: 24),
+        CustomText(
+          text: '${widget.rating} • ${widget.ratingsCount} ratings',
+          fontSize: 14,
+        ),
 
         // ⚙️ ACTION BUTTONS
         Padding(
@@ -86,9 +144,17 @@ class RestaurantGalleryHeader extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildActionButton(Icons.reviews, 'Review', onReviewPressed),
-              _buildActionButton(Icons.bookmark_border, 'Save', onSavePressed),
-              _buildActionButton(Icons.share, 'Share', onSharePressed),
+              _buildActionButton(
+                Icons.reviews,
+                'Review',
+                widget.onReviewPressed,
+              ),
+              _buildActionButton(
+                Icons.bookmark_border,
+                'Save',
+               widget.onSavePressed
+              ),
+              _buildActionButton(Icons.share, 'Share', widget.onSharePressed),
             ],
           ),
         ),
@@ -112,7 +178,7 @@ class RestaurantGalleryHeader extends StatelessWidget {
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
-                      (loadingProgress.expectedTotalBytes ?? 1)
+                        (loadingProgress.expectedTotalBytes ?? 1)
                   : null,
             ),
           ),
@@ -122,11 +188,7 @@ class RestaurantGalleryHeader extends StatelessWidget {
         width: width,
         height: height,
         color: Colors.grey[200],
-        child: const Icon(
-          Icons.broken_image,
-          color: Colors.grey,
-          size: 40,
-        ),
+        child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
       ),
     );
   }
@@ -147,7 +209,7 @@ class RestaurantGalleryHeader extends StatelessWidget {
               color: Colors.black.withOpacity(0.05),
               blurRadius: 6,
               offset: const Offset(0, 2),
-            )
+            ),
           ],
         ),
         child: Row(

@@ -3,7 +3,6 @@ import 'package:dspora/App/View/Interests/Model/historymodel.dart';
 import 'package:dspora/App/View/Interests/Model/placemodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
-
 import 'package:dspora/App/View/Widgets/GLOBAL/FDetailwidget.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +83,9 @@ Future<void> _trackHistory() async {
           ];
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: CustomText(text: widget.realestate.name),
       ),
       body: SingleChildScrollView(

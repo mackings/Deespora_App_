@@ -1,4 +1,7 @@
 import 'package:dspora/App/View/Catering/Model/cateringModel.dart';
+import 'package:dspora/App/View/Interests/Model/historymodel.dart';
+import 'package:dspora/App/View/Interests/Model/placemodel.dart';
+import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/FDetailwidget.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
@@ -7,40 +10,96 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 
 
 
-class GlobalStoreDetails extends StatelessWidget {
+class GlobalStoreDetails extends StatefulWidget {
   final Catering catering;
 
   const GlobalStoreDetails({super.key, required this.catering});
 
   @override
+  State<GlobalStoreDetails> createState() => _GlobalStoreDetailsState();
+}
+
+class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
+
+  @override
+  void initState() {
+    super.initState();
+    _trackHistory(); // ✅ Log when user views this catering store
+  }
+
+  // ✅ Save Catering place to SharedPreferences
+  Future<void> _savePlaceFromCatering(BuildContext context) async {
+    final imageUrl = widget.catering.photoReferences.isNotEmpty
+        ? widget.catering.photoReferences[0]
+        : Images.Store;
+
+    final place = Place(
+      name: widget.catering.name,
+      address: widget.catering.address,
+      imageUrl: imageUrl,
+      rating: widget.catering.rating,
+    );
+
+    final success = await PlacePreferencesService.savePlace(place);
+
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${widget.catering.name} saved to your interests!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Place already saved or error occurred'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  // ✅ Track when the user opens this store
+  Future<void> _trackHistory() async {
+    final historyItem = HistoryItem(
+      title: widget.catering.name,
+      subtitle: widget.catering.address,
+      type: 'Catering',
+      timestamp: DateTime.now(),
+    );
+    await HistoryService.addHistory(historyItem);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // ✅ fallback image if no photos available
-    final List<String> imageUrls = (catering.photoReferences.isNotEmpty)
-        ? catering.photoReferences
-        : [
-            Images.Store,
-          ];
+    final List<String> imageUrls = (widget.catering.photoReferences.isNotEmpty)
+        ? widget.catering.photoReferences
+        : [Images.Store];
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: CustomText(text: catering.name),
+        backgroundColor: Colors.white,
+        title: CustomText(text: widget.catering.name),
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ Restaurant Details with fallback images
+            // 🏪 Store Details
             GlobalDetailWidget(
-              storeName: catering.name,
-              rating: catering.rating.toString(),
-              ratingsCount: "${catering.reviews.length}",
-              location: catering.address,
-              status: catering.openNow ? "Open now" : "Closed",
+              storeName: widget.catering.name,
+              rating: widget.catering.rating.toString(),
+              ratingsCount: "${widget.catering.reviews.length}",
+              location: widget.catering.address,
+              status: widget.catering.openNow ? "Open now" : "Closed",
               description:
-                  "Discover ${catering.name} located at ${catering.address}.",
+                  "Discover ${widget.catering.name} located at ${widget.catering.address}.",
               imageUrls: imageUrls,
               onReviewPressed: () {},
-              onSavePressed: () {},
+              onSavePressed: () {
+                _savePlaceFromCatering(context);
+              },
               onSharePressed: () {},
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},
@@ -59,8 +118,7 @@ class GlobalStoreDetails extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            // ✅ Handle empty reviews gracefully
-            if (catering.reviews.isEmpty)
+            if (widget.catering.reviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
@@ -69,10 +127,9 @@ class GlobalStoreDetails extends StatelessWidget {
                 ),
               )
             else
-              ...catering.reviews.map(
+              ...widget.catering.reviews.map(
                 (review) => ListTile(
                   leading: CircleAvatar(
-                    // ✅ fallback avatar if photo is empty or null
                     backgroundImage: review.profilePhotoUrl.isNotEmpty
                         ? NetworkImage(review.profilePhotoUrl)
                         : const NetworkImage(Images.Store),
@@ -84,7 +141,6 @@ class GlobalStoreDetails extends StatelessWidget {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ✅ Star rating row
                       Row(
                         children: List.generate(
                           5,

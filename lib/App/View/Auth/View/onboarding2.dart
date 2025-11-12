@@ -71,11 +71,14 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                     svgAsset: "assets/svg/facebook.svg",
                   ),
                   const SizedBox(height: 40),
-                  CustomBtn(
-                    text: "Sign in using Password",
-                    onPressed: () {
-                      Nav.push(SignIn());
-                    },
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20,right: 20),
+                    child: CustomBtn(
+                      text: "Sign in using Password",
+                      onPressed: () {
+                        Nav.push(SignIn());
+                      },
+                    ),
                   ),
                   const SizedBox(height: 20),
 

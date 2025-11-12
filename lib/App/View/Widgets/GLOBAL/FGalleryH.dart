@@ -76,7 +76,10 @@ class GlobalGalleryHeader extends StatelessWidget {
         ),
 
         // 🏷 HEADER
-        CustomText(text: storeName, title: true, fontSize: 24),
+        Padding(
+          padding: const EdgeInsets.only(left: 15,right: 15),
+          child: CustomText(text: storeName, title: true, fontSize: 24),
+        ),
         CustomText(text: '$rating • $ratingsCount ratings', fontSize: 14),
 
         // ⚙️ ACTION BUTTONS
