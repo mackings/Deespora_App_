@@ -114,35 +114,10 @@ final List<String> usCities = [
   Widget build(BuildContext context) {
     return  Scaffold(
       backgroundColor: Colors.white,
-      appBar: FeatureHeader(
-        title: "Notifications",
-        location: _selectedCity,
-        showBackButton: false,
-        //onBack: () => Navigator.pop(context),
-        onLocationTap: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-            ),
-            builder: (context) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
-                child: CitySelector(
-                  cities: usCities,
-                  onCitySelected: (city) {
-                    Navigator.pop(context);
-                    _loadRestaurants(city);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Selected $city')),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        title: CustomText(text: "Notifications",title: true,fontSize: 18,),
       ),
 
       body: SafeArea(
