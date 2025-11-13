@@ -5,6 +5,8 @@ import 'package:dspora/App/View/Restaurants/Providers/resPrefPro.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 
+
+
 class RestaurantGalleryHeader extends StatefulWidget {
   final String storeName;
   final String rating;

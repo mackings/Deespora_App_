@@ -49,7 +49,13 @@ class _SignInState extends ConsumerState<SignIn> {
         );
 
         if (result['success']) {
-           Nav.pushReplacement(HomePage());
+          // Nav.pushReplacement(HomePage());
+          Navigator.pushAndRemoveUntil(
+  context,
+  MaterialPageRoute(builder: (context) => HomePage()),
+  (route) => false, // this predicate removes all previous routes
+);
+
          // _showSnackBar("✅ Login Successful!");
         } else {
           _showSnackBar(result['message'] ?? "Login failed");
@@ -89,6 +95,8 @@ class _SignInState extends ConsumerState<SignIn> {
     }
   }
 
+
+
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -97,6 +105,8 @@ class _SignInState extends ConsumerState<SignIn> {
       ),
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +190,8 @@ class _SignInState extends ConsumerState<SignIn> {
                       },
                       child: CustomText(text: "Forgot Password"),
                     ),
+
+
                   ],
                 ),
               ),
