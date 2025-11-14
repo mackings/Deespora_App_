@@ -6,6 +6,7 @@ import 'package:dspora/App/View/Restaurants/Widgets/storeDetail.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 
@@ -69,6 +70,46 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     await HistoryService.addHistory(historyItem);
   }
 
+  // ✅ Open Google Maps to leave a review
+  Future<void> _openReviewInMaps(BuildContext context) async {
+    try {
+      // Encode the place name for URL
+      final encodedName = Uri.encodeComponent(widget.restaurant.name);
+      final encodedAddress = Uri.encodeComponent(widget.restaurant.vicinity);
+      
+      // Google Maps URL for searching and reviewing a place
+      // This works for both iOS and Android
+      final mapsUrl = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress'
+      );
+
+      if (await canLaunchUrl(mapsUrl)) {
+        await launchUrl(
+          mapsUrl,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open Google Maps'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening Maps: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<String> imageUrls = (widget.restaurant.photoReferences.isNotEmpty)
@@ -95,7 +136,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               description:
                   "Discover ${widget.restaurant.name} located at ${widget.restaurant.vicinity}.",
               imageUrls: imageUrls,
-              onReviewPressed: () {},
+              onReviewPressed: () {
+                _openReviewInMaps(context);
+              },
               onSavePressed: () {
                _saveRestaurantPlace(context);
               },
@@ -173,6 +216,3 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 }
-
-
-

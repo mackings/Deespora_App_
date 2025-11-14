@@ -7,6 +7,7 @@ import 'package:dspora/App/View/Widgets/GLOBAL/FDetailwidget.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 
@@ -18,7 +19,6 @@ class RealestateStoreDetails extends StatefulWidget {
   @override
   State<RealestateStoreDetails> createState() => _RealestateStoreDetailsState();
 }
-
 
 class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
 
@@ -55,23 +55,61 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
     }
   }
 
-
   @override
-void initState() {
-  super.initState();
-  _trackHistory();
-}
+  void initState() {
+    super.initState();
+    _trackHistory();
+  }
 
-Future<void> _trackHistory() async {
-  final historyItem = HistoryItem(
-    title: widget.realestate.name,
-    subtitle: widget.realestate.address,
-    type: 'RealEstate',
-    timestamp: DateTime.now(),
-  );
-  await HistoryService.addHistory(historyItem);
-}
+  Future<void> _trackHistory() async {
+    final historyItem = HistoryItem(
+      title: widget.realestate.name,
+      subtitle: widget.realestate.address,
+      type: 'RealEstate',
+      timestamp: DateTime.now(),
+    );
+    await HistoryService.addHistory(historyItem);
+  }
 
+  // ✅ Open Google Maps to leave a review
+  Future<void> _openReviewInMaps(BuildContext context) async {
+    try {
+      // Encode the place name for URL
+      final encodedName = Uri.encodeComponent(widget.realestate.name);
+      final encodedAddress = Uri.encodeComponent(widget.realestate.address);
+      
+      // Google Maps URL for searching and reviewing a place
+      // This works for both iOS and Android
+      final mapsUrl = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress'
+      );
+
+      if (await canLaunchUrl(mapsUrl)) {
+        await launchUrl(
+          mapsUrl,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open Google Maps'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening Maps: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +140,9 @@ Future<void> _trackHistory() async {
               description:
                   "Discover ${widget.realestate.name} located at ${widget.realestate.address}.",
               imageUrls: imageUrls,
-              onReviewPressed: () {},
+              onReviewPressed: () {
+                _openReviewInMaps(context);
+              },
               onSavePressed: () {
                 _savePlaceFromRealEstate(context);
               },
