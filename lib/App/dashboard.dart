@@ -1,7 +1,9 @@
 import 'package:dspora/App/View/Auth/View/Signin.dart';
 import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Catering/View/cateringHome.dart';
+import 'package:dspora/App/View/Events/Api/AdsService.dart';
 import 'package:dspora/App/View/Events/Api/eventsApi.dart';
+import 'package:dspora/App/View/Events/Model/AdsModel.dart';
 import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/Events/Views/eventDetails.dart';
 import 'package:dspora/App/View/Events/Views/eventHome.dart';
@@ -34,12 +36,16 @@ class Dashboard extends ConsumerStatefulWidget {
 
 class _DashboardState extends ConsumerState<Dashboard> {
   final EventApiService _eventService = EventApiService();
+  final AdvertApiService _advertService = AdvertApiService();
 
   bool _loading = false;
+  bool _advertsLoading = false;
   String? _userName;
   String _selectedCity = "";
   List<Event> _events = [];
-  bool _isGuest = false; // Track if user is a guest
+  List<Advert> _adverts = [];
+  List<Advert> _promotedAdverts = [];
+  bool _isGuest = false;
 
   final TextEditingController searchController = TextEditingController();
 
@@ -94,8 +100,13 @@ class _DashboardState extends ConsumerState<Dashboard> {
     await _loadUserLocation();
     debugPrint('✅ Location loaded: $_selectedCity');
 
-    await _fetchEvents();
-    debugPrint('✅ Events fetched');
+    // Fetch both events and adverts in parallel
+    await Future.wait([
+      _fetchEvents(),
+      _fetchAdverts(),
+    ]);
+    
+    debugPrint('✅ Events and Adverts fetched');
   }
 
   Future<void> _loadUserName() async {
@@ -109,11 +120,9 @@ class _DashboardState extends ConsumerState<Dashboard> {
     final prefs = await SharedPreferences.getInstance();
     final userName = prefs.getString('userName');
     
-    // Check if user is guest based on userName only
     final isGuestUser = userName == null || userName.isEmpty || userName == 'Guest';
     
     if (isGuestUser) {
-      // Clear all auth data for guest users
       await _clearAuthData();
       setState(() {
         _isGuest = true;
@@ -219,6 +228,30 @@ class _DashboardState extends ConsumerState<Dashboard> {
     }
   }
 
+  Future<void> _fetchAdverts() async {
+    debugPrint('🔵 Fetching adverts');
+    setState(() => _advertsLoading = true);
+    
+    try {
+      final adverts = await _advertService.fetchAllAdverts(limit: 50);
+      final promoted = adverts.where((ad) => ad.promoted).toList();
+
+      debugPrint('✅ Got ${adverts.length} adverts (${promoted.length} promoted)');
+      setState(() {
+        _adverts = adverts;
+        _promotedAdverts = promoted;
+        _advertsLoading = false;
+      });
+    } catch (e) {
+      debugPrint('❌ Error fetching adverts: $e');
+      setState(() {
+        _adverts = [];
+        _promotedAdverts = [];
+        _advertsLoading = false;
+      });
+    }
+  }
+
   List<CarouselItem> _buildSkeletonCarouselItems() {
     return List.generate(
       4,
@@ -229,6 +262,58 @@ class _DashboardState extends ConsumerState<Dashboard> {
         onTap: () {},
       ),
     );
+  }
+
+  // Build carousel items combining events and promoted adverts
+  List<CarouselItem> _buildMixedCarouselItems() {
+    List<CarouselItem> items = [];
+    
+    // Add promoted adverts first (convert to Event for detail screen)
+    for (var advert in _promotedAdverts.take(2)) {
+      items.add(
+        CarouselItem(
+          imageUrl: advert.images.isNotEmpty
+              ? advert.images.first
+              : 'https://via.placeholder.com/400x200',
+          title: advert.title,
+          date: advert.eventDate.toString().split(' ')[0],
+          // ✅ UPDATED: Added isFromAdvert parameter for adverts
+          onTap: () {
+            final event = advert.toEvent();
+            Nav.push(
+              EventDetailScreen(
+                event: event,
+                isFromAdvert: true, // Important: Triggers geocoding
+              ),
+            );
+          },
+        ),
+      );
+    }
+    
+    // Add events
+    for (var event in _events.take(4 - items.length)) {
+      items.add(
+        CarouselItem(
+          imageUrl: event.images.isNotEmpty
+              ? event.images.first.url
+              : 'https://via.placeholder.com/400x200',
+          title: event.name,
+          date: event.dates.start.localDate,
+          // ✅ UPDATED: Added isFromAdvert parameter for events
+          onTap: () {
+            Nav.push(
+              EventDetailScreen(
+                event: event,
+                isFromAdvert: false, // Regular event, has coordinates
+              ),
+            );
+          },
+        ),
+      );
+    }
+    
+    return items;
   }
 
   @override
@@ -251,6 +336,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
                         _loading = true;
                       });
                       _fetchEvents();
+                      _fetchAdverts();
                     },
                   ),
 
@@ -268,28 +354,17 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
                   const SizedBox(height: 20),
 
-                  /// ---------- Top Carousel ------------
+                  /// ---------- Top Carousel (Mixed Events & Promoted Adverts) ------------
                   Skeletonizer(
-                    enabled: _loading,
+                    enabled: _loading || _advertsLoading,
                     child: HomeCarousel(
-                      items: _loading
+                      items: (_loading || _advertsLoading)
                           ? _buildSkeletonCarouselItems()
-                          : _events.isNotEmpty
-                              ? _events.take(4).map((event) {
-                                  return CarouselItem(
-                                    imageUrl: event.images.isNotEmpty
-                                        ? event.images.first.url
-                                        : 'https://via.placeholder.com/400x200',
-                                    title: event.name,
-                                    date: event.dates.start.localDate,
-                                    onTap: () =>
-                                        Nav.push(EventDetailScreen(event: event)),
-                                  );
-                                }).toList()
+                          : _buildMixedCarouselItems().isNotEmpty
+                              ? _buildMixedCarouselItems()
                               : [
                                   CarouselItem(
-                                    imageUrl:
-                                        'https://via.placeholder.com/400x200',
+                                    imageUrl: 'https://via.placeholder.com/400x200',
                                     title: 'No events available',
                                     date: '',
                                     onTap: () {},
@@ -312,8 +387,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
                   CategoryGrid(items: categories),
 
-                  const SizedBox(height: 20),
-
                   /// ---------- Events Near You ------------
                   Align(
                     alignment: Alignment.centerLeft,
@@ -326,6 +399,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
                   const SizedBox(height: 25),
 
+                  // ✅ UPDATED: Events Near You carousel now properly identifies events
                   Skeletonizer(
                     enabled: _loading,
                     child: EventCarousel(
@@ -349,7 +423,13 @@ class _DashboardState extends ConsumerState<Dashboard> {
                           : (index) {
                               if (_events.length > index + 1) {
                                 final event = _events.skip(1).toList()[index];
-                                Nav.push(EventDetailScreen(event: event));
+                                // ✅ UPDATED: Added isFromAdvert parameter
+                                Nav.push(
+                                  EventDetailScreen(
+                                    event: event,
+                                    isFromAdvert: false, // These are regular events
+                                  ),
+                                );
                               }
                             },
                       loading: _loading,
