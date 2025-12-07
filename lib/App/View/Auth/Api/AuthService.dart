@@ -218,14 +218,26 @@ class AuthApi {
     }
   }
 
-  // ---------------- LOGIN ----------------
+  // ---------------- LOGIN (Supports Email or Phone) ----------------
 
   Future<Map<String, dynamic>> login({
-    required String email,
+    String? email,
+    String? phoneNumber,
     required String password,
   }) async {
-    final payload = {"email": email, "password": password};
+    // Build payload
+    final payload = <String, dynamic>{"password": password};
+    
+    if (email != null && email.isNotEmpty) {
+      payload["email"] = email;
+    }
+    
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      payload["phoneNumber"] = phoneNumber;
+    }
+
     debugPrint("➡️ [LOGIN] POST ${Baseurl.Url}login");
+    debugPrint("📦 Payload: $payload");
 
     const int maxRetries = 3;
     const Duration initialDelay = Duration(seconds: 2);

@@ -1,5 +1,6 @@
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
 import 'package:dspora/App/View/Auth/View/resetPassword.dart';
+import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';
@@ -10,9 +11,6 @@ import 'package:dspora/App/View/Widgets/loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-
-
 class SignIn extends ConsumerStatefulWidget {
   const SignIn({super.key});
 
@@ -21,7 +19,6 @@ class SignIn extends ConsumerStatefulWidget {
 }
 
 class _SignInState extends ConsumerState<SignIn> {
-  
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
   final TextEditingController phone = TextEditingController();
@@ -30,74 +27,95 @@ class _SignInState extends ConsumerState<SignIn> {
 
   int _selectedIndex = 0;
   bool _isLoading = false;
+  String _selectedCountryCode = '+234';
 
-  /// Login handler
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    phone.dispose();
+    super.dispose();
+  }
+
+  /// Login handler - supports both email and phone login
   Future<void> _handleLogin() async {
+    // Validate inputs based on selected tab
     if (_selectedIndex == 0) {
       // Email login
-      if (email.text.isEmpty || password.text.isEmpty) {
+      if (email.text.trim().isEmpty || password.text.isEmpty) {
         _showSnackBar("Please enter email and password");
         return;
       }
 
-      setState(() => _isLoading = true);
-
-      try {
-        final result = await _authApi.login(
-          email: email.text.trim(),
-          password: password.text.trim(),
-        );
-
-        if (result['success']) {
-          // Nav.pushReplacement(HomePage());
-          Navigator.pushAndRemoveUntil(
-  context,
-  MaterialPageRoute(builder: (context) => HomePage()),
-  (route) => false, // this predicate removes all previous routes
-);
-
-         // _showSnackBar("✅ Login Successful!");
-        } else {
-          _showSnackBar(result['message'] ?? "Login failed");
-        }
-      } catch (e) {
-        _showSnackBar("An error occurred: $e");
-      } finally {
-        // ALWAYS turn off loading
-        if (mounted) setState(() => _isLoading = false);
+      if (!_isValidEmail(email.text.trim())) {
+        _showSnackBar("Please enter a valid email address");
+        return;
       }
     } else {
       // Phone login
-      if (phone.text.isEmpty || password.text.isEmpty) {
+      if (phone.text.trim().isEmpty || password.text.isEmpty) {
         _showSnackBar("Please enter phone and password");
         return;
       }
 
-      setState(() => _isLoading = true);
+      if (phone.text.trim().length < 7) {
+        _showSnackBar("Please enter a valid phone number");
+        return;
+      }
+    }
 
-      try {
-        final result = await _authApi.login(
-          email: phone.text.trim(),
+    setState(() => _isLoading = true);
+
+    try {
+      Map<String, dynamic> result;
+
+      if (_selectedIndex == 0) {
+        // Login with email
+        result = await _authApi.login(
+          email: email.text.trim(),
           password: password.text.trim(),
         );
+      } else {
+        // Login with phone
+        final fullPhone = '$_selectedCountryCode${phone.text.trim()}';
+        debugPrint("📞 Logging in with phone: $fullPhone");
 
-        if (result['success']) {
-        //  Nav.pushReplacement(Dashboard());
-          // _showSnackBar("✅ Login Successful!");
-        } else {
-          _showSnackBar(result['message'] ?? "Login failed");
-        }
-      } catch (e) {
-        _showSnackBar("An error occurred: $e");
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
+        result = await _authApi.login(
+          phoneNumber: fullPhone,
+          password: password.text.trim(),
+        );
       }
+
+      if (mounted) setState(() => _isLoading = false);
+
+      if (result['success']) {
+        // Navigate to home page
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+            (route) => false,
+          );
+        }
+      } else {
+        _showSnackBar(result['message'] ?? "Login failed");
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+      _showSnackBar("An error occurred: ${e.toString()}");
+      debugPrint("🔥 Login error: $e");
     }
   }
 
-
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    return emailRegex.hasMatch(email);
+  }
 
   void _showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: CustomText(text: message, color: Colors.white),
@@ -106,13 +124,13 @@ class _SignInState extends ConsumerState<SignIn> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white,),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+      ),
       body: LoadingOverlay(
         isLoading: _isLoading,
         text: "Logging in...",
@@ -133,13 +151,16 @@ class _SignInState extends ConsumerState<SignIn> {
                     ),
                     const SizedBox(height: 20),
 
-                    /// Tab Bar
+                    /// Tab Bar - Email or Phone
                     Bar(
-                      tabs: ["Email", "Phone"],
+                      tabs: const ["Email", "Phone"],
                       selectedIndex: _selectedIndex,
                       onTabSelected: (index) {
                         setState(() {
                           _selectedIndex = index;
+                          // Clear inputs when switching tabs
+                          email.clear();
+                          phone.clear();
                         });
                       },
                     ),
@@ -167,6 +188,12 @@ class _SignInState extends ConsumerState<SignIn> {
                         hintText: "Enter phone number",
                         controller: phone,
                         isPhone: true,
+                        onCountrySelected: (code) {
+                          setState(() {
+                            _selectedCountryCode = code;
+                          });
+                          debugPrint("🏁 Country code selected: $code");
+                        },
                       ),
                       const SizedBox(height: 20),
                       CustomTextField(
@@ -184,14 +211,18 @@ class _SignInState extends ConsumerState<SignIn> {
 
                     const SizedBox(height: 20),
 
+                    // Forgot Password Link
                     GestureDetector(
                       onTap: () {
-                        Nav.push(ResetPassword());
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ResetPassword(),
+                          ),
+                        );
                       },
                       child: CustomText(text: "Forgot Password"),
                     ),
-
-
                   ],
                 ),
               ),
