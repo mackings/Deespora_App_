@@ -43,36 +43,34 @@ class _OnboardingState extends ConsumerState<Onboarding> {
               ),
             ),
 
-            SingleChildScrollView(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 480),
-                      CustomText(
-                        text:
-                            "Welcome To Your Best Guide in Diaspora, Deespora",
-                        title: true,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomText(
-                        text:
-                            "Discover and connect with African-owned businesses, vibrant events, and cultural spaces wherever you are in the U.S.",
-                        content: true,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 30),
-                      CustomBtn(
-                        text: "Get Started >>>",
-                        onPressed: () {
-                          Nav.push(Second_Onboarding());
-                        },
-                      ),
-                    ],
-                  ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 420),
+                    CustomText(
+                      text:
+                          "Welcome To Your Best Guide in Diaspora, Deespora",
+                      title: true,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    CustomText(
+                      text:
+                          "Discover and connect with African-owned businesses, vibrant events, and cultural spaces wherever you are in the U.S.",
+                      content: true,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 30),
+                    CustomBtn(
+                      text: "Get Started >>>",
+                      onPressed: () {
+                        Nav.push(Second_Onboarding());
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
