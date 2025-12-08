@@ -343,14 +343,14 @@ class _DashboardState extends ConsumerState<Dashboard> {
                   const SizedBox(height: 10),
 
                   /// ---------- Search ------------
-                  HomeSearch(
-                    controller: searchController,
-                    hintText: 'Search Deespora',
-                    onChanged: (value) {},
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Enter search text'
-                        : null,
-                  ),
+                  // HomeSearch(
+                  //   controller: searchController,
+                  //   hintText: 'Search Deespora',
+                  //   onChanged: (value) {},
+                  //   validator: (value) => value == null || value.isEmpty
+                  //       ? 'Enter search text'
+                  //       : null,
+                  // ),
 
                   const SizedBox(height: 20),
 

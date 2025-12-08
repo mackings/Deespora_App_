@@ -93,71 +93,58 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: MediaQuery.of(context).size.width - 35,
-          height: 54,
-          child: Stack(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 17.5),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 👤 User Name
-              Positioned(
-                left: 0,
-                top: 20,
-                child: SizedBox(
-                  width: 355,
-                  child: CustomText(
-                    text: capitalizeFirst(name),
-                    content: false,
-                    title: true,
-                    fontSize: 20,
-                  ),
+              // 👤 User Name (Left)
+              Expanded(
+                child: CustomText(
+                  text: capitalizeFirst(name),
+                  content: false,
+                  title: true,
+                  fontSize: 20,
                 ),
               ),
 
-              // 📍 Location Row
-              Positioned(
-                left: 0,
-                top: 0,
-                child: SizedBox(
-                  width: 249.41,
-                  child: GestureDetector(
-                    onTap: () => _showLocationPicker(context),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.wb_sunny_outlined,
-                          size: 16,
-                          color: Colors.orange,
-                        ),
-                        const SizedBox(width: 10),
-                        CustomText(
-                          text: location,
-                          content: true,
-                        ),
-                        const SizedBox(width: 10),
-                        Transform.rotate(
-                          angle: 1.57,
-                          child: const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
+              // 📍 Location Row (Right)
+              GestureDetector(
+                onTap: () => _showLocationPicker(context),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.wb_sunny_outlined,
+                      size: 16,
+                      color: Colors.orange,
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    CustomText(
+                      text: location,
+                      content: true,
+                    ),
+                    const SizedBox(width: 6),
+                    Transform.rotate(
+                      angle: 1.57,
+                      child: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
-
-
-
 
