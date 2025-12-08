@@ -3,6 +3,8 @@ import 'package:dspora/Constants/BaseUrl.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+
 class AuthApi {
   final Dio _dio = Dio(
     BaseOptions(
@@ -11,7 +13,49 @@ class AuthApi {
       receiveTimeout: const Duration(seconds: 20),
       headers: {'Content-Type': 'application/json'},
     ),
-  );
+  )..interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          debugPrint("➡️ API REQUEST");
+          debugPrint("URL: ${options.baseUrl}${options.path}");
+          debugPrint("METHOD: ${options.method}");
+          debugPrint("HEADERS: ${options.headers}");
+          debugPrint("BODY: ${options.data}");
+          debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          handler.next(options);
+        },
+        onResponse: (response, handler) {
+          debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          debugPrint("✅ API RESPONSE");
+          debugPrint("URL: ${response.realUri}");
+          debugPrint("STATUS: ${response.statusCode}");
+          debugPrint("DATA: ${response.data}");
+          debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          handler.next(response);
+        },
+        onError: (DioException e, handler) {
+          debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          debugPrint("❌ API ERROR");
+          debugPrint("URL: ${e.requestOptions.uri}");
+          debugPrint("METHOD: ${e.requestOptions.method}");
+          debugPrint("STATUS CODE: ${e.response?.statusCode}");
+          debugPrint("STATUS MESSAGE: ${e.response?.statusMessage}");
+          debugPrint("ERROR TYPE: ${e.type}");
+          
+          // Log the actual server response body
+          if (e.response?.data != null) {
+            debugPrint("🔴 SERVER RESPONSE BODY: ${e.response?.data}");
+          } else {
+            debugPrint("🔴 SERVER RESPONSE BODY: No response data available");
+          }
+          
+          debugPrint("ERROR MESSAGE: ${e.message}");
+          debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          handler.next(e);
+        },
+      ),
+    );
 
   // ---------------- REGISTER ----------------
 
@@ -30,14 +74,8 @@ class AuthApi {
       "password": password,
     };
 
-    debugPrint("➡️ [REGISTER] POST ${Baseurl.Url}register");
-    debugPrint("📦 Payload: $payload");
-
     try {
       final response = await _dio.post('register', data: payload);
-
-      debugPrint("✅ [REGISTER] Status: ${response.statusCode}");
-      debugPrint("⬅️ Response: ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Automatically send email OTP after successful registration
@@ -45,7 +83,6 @@ class AuthApi {
           await sendOtp(email: email);
         } catch (otpError) {
           debugPrint("⚠️ [REGISTER] Failed to send OTP: $otpError");
-          // Continue even if OTP fails - user registered successfully
         }
 
         return {
@@ -60,8 +97,6 @@ class AuthApi {
         "message": response.data['message'] ?? 'Registration failed',
       };
     } on DioException catch (e) {
-      debugPrint("❌ [REGISTER] Error: ${e.message}");
-      
       return {
         "success": false,
         "message": _extractErrorMessage(e),
@@ -79,20 +114,16 @@ class AuthApi {
 
   Future<Map<String, dynamic>> sendOtp({required String email}) async {
     final payload = {"email": email};
-    debugPrint("➡️ [SEND OTP] POST ${Baseurl.Url}auth/send-otp");
 
     try {
       final response = await _dio.post('auth/send-otp', data: payload);
-      debugPrint("✅ [SEND OTP] Status: ${response.statusCode}");
-      
+
       return {
         "success": true,
         "message": response.data['message'] ?? "Verification code sent",
         "data": response.data['data'],
       };
     } on DioException catch (e) {
-      debugPrint("❌ [SEND OTP] Error: ${e.message}");
-      
       return {
         "success": false,
         "message": _extractErrorMessage(e),
@@ -113,20 +144,16 @@ class AuthApi {
     required String code,
   }) async {
     final payload = {"email": email, "code": code};
-    debugPrint("➡️ [VERIFY OTP] POST ${Baseurl.Url}auth/verify-otp");
 
     try {
       final response = await _dio.post('auth/verify-otp', data: payload);
-      debugPrint("✅ [VERIFY OTP] Status: ${response.statusCode}");
-      
+
       return {
         "success": true,
         "message": response.data['message'] ?? "Email verified successfully",
         "data": response.data['data'],
       };
     } on DioException catch (e) {
-      debugPrint("❌ [VERIFY OTP] Error: ${e.message}");
-      
       return {
         "success": false,
         "message": _extractErrorMessage(e),
@@ -142,22 +169,20 @@ class AuthApi {
 
   // ---------------- SEND PHONE OTP ----------------
 
-  Future<Map<String, dynamic>> sendPhoneOtp({required String phoneNumber}) async {
+  Future<Map<String, dynamic>> sendPhoneOtp({
+    required String phoneNumber,
+  }) async {
     final payload = {"phoneNumber": phoneNumber};
-    debugPrint("➡️ [SEND PHONE OTP] POST ${Baseurl.Url}auth/send-phone-otp");
 
     try {
       final response = await _dio.post('auth/send-phone-otp', data: payload);
-      debugPrint("✅ [SEND PHONE OTP] Status: ${response.statusCode}");
-      
+
       return {
         "success": true,
         "message": response.data['message'] ?? "Verification code sent to phone",
         "data": response.data['data'],
       };
     } on DioException catch (e) {
-      debugPrint("❌ [SEND PHONE OTP] Error: ${e.message}");
-      
       return {
         "success": false,
         "message": _extractErrorMessage(e),
@@ -178,14 +203,11 @@ class AuthApi {
     required String code,
   }) async {
     final payload = {"phoneNumber": phoneNumber, "code": code};
-    debugPrint("➡️ [VERIFY PHONE OTP] POST ${Baseurl.Url}auth/verify-phone-otp");
 
     try {
       final response = await _dio.post('auth/verify-phone-otp', data: payload);
-      debugPrint("✅ [VERIFY PHONE OTP] Status: ${response.statusCode}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Save user data and token from phone verification
         final data = response.data['data'];
         if (data != null && data['token'] != null) {
           await _saveUserSession(data);
@@ -203,8 +225,6 @@ class AuthApi {
         "message": response.data['message'] ?? 'Verification failed',
       };
     } on DioException catch (e) {
-      debugPrint("❌ [VERIFY PHONE OTP] Error: ${e.message}");
-      
       return {
         "success": false,
         "message": _extractErrorMessage(e),
@@ -225,19 +245,15 @@ class AuthApi {
     String? phoneNumber,
     required String password,
   }) async {
-    // Build payload
     final payload = <String, dynamic>{"password": password};
-    
+
     if (email != null && email.isNotEmpty) {
       payload["email"] = email;
     }
-    
+
     if (phoneNumber != null && phoneNumber.isNotEmpty) {
       payload["phoneNumber"] = phoneNumber;
     }
-
-    debugPrint("➡️ [LOGIN] POST ${Baseurl.Url}login");
-    debugPrint("📦 Payload: $payload");
 
     const int maxRetries = 3;
     const Duration initialDelay = Duration(seconds: 2);
@@ -246,11 +262,10 @@ class AuthApi {
     while (true) {
       try {
         final response = await _dio.post('login', data: payload);
-        debugPrint("✅ [LOGIN] Status: ${response.statusCode}");
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           final data = response.data['data'];
-          
+
           if (data != null && data['token'] != null) {
             await _saveUserSession(data);
           }
@@ -269,10 +284,6 @@ class AuthApi {
       } on DioException catch (e) {
         attempt++;
         final statusCode = e.response?.statusCode;
-
-        debugPrint(
-          "❌ [LOGIN] Attempt $attempt failed: ${e.message} (Status: $statusCode)",
-        );
 
         // If it's a client error (4xx) or we've hit max retries, stop retrying
         if ((statusCode != null && statusCode >= 400 && statusCode < 500) ||
@@ -297,33 +308,110 @@ class AuthApi {
     }
   }
 
-  // ---------------- REQUEST PASSWORD RESET ----------------
 
-  Future<Map<String, dynamic>> requestPasswordReset({
-    required String email,
+
+Future<Map<String, dynamic>> requestPasswordReset({
+  String? email,
+  String? phoneNumber,
+}) async {
+  // Build payload based on what's provided
+  final payload = <String, dynamic>{};
+  
+  if (email != null && email.isNotEmpty) {
+    payload['email'] = email;
+  }
+  
+  if (phoneNumber != null && phoneNumber.isNotEmpty) {
+    payload['phoneNumber'] = phoneNumber;
+  }
+
+  try {
+    final response = await _dio.post('request-password-reset', data: payload);
+
+    return {
+      "success": true,
+      "message": response.data['message'] ?? "Reset code sent successfully",
+      "data": response.data['data'],
+    };
+  } on DioException catch (e) {
+    return {
+      "success": false,
+      "message": _extractErrorMessage(e),
+    };
+  } catch (e) {
+    debugPrint("🔥 [REQUEST PASSWORD RESET] Unexpected error: $e");
+    return {
+      "success": false,
+      "message": "Failed to send reset code. Please try again.",
+    };
+  }
+}
+
+// ---------------- RESET PASSWORD (EMAIL OR PHONE) ----------------
+
+Future<Map<String, dynamic>> resetPassword({
+  String? email,
+  String? phoneNumber,
+  required String token,
+  required String newPassword,
+}) async {
+  final payload = <String, dynamic>{
+    "token": token,
+    "password": newPassword,
+  };
+
+  if (email != null && email.isNotEmpty) {
+    payload['email'] = email;
+  }
+  
+  if (phoneNumber != null && phoneNumber.isNotEmpty) {
+    payload['phoneNumber'] = phoneNumber;
+  }
+
+  try {
+    final response = await _dio.post('reset-password', data: payload);
+
+    return {
+      "success": true,
+      "message": response.data['message'] ?? "Password reset successful",
+    };
+  } on DioException catch (e) {
+    return {
+      "success": false,
+      "message": _extractErrorMessage(e),
+    };
+  } catch (e) {
+    debugPrint("🔥 [RESET PASSWORD] Unexpected error: $e");
+    return {
+      "success": false,
+      "message": "Password reset failed. Please try again.",
+    };
+  }
+}
+
+
+  // ---------------- REQUEST PASSWORD RESET (PHONE) ----------------
+
+  Future<Map<String, dynamic>> requestPasswordResetPhone({
+    required String phoneNumber,
   }) async {
-    final payload = {"email": email};
-    debugPrint(
-      "➡️ [REQUEST PASSWORD RESET] POST ${Baseurl.Url}request-password-reset",
-    );
+    final payload = {"phoneNumber": phoneNumber};
 
     try {
-      final response = await _dio.post('request-password-reset', data: payload);
-      debugPrint("✅ [REQUEST PASSWORD RESET] Status: ${response.statusCode}");
+      final response = await _dio.post('phone/send-otp', data: payload);
 
       return {
         "success": true,
-        "message": response.data['message'] ?? "Reset code sent to your email",
+        "message": response.data['message'] ?? "Reset code sent to your phone",
+        "data": response.data['data'],
       };
     } on DioException catch (e) {
-      debugPrint("❌ [REQUEST PASSWORD RESET] Error: ${e.message}");
-      
       return {
         "success": false,
         "message": _extractErrorMessage(e),
       };
     } catch (e) {
-      debugPrint("🔥 [REQUEST PASSWORD RESET] Unexpected error: $e");
+      debugPrint("🔥 [REQUEST PASSWORD RESET PHONE] Unexpected error: $e");
       return {
         "success": false,
         "message": "Failed to send reset code. Please try again.",
@@ -331,44 +419,42 @@ class AuthApi {
     }
   }
 
-  // ---------------- RESET PASSWORD ----------------
+  // ---------------- RESET PASSWORD WITH PHONE OTP ----------------
 
-  Future<Map<String, dynamic>> resetPassword({
-    required String email,
-    required String token,
+  Future<Map<String, dynamic>> resetPasswordWithPhone({
+    required String phoneNumber,
+    required String code,
     required String newPassword,
   }) async {
     final payload = {
-      "email": email,
-      "token": token,
+      "phoneNumber": phoneNumber,
+      "code": code,
       "password": newPassword,
     };
 
-    debugPrint("➡️ [RESET PASSWORD] POST ${Baseurl.Url}reset-password");
-
     try {
-      final response = await _dio.post('reset-password', data: payload);
-      debugPrint("✅ [RESET PASSWORD] Status: ${response.statusCode}");
+      final response = await _dio.post('phone/verify-otp', data: payload);
 
       return {
         "success": true,
         "message": response.data['message'] ?? "Password reset successful",
       };
     } on DioException catch (e) {
-      debugPrint("❌ [RESET PASSWORD] Error: ${e.message}");
-      
       return {
         "success": false,
         "message": _extractErrorMessage(e),
       };
     } catch (e) {
-      debugPrint("🔥 [RESET PASSWORD] Unexpected error: $e");
+      debugPrint("🔥 [RESET PASSWORD PHONE] Unexpected error: $e");
       return {
         "success": false,
         "message": "Password reset failed. Please try again.",
       };
     }
   }
+
+
+
 
   // ---------------- LOGOUT ----------------
 
@@ -398,21 +484,21 @@ class AuthApi {
         if (user['id'] != null) {
           await prefs.setString('userId', user['id'].toString());
         }
-        
+
         if (user['firstName'] != null) {
           await prefs.setString('userName', user['firstName']);
         } else if (user['username'] != null) {
           await prefs.setString('userName', user['username']);
         }
-        
+
         if (user['email'] != null) {
           await prefs.setString('userEmail', user['email']);
         }
-        
+
         if (user['phoneNumber'] != null) {
           await prefs.setString('userPhone', user['phoneNumber']);
         }
-        
+
         if (user['role'] != null) {
           await prefs.setString('userRole', user['role']);
         }
@@ -421,7 +507,7 @@ class AuthApi {
           'emailVerified',
           user['emailVerified'] ?? false,
         );
-        
+
         await prefs.setBool(
           'phoneVerified',
           user['phoneVerified'] ?? false,
@@ -440,7 +526,7 @@ class AuthApi {
       // Try to get message from response data
       if (e.response?.data != null) {
         final data = e.response!.data;
-        
+
         // Handle different response formats
         if (data is Map) {
           if (data['message'] != null) {
@@ -450,7 +536,7 @@ class AuthApi {
             return data['error'].toString();
           }
         }
-        
+
         if (data is String) {
           return data;
         }

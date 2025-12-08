@@ -120,79 +120,86 @@ class _CustomTextFieldState extends State<CustomTextField> {
       return;
     }
 
-    final result = await showModalBottomSheet<Country>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Select Country',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _countries.length,
-                itemBuilder: (context, index) {
-                  final country = _countries[index];
-                  return ListTile(
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(
-                        country.flag,
-                        width: 30,
-                        height: 20,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 30,
-                            height: 20,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.flag, size: 16),
-                          );
-                        },
-                      ),
-                    ),
-                    title: Text(
-                      country.name,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    subtitle: Text(
-                      country.code,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    onTap: () => Navigator.pop(context, country),
-                  );
-                },
-              ),
-            ),
-          ],
+final result = await showModalBottomSheet<Country>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: Colors.white,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+  ),
+  builder: (context) => Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // drag indicator
+        Container(
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
-      ),
-    );
+        const SizedBox(height: 16),
+
+        Text(
+          'Select Country',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        SizedBox(
+          height: 200,
+         // height: MediaQuery.of(context).size.height * 0.45, // shorter
+          child: ListView.builder(
+            itemCount: _countries.length,
+            itemBuilder: (context, index) {
+              final country = _countries[index];
+              return ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    country.flag,
+                    width: 28,
+                    height: 18,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 28,
+                        height: 18,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.flag, size: 14),
+                      );
+                    },
+                  ),
+                ),
+                title: Text(
+                  country.name,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  country.code,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, country),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  ),
+);
+
 
     if (result != null) {
       setState(() => _selectedCountry = result);

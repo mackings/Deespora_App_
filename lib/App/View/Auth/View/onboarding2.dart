@@ -66,10 +66,6 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                     svgAsset: "assets/svg/google.svg",
                   ),
                   const SizedBox(height: 20),
-                  SocialSigninButton(
-                    text: "Sign in Using Facebook Account",
-                    svgAsset: "assets/svg/facebook.svg",
-                  ),
                   const SizedBox(height: 40),
                   Padding(
                     padding: const EdgeInsets.only(left: 20,right: 20),
@@ -80,7 +76,7 @@ class _Second_OnboardingState extends ConsumerState<Second_Onboarding> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 40),
 
                   Align(
                     alignment: Alignment.center,
