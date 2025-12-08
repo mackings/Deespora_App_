@@ -4,9 +4,11 @@ import 'package:dspora/App/View/Interests/Model/placemodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/FDetailwidget.dart';
+import 'package:dspora/App/View/Widgets/GLOBAL/ReviewShare.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 
@@ -27,7 +29,6 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
         ? widget.realestate.photoReferences[0] 
         : Images.Store;
     
-    // Create Place object
     final place = Place(
       name: widget.realestate.name,
       address: widget.realestate.address,
@@ -35,7 +36,6 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
       rating: widget.realestate.rating,
     );
     
-    // Save to SharedPreferences
     final success = await PlacePreferencesService.savePlace(place);
     
     if (success && context.mounted) {
@@ -71,26 +71,20 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
     await HistoryService.addHistory(historyItem);
   }
 
-  // ✅ Open Google Maps to leave a review
-  Future<void> _openReviewInMaps(BuildContext context) async {
+  // ✅ Open Google Maps for review
+  Future<void> _openReviewInMaps() async {
     try {
-      // Encode the place name for URL
       final encodedName = Uri.encodeComponent(widget.realestate.name);
       final encodedAddress = Uri.encodeComponent(widget.realestate.address);
       
-      // Google Maps URL for searching and reviewing a place
-      // This works for both iOS and Android
       final mapsUrl = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress'
       );
 
       if (await canLaunchUrl(mapsUrl)) {
-        await launchUrl(
-          mapsUrl,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
       } else {
-        if (context.mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Could not open Google Maps'),
@@ -100,7 +94,7 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
         }
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening Maps: $e'),
@@ -111,14 +105,37 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
     }
   }
 
+  // ✅ Share place
+  Future<void> _sharePlace() async {
+    try {
+      final ratingText = '⭐ Rating: ${widget.realestate.rating}/5\n';
+      final message = '''
+Check out ${widget.realestate.name}!
+
+$ratingText📍 Location: ${widget.realestate.address}
+
+Find it on Google Maps:
+https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.realestate.name} ${widget.realestate.address}')}
+''';
+
+      await Share.share(message, subject: 'Check out ${widget.realestate.name}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ✅ fallback image if no photos available
     final List<String> imageUrls = (widget.realestate.photoReferences.isNotEmpty)
         ? widget.realestate.photoReferences
-        : [
-            Images.Store,
-          ];
+        : [Images.Store];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -130,7 +147,7 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ Restaurant Details with fallback images
+            // Real Estate Details
             GlobalDetailWidget(
               storeName: widget.realestate.name,
               rating: widget.realestate.rating.toString(),
@@ -140,20 +157,20 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
               description:
                   "Discover ${widget.realestate.name} located at ${widget.realestate.address}.",
               imageUrls: imageUrls,
-              onReviewPressed: () {
-                _openReviewInMaps(context);
-              },
+              onReviewPressed: _openReviewInMaps,
               onSavePressed: () {
                 _savePlaceFromRealEstate(context);
               },
-              onSharePressed: () {},
+              onSharePressed: _sharePlace,
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},
               onDoorDashPressed: () {},
               onOpenInMapsPressed: () {},
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
+
+            // Reviews Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: CustomText(
@@ -164,7 +181,6 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
             ),
             const SizedBox(height: 8),
 
-            // ✅ Handle empty reviews gracefully
             if (widget.realestate.reviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -177,7 +193,6 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
               ...widget.realestate.reviews.map(
                 (review) => ListTile(
                   leading: CircleAvatar(
-                    // ✅ fallback avatar if photo is empty or null
                     backgroundImage: review.profilePhotoUrl.isNotEmpty
                         ? NetworkImage(review.profilePhotoUrl)
                         : const NetworkImage(Images.Store),
@@ -189,7 +204,6 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ✅ Star rating row
                       Row(
                         children: List.generate(
                           5,
@@ -216,6 +230,8 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
                   ),
                 ),
               ),
+            
+            const SizedBox(height: 24),
           ],
         ),
       ),

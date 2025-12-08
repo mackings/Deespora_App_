@@ -49,29 +49,6 @@ class FeatureSearch extends StatelessWidget {
 
         const SizedBox(width: 12),
 
-        // Filter Button
-        GestureDetector(
-          onTap: onFilterTap,
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F8F8),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0C000000),
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.filter_list_rounded,
-              size: 24,
-              color: Colors.black87,
-            ),
-          ),
-        ),
       ],
     );
   }

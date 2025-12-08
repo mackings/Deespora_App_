@@ -7,6 +7,7 @@ import 'package:dspora/App/View/Widgets/GLOBAL/FDetailwidget.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 
@@ -25,7 +26,7 @@ class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
   @override
   void initState() {
     super.initState();
-    _trackHistory(); // ✅ Log when user views this catering store
+    _trackHistory();
   }
 
   // ✅ Save Catering place to SharedPreferences
@@ -71,26 +72,20 @@ class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
     await HistoryService.addHistory(historyItem);
   }
 
-  // ✅ Open Google Maps to leave a review
-  Future<void> _openReviewInMaps(BuildContext context) async {
+  // ✅ Open Google Maps for review
+  Future<void> _openReviewInMaps() async {
     try {
-      // Encode the place name for URL
       final encodedName = Uri.encodeComponent(widget.catering.name);
       final encodedAddress = Uri.encodeComponent(widget.catering.address);
       
-      // Google Maps URL for searching and reviewing a place
-      // This works for both iOS and Android
       final mapsUrl = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress'
       );
 
       if (await canLaunchUrl(mapsUrl)) {
-        await launchUrl(
-          mapsUrl,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
       } else {
-        if (context.mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Could not open Google Maps'),
@@ -100,10 +95,36 @@ class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
         }
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening Maps: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ✅ Share place
+  Future<void> _sharePlace() async {
+    try {
+      final ratingText = '⭐ Rating: ${widget.catering.rating}/5\n';
+      final message = '''
+Check out ${widget.catering.name}!
+
+$ratingText📍 Location: ${widget.catering.address}
+
+Find it on Google Maps:
+https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.catering.name} ${widget.catering.address}')}
+''';
+
+      await Share.share(message, subject: 'Check out ${widget.catering.name}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -137,13 +158,11 @@ class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
               description:
                   "Discover ${widget.catering.name} located at ${widget.catering.address}.",
               imageUrls: imageUrls,
-              onReviewPressed: () {
-                _openReviewInMaps(context);
-              },
+              onReviewPressed: _openReviewInMaps,
               onSavePressed: () {
                 _savePlaceFromCatering(context);
               },
-              onSharePressed: () {},
+              onSharePressed: _sharePlace,
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},
               onDoorDashPressed: () {},

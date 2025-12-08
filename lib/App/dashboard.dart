@@ -15,7 +15,6 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/carouselHome.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/categoryGrid.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/eventCarousel.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/header.dart';
-import 'package:dspora/App/View/Widgets/HomeWidgets/homeSearch.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +22,8 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+
+
 
 
 class Dashboard extends ConsumerStatefulWidget {
@@ -61,25 +62,25 @@ class _DashboardState extends ConsumerState<Dashboard> {
       CategoryItem(
         title: 'Restaurants',
         svgAsset: 'assets/img/restaurant.png',
-        backgroundColor: const Color(0xFFF1CD59),
+        backgroundColor: const Color(0x7FFDD75C),
         onTap: () => Nav.push(const RestaurantHome()),
       ),
       CategoryItem(
         title: 'Catering',
         svgAsset: 'assets/img/catering.png',
-        backgroundColor: const Color(0xFF32871F),
+        backgroundColor: const Color(0x7F32871F),
         onTap: () => _handleCategoryTap('Catering', () => Nav.push(CateringHome())),
       ),
       CategoryItem(
         title: 'Events',
         svgAsset: 'assets/img/event.png',
-        backgroundColor: const Color(0xFFDA763F),
+        backgroundColor: const Color(0x7FDA763F),
         onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
       ),
       CategoryItem(
         title: 'Real Estate',
         svgAsset: 'assets/img/realestate.png',
-        backgroundColor: const Color(0xFFB287EE),
+        backgroundColor:  const Color(0x7FB287EE),
         onTap: () => _handleCategoryTap('Real Estate', () => Nav.push(RealEstateHome())),
       ),
     ];

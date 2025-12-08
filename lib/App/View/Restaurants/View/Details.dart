@@ -6,6 +6,7 @@ import 'package:dspora/App/View/Restaurants/Widgets/storeDetail.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 
@@ -24,7 +25,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _trackHistory(); // ✅ Log visit to restaurant
+    _trackHistory();
   }
 
   // ✅ Save restaurant to SharedPreferences
@@ -70,26 +71,20 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     await HistoryService.addHistory(historyItem);
   }
 
-  // ✅ Open Google Maps to leave a review
-  Future<void> _openReviewInMaps(BuildContext context) async {
+  // ✅ Open Google Maps for review
+  Future<void> _openReviewInMaps() async {
     try {
-      // Encode the place name for URL
       final encodedName = Uri.encodeComponent(widget.restaurant.name);
       final encodedAddress = Uri.encodeComponent(widget.restaurant.vicinity);
       
-      // Google Maps URL for searching and reviewing a place
-      // This works for both iOS and Android
       final mapsUrl = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress'
       );
 
       if (await canLaunchUrl(mapsUrl)) {
-        await launchUrl(
-          mapsUrl,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
       } else {
-        if (context.mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Could not open Google Maps'),
@@ -99,10 +94,36 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         }
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening Maps: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ✅ Share restaurant
+  Future<void> _shareRestaurant() async {
+    try {
+      final ratingText = '⭐ Rating: ${widget.restaurant.rating}/5\n';
+      final message = '''
+Check out ${widget.restaurant.name}!
+
+$ratingText📍 Location: ${widget.restaurant.vicinity}
+
+Find it on Google Maps:
+https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.restaurant.name} ${widget.restaurant.vicinity}')}
+''';
+
+      await Share.share(message, subject: 'Check out ${widget.restaurant.name}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -136,13 +157,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               description:
                   "Discover ${widget.restaurant.name} located at ${widget.restaurant.vicinity}.",
               imageUrls: imageUrls,
-              onReviewPressed: () {
-                _openReviewInMaps(context);
-              },
+              onReviewPressed: _openReviewInMaps,
               onSavePressed: () {
                _saveRestaurantPlace(context);
               },
-              onSharePressed: () {},
+              onSharePressed: _shareRestaurant,
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},
               onDoorDashPressed: () {},

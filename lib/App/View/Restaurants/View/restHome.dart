@@ -7,6 +7,7 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
+import 'package:dspora/App/View/Widgets/ResFilter.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -21,8 +22,6 @@ class RestaurantHome extends StatefulWidget {
 }
 
 class _RestaurantHomeState extends State<RestaurantHome> {
-
-  
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 
@@ -32,50 +31,48 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
   late Future<List<Restaurant>> _restaurantsFuture;
   
-final List<String> usCities = [
-  "New York",
-  "Los Angeles",
-  "Chicago",
-  "Houston",
-  "Miami",
-  "San Francisco",
-  "Boston",
-  "Washington",
-  "Seattle",
-  "Atlanta",
-  "Las Vegas",
-  "Orlando",
-  "Dallas",
-  "Denver",
-  "Philadelphia",
-  "Phoenix",
-  "San Diego",
-  "Austin",
-  "Nashville",
-  "Portland",
-  "Detroit",
-  "Minneapolis",
-  "Charlotte",
-  "Indianapolis",
-  "Columbus",
-  "San Antonio",
-  "Tampa",
-  "Baltimore",
-  "Cleveland",
-  "Kansas City",
-];
+  // ✅ Simple filter state - only status
+  String _selectedStatus = 'All';
+  bool _isDataLoaded = false;
 
+  final List<String> usCities = [
+    "New York",
+    "Los Angeles",
+    "Chicago",
+    "Houston",
+    "Miami",
+    "San Francisco",
+    "Boston",
+    "Washington",
+    "Seattle",
+    "Atlanta",
+    "Las Vegas",
+    "Orlando",
+    "Dallas",
+    "Denver",
+    "Philadelphia",
+    "Phoenix",
+    "San Diego",
+    "Austin",
+    "Nashville",
+    "Portland",
+    "Detroit",
+    "Minneapolis",
+    "Charlotte",
+    "Indianapolis",
+    "Columbus",
+    "San Antonio",
+    "Tampa",
+    "Baltimore",
+    "Cleveland",
+    "Kansas City",
+  ];
 
   @override
   void initState() {
     super.initState();
-
-    // ✅ Load all US restaurants first
     _restaurantsFuture = _fetchAndCacheRestaurants('US');
-
-    // ✅ Detect user’s location, but don’t override the list yet
     _loadUserLocation();
-
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -86,7 +83,6 @@ final List<String> usCities = [
     super.dispose();
   }
 
-  /// ✅ Detect user’s location (but do not reload restaurants automatically)
   Future<void> _loadUserLocation() async {
     try {
       LocationPermission permission = await Geolocator.requestPermission();
@@ -94,7 +90,7 @@ final List<String> usCities = [
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         debugPrint('⚠️ Location permission denied');
-        return; // stay on US restaurants
+        return;
       }
 
       final pos = await Geolocator.getCurrentPosition(
@@ -110,75 +106,169 @@ final List<String> usCities = [
         final detectedCity = placemarks.first.locality ?? 'US';
         debugPrint("📍 User city detected: $detectedCity");
 
-        // ✅ just update the header display
         setState(() {
           _selectedCity = detectedCity;
         });
+        
+        if (_restaurantsCache.containsKey('US')) {
+          _applyAllFilters(_selectedCity);
+        }
       }
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
-      // keep default US
     }
   }
 
-  /// ✅ Fetch from cache or API
   Future<List<Restaurant>> _fetchAndCacheRestaurants(String city) async {
     if (_restaurantsCache.containsKey(city)) {
-      _applyCityFilter(city);
+      setState(() {
+        _isDataLoaded = true;
+      });
+      _applyAllFilters(city);
       return _restaurantsCache[city]!;
     }
 
     final result = await _apiService.fetchRestaurants(city: city);
     _restaurantsCache[city] = result;
-    _applyCityFilter(city);
+    setState(() {
+      _isDataLoaded = true;
+    });
+    _applyAllFilters(city);
     return result;
   }
 
-  /// ✅ Apply filtering
-  void _applyCityFilter(String city) {
+  void _applyAllFilters(String city) {
+    if (!_isDataLoaded) return;
+
     final allRestaurants = _restaurantsCache[city] ?? [];
-    _filteredRestaurants = allRestaurants
+    List<Restaurant> filtered = allRestaurants;
+
+    // Step 1: Apply city filter
+    filtered = filtered
         .where((r) =>
             r.vicinity.toLowerCase().contains(city.toLowerCase()) ||
             r.name.toLowerCase().contains(city.toLowerCase()))
         .toList();
 
-    if (_filteredRestaurants.isEmpty) {
-      _filteredRestaurants = allRestaurants;
+    if (filtered.isEmpty) {
+      filtered = allRestaurants;
     }
+
+    // Step 2: Apply search query
+    final query = _searchController.text.toLowerCase();
+    if (query.isNotEmpty) {
+      filtered = filtered
+          .where((r) =>
+              r.name.toLowerCase().contains(query) ||
+              r.vicinity.toLowerCase().contains(query))
+          .toList();
+    }
+
+    // Step 3: Apply status filter (Open/Closed)
+    if (_selectedStatus == 'Open') {
+      filtered = filtered.where((r) => r.openNow == true).toList();
+    } else if (_selectedStatus == 'Closed') {
+      filtered = filtered.where((r) => r.openNow == false).toList();
+    }
+
+    setState(() {
+      _filteredRestaurants = filtered;
+    });
   }
 
-  /// ✅ Called when user selects city
   void _loadRestaurants(String city) {
     setState(() {
       _selectedCity = city;
+      _isDataLoaded = false;
       _restaurantsFuture = _fetchAndCacheRestaurants(city);
       _searchController.clear();
     });
   }
 
-  /// ✅ Refresh ignoring cache
   Future<void> _onRefresh() async {
     final freshData = await _apiService.fetchRestaurants(city: _selectedCity);
     setState(() {
       _restaurantsCache[_selectedCity] = freshData;
-      _applyCityFilter(_selectedCity);
+      _isDataLoaded = true;
+      _applyAllFilters(_selectedCity);
       _restaurantsFuture = Future.value(freshData);
     });
   }
 
-  /// ✅ Search filtering
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    if (_restaurantsCache.containsKey(_selectedCity)) {
-      setState(() {
-        _filteredRestaurants = _restaurantsCache[_selectedCity]!
-            .where((r) =>
-                r.name.toLowerCase().contains(query) ||
-                r.vicinity.toLowerCase().contains(query))
-            .toList();
-      });
+    if (_isDataLoaded && _restaurantsCache.containsKey(_selectedCity)) {
+      _applyAllFilters(_selectedCity);
     }
+  }
+
+  void _onStatusChanged(String status) {
+    setState(() {
+      _selectedStatus = status;
+      _applyAllFilters(_selectedCity);
+    });
+    Navigator.pop(context); // Close the modal after selection
+  }
+
+  // ✅ Show filter modal
+  void _showFilterModal() {
+    if (!_isDataLoaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please wait for restaurants to load'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Filter title
+              const Text(
+                'Filter Restaurants',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Status filter buttons
+              RestaurantStatusFilter(
+                selectedStatus: _selectedStatus,
+                onStatusChanged: _onStatusChanged,
+              ),
+              
+              const SizedBox(height: 32),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -216,13 +306,39 @@ final List<String> usCities = [
       ),
       body: Column(
         children: [
+          // Search bar with filter button
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: FeatureSearch(
-              controller: _searchController,
-              hintText: 'Search Restaurants',
+            child: Row(
+              children: [
+                Expanded(
+                  child: FeatureSearch(
+                    controller: _searchController,
+                    hintText: 'Search Restaurants',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // ✅ Filter button
+                GestureDetector(
+                  onTap: _showFilterModal,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF37B6AF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.filter_list,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          
+          // Restaurant list
           Expanded(
             child: FutureBuilder<List<Restaurant>>(
               future: _restaurantsFuture,
@@ -280,6 +396,57 @@ final List<String> usCities = [
             },
           );
         },
+      ),
+    );
+  }
+}
+
+// ✅ Simple Status Filter Component
+class RestaurantStatusFilter extends StatelessWidget {
+  final String selectedStatus;
+  final Function(String) onStatusChanged;
+
+  const RestaurantStatusFilter({
+    super.key,
+    required this.selectedStatus,
+    required this.onStatusChanged,
+  });
+
+  final List<String> _statusOptions = const ['All', 'Open', 'Closed'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: _statusOptions.map((status) {
+          final isSelected = selectedStatus == status;
+          return GestureDetector(
+            onTap: () => onStatusChanged(status),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF37B6AF)
+                    : Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                status,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
