@@ -25,8 +25,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 
-
-
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
 
@@ -319,123 +317,129 @@ class _DashboardState extends ConsumerState<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
-              child: Column(
-                children: [
-                  HomeHeader(
-                    name: _userName ?? '',
-                    location: _selectedCity,
-                    onLocationSelected: (city) {
-                      setState(() {
-                        _selectedCity = city;
-                        _loading = true;
-                      });
-                      _fetchEvents();
-                      _fetchAdverts();
-                    },
+      backgroundColor: const Color(0xFFFFFFFF),
+      body: Container(
+        color: const Color(0xFFFFFFFF),
+        child: SafeArea(
+          child: Container(
+            color: const Color(0xFFFFFFFF),
+            child: SingleChildScrollView(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
+                  child: Column(
+                    children: [
+                      HomeHeader(
+                        name: _userName ?? '',
+                        location: _selectedCity,
+                        onLocationSelected: (city) {
+                          setState(() {
+                            _selectedCity = city;
+                            _loading = true;
+                          });
+                          _fetchEvents();
+                          _fetchAdverts();
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// ---------- Search ------------
+                      // HomeSearch(
+                      //   controller: searchController,
+                      //   hintText: 'Search Deespora',
+                      //   onChanged: (value) {},
+                      //   validator: (value) => value == null || value.isEmpty
+                      //       ? 'Enter search text'
+                      //       : null,
+                      // ),
+
+                      const SizedBox(height: 20),
+
+                      /// ---------- Top Carousel (Mixed Events & Promoted Adverts) ------------
+                      Skeletonizer(
+                        enabled: _loading || _advertsLoading,
+                        child: HomeCarousel(
+                          items: (_loading || _advertsLoading)
+                              ? _buildSkeletonCarouselItems()
+                              : _buildMixedCarouselItems().isNotEmpty
+                                  ? _buildMixedCarouselItems()
+                                  : [
+                                      CarouselItem(
+                                        imageUrl: 'https://via.placeholder.com/400x200',
+                                        title: 'No events available',
+                                        date: '',
+                                        onTap: () {},
+                                      ),
+                                    ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// ---------- Categories ------------
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: CustomText(
+                          text: "Categories",
+                          title: true,
+                          fontSize: 18,
+                        ),
+                      ),
+
+                      CategoryGrid(items: categories),
+
+                      /// ---------- Events Near You ------------
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: CustomText(
+                          text: "Events Near You",
+                          title: true,
+                          fontSize: 18,
+                        ),
+                      ),
+
+                      const SizedBox(height: 25),
+
+                      // ✅ UPDATED: Events Near You carousel now properly identifies events
+                      Skeletonizer(
+                        enabled: _loading,
+                        child: EventCarousel(
+                          imageUrls: _loading
+                              ? List.generate(8, (index) => '')
+                              : _events.length > 1
+                                  ? _events
+                                      .skip(1)
+                                      .take(8)
+                                      .map(
+                                        (e) => e.images.isNotEmpty
+                                            ? e.images.first.url
+                                            : 'https://via.placeholder.com/400x200',
+                                      )
+                                      .toList()
+                                  : ['https://via.placeholder.com/400x200'],
+                          height: 100,
+                          autoPlay: !_loading,
+                          onTap: _loading
+                              ? (index) {}
+                              : (index) {
+                                  if (_events.length > index + 1) {
+                                    final event = _events.skip(1).toList()[index];
+                                    // ✅ UPDATED: Added isFromAdvert parameter
+                                    Nav.push(
+                                      EventDetailScreen(
+                                        event: event,
+                                        isFromAdvert: false, // These are regular events
+                                      ),
+                                    );
+                                  }
+                                },
+                          loading: _loading,
+                        ),
+                      ),
+                    ],
                   ),
-
-                  const SizedBox(height: 10),
-
-                  /// ---------- Search ------------
-                  // HomeSearch(
-                  //   controller: searchController,
-                  //   hintText: 'Search Deespora',
-                  //   onChanged: (value) {},
-                  //   validator: (value) => value == null || value.isEmpty
-                  //       ? 'Enter search text'
-                  //       : null,
-                  // ),
-
-                  const SizedBox(height: 20),
-
-                  /// ---------- Top Carousel (Mixed Events & Promoted Adverts) ------------
-                  Skeletonizer(
-                    enabled: _loading || _advertsLoading,
-                    child: HomeCarousel(
-                      items: (_loading || _advertsLoading)
-                          ? _buildSkeletonCarouselItems()
-                          : _buildMixedCarouselItems().isNotEmpty
-                              ? _buildMixedCarouselItems()
-                              : [
-                                  CarouselItem(
-                                    imageUrl: 'https://via.placeholder.com/400x200',
-                                    title: 'No events available',
-                                    date: '',
-                                    onTap: () {},
-                                  ),
-                                ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// ---------- Categories ------------
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: CustomText(
-                      text: "Categories",
-                      title: true,
-                      fontSize: 18,
-                    ),
-                  ),
-
-                  CategoryGrid(items: categories),
-
-                  /// ---------- Events Near You ------------
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: CustomText(
-                      text: "Events Near You",
-                      title: true,
-                      fontSize: 18,
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // ✅ UPDATED: Events Near You carousel now properly identifies events
-                  Skeletonizer(
-                    enabled: _loading,
-                    child: EventCarousel(
-                      imageUrls: _loading
-                          ? List.generate(8, (index) => '')
-                          : _events.length > 1
-                              ? _events
-                                  .skip(1)
-                                  .take(8)
-                                  .map(
-                                    (e) => e.images.isNotEmpty
-                                        ? e.images.first.url
-                                        : 'https://via.placeholder.com/400x200',
-                                  )
-                                  .toList()
-                              : ['https://via.placeholder.com/400x200'],
-                      height: 100,
-                      autoPlay: !_loading,
-                      onTap: _loading
-                          ? (index) {}
-                          : (index) {
-                              if (_events.length > index + 1) {
-                                final event = _events.skip(1).toList()[index];
-                                // ✅ UPDATED: Added isFromAdvert parameter
-                                Nav.push(
-                                  EventDetailScreen(
-                                    event: event,
-                                    isFromAdvert: false, // These are regular events
-                                  ),
-                                );
-                              }
-                            },
-                      loading: _loading,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
