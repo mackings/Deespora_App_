@@ -1,8 +1,13 @@
+import 'package:dspora/App/View/Events/Views/eventDetails.dart';
+import 'package:dspora/App/View/Interests/Api/placeService.dart';
 import 'package:dspora/App/View/Interests/Model/historymodel.dart';
 import 'package:dspora/App/View/Interests/Model/placemodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/UScities.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
+import 'package:dspora/App/View/RealEstate/Widget/realEstate.dart';
+import 'package:dspora/App/View/Restaurants/View/Details.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
+import 'package:dspora/App/View/Widgets/GLOBAL/FrontDetails.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
@@ -10,7 +15,6 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-
 
 
 
@@ -151,6 +155,54 @@ class _InterestHomeState extends State<InterestHome> {
     }
   }
 
+  // ✅ Navigate to saved place - Updated to include Event handling
+  void _navigateToSavedPlace(Place place) {
+    if (place.type == 'Restaurant') {
+      final restaurant = place.toRestaurant();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RestaurantDetailScreen(restaurant: restaurant),
+        ),
+      );
+    } else if (place.type == 'RealEstate') {
+      final realEstate = place.toRealEstate();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RealestateStoreDetails(realestate: realEstate),
+        ),
+      );
+    } else if (place.type == 'Catering') {
+      final catering = place.toCatering();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GlobalStoreDetails(catering: catering),
+        ),
+      );
+    } else if (place.type == 'Event') {
+      // ✅ NEW: Handle Event navigation
+      final event = place.toEvent();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EventDetailScreen(event: event),
+        ),
+      );
+    }
+  }
+
+  // ✅ Navigate to history item
+  void _navigateToHistoryItem(HistoryItem item) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Save "${item.title}" to view full details'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
@@ -190,7 +242,6 @@ class _InterestHomeState extends State<InterestHome> {
                 ),
               ),
               const SizedBox(height: 8),
-
             ],
           ),
         );
@@ -210,6 +261,13 @@ class _InterestHomeState extends State<InterestHome> {
           return ArtistCardWidget(
             artist: artist,
             onTap: () {
+              // Navigate to event if URL exists
+              if (artist.eventUrl!.isNotEmpty) {
+                // You would fetch and navigate to the event here
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Opening ${artist.name}...')),
+                );
+              }
               debugPrint('Tapped on ${artist.name}');
             },
             onRemove: () => _removeArtist(artist.name),
@@ -217,7 +275,7 @@ class _InterestHomeState extends State<InterestHome> {
         },
       );
     } else if (_selectedIndex == 1) {
-      // Saved Tab - Show Places (Real Estate)
+      // Saved Tab - Show Places (including Events)
       if (isLoading) {
         return const Center(child: CircularProgressIndicator());
       }
@@ -243,23 +301,29 @@ class _InterestHomeState extends State<InterestHome> {
       }
 
       return ListView.builder(
-  padding: const EdgeInsets.only(top: 10),
-  itemCount: savedPlaces.length,
-  itemBuilder: (context, index) {
-    final place = savedPlaces[index];
+        padding: const EdgeInsets.only(top: 10),
+        itemCount: savedPlaces.length,
+        itemBuilder: (context, index) {
+          final place = savedPlaces[index];
 
-    return GlobalStoreFront(
-      imageUrl: place.imageUrl ?? Images.Store,
-      storeName: place.name,
-      category:  '',
-      location: place.address,
-      rating: place.rating ?? 0.0,
-      onTap: () {
+          // ✅ UPDATED: Show event date for events
+          String category = '';
+          if (place.type == 'Event' && place.eventDate != null && place.eventDate!.isNotEmpty) {
+            category = '📅 ${place.eventDate}';
+          }
 
-      },
-    );
-  },
-);
+          return GlobalStoreFront(
+            imageUrl: place.imageUrl ?? Images.Store,
+            storeName: place.name,
+            category: category,
+            location: place.address,
+            rating: place.rating ?? 0.0,
+            onTap: () {
+              _navigateToSavedPlace(place);
+            },
+          );
+        },
+      );
 
     } else if (_selectedIndex == 2) {
       // History Tab
@@ -274,9 +338,8 @@ class _InterestHomeState extends State<InterestHome> {
             children: [
               Icon(Icons.history, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
- CustomText(text: "No saved history"),
+              CustomText(text: "No saved history"),
               const SizedBox(height: 8),
-
             ],
           ),
         );
@@ -289,22 +352,22 @@ class _InterestHomeState extends State<InterestHome> {
           final item = historyItems[index];
           return Container(
             padding: const EdgeInsets.all(10),
-  margin: const EdgeInsets.symmetric(vertical: 6),
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(
-      color: Colors.grey.shade300, // border color
-      width: 1,
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.grey.withOpacity(0.1),
-        blurRadius: 3,
-        offset: const Offset(0, 2),
-      ),
-    ],
-  ),
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.grey.shade300,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 3,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: _getTypeColor(item.type),
@@ -314,17 +377,21 @@ class _InterestHomeState extends State<InterestHome> {
                   size: 20,
                 ),
               ),
-             // title: CustomText(text: item.type),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 2),
-            CustomText(text: item.title,fontSize: 15,),
+                  CustomText(text: item.title, fontSize: 15),
                   const SizedBox(height: 2),
-                 CustomText(text:  _formatTimestamp(item.timestamp),fontSize: 12,)
-                  
+                  CustomText(
+                    text: _formatTimestamp(item.timestamp),
+                    fontSize: 12,
+                  ),
                 ],
               ),
+              onTap: () {
+                _navigateToHistoryItem(item);
+              },
             ),
           );
         },
@@ -344,6 +411,8 @@ class _InterestHomeState extends State<InterestHome> {
         return Colors.orange;
       case 'restaurant':
         return Colors.green;
+      case 'catering':
+        return Colors.teal;
       default:
         return Colors.grey;
     }
@@ -359,6 +428,8 @@ class _InterestHomeState extends State<InterestHome> {
         return Icons.event;
       case 'restaurant':
         return Icons.restaurant;
+      case 'catering':
+        return Icons.restaurant_menu;
       default:
         return Icons.info;
     }
@@ -368,60 +439,32 @@ class _InterestHomeState extends State<InterestHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: FeatureHeader(
-        title: "Interests",
-        showBackButton: false,
-       location: _selectedCity,
-        onBack: () => Navigator.pop(context),
-        onLocationTap: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: CustomText(text: "Interests", fontSize: 18, title: true),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(left: 20, right: 20),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Bar(
+              tabs: ["Artists", "Saved", "History"],
+              selectedIndex: _selectedIndex,
+              onTabSelected: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
             ),
-            builder: (context) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
-                child: CitySelector(
-                  cities: usCities,
-                  onCitySelected: (city) {
-                    Navigator.pop(context);
-                    _loadRestaurants(city);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Selected $city')),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-body: Padding(
-  padding: const EdgeInsets.only(left: 20, right: 20),
-  child: Column(
-    children: [
-      const SizedBox(height: 20),
-      Bar(
-        tabs: ["Artists", "Saved", "History"],
-        selectedIndex: _selectedIndex,
-        onTabSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-      ),
-      const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-      // 👇 This expands correctly for scrollable content
-      Expanded(
-        child: _buildTabContent(),
+            Expanded(
+              child: _buildTabContent(),
+            ),
+          ],
+        ),
       ),
-    ],
-  ),
-),
-
     );
   }
 }

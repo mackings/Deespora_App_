@@ -25,35 +25,38 @@ class RealestateStoreDetails extends StatefulWidget {
 class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
 
   Future<void> _savePlaceFromRealEstate(BuildContext context) async {
-    final imageUrl = widget.realestate.photoReferences.isNotEmpty 
-        ? widget.realestate.photoReferences[0] 
-        : Images.Store;
-    
-    final place = Place(
-      name: widget.realestate.name,
-      address: widget.realestate.address,
-      imageUrl: imageUrl,
-      rating: widget.realestate.rating,
+  final imageUrl = widget.realestate.photoReferences.isNotEmpty 
+      ? widget.realestate.photoReferences[0] 
+      : Images.Store;
+  
+  final place = Place(
+    name: widget.realestate.name,
+    address: widget.realestate.address,
+    imageUrl: imageUrl,
+    rating: widget.realestate.rating,
+    type: 'RealEstate', // ✅ Add type
+    openNow: widget.realestate.openNow,
+    id: widget.realestate.id, // ✅ Add id
+  );
+  
+  final success = await PlacePreferencesService.savePlace(place);
+  
+  if (success && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${widget.realestate.name} saved to your interests!'),
+        backgroundColor: Colors.green,
+      ),
     );
-    
-    final success = await PlacePreferencesService.savePlace(place);
-    
-    if (success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.realestate.name} saved to your interests!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Place already saved or error occurred'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
+  } else if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Place already saved or error occurred'),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
+}
 
   @override
   void initState() {

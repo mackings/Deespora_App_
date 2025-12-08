@@ -74,7 +74,7 @@ class EventGalleryHeader extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildActionButton(Icons.reviews, 'Review', onReviewPressed),
+            //  _buildActionButton(Icons.reviews, 'Review', onReviewPressed),
               _buildActionButton(Icons.bookmark_border, 'Save', onSavePressed),
               _buildActionButton(Icons.share, 'Share', onSharePressed),
             ],

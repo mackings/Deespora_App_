@@ -3,12 +3,16 @@ import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/Events/widgets/WebView.dart';
 import 'package:dspora/App/View/Events/widgets/eventDetails.dart';
 import 'package:dspora/App/View/Interests/Model/historymodel.dart';
+import 'package:dspora/App/View/Interests/Model/placemodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+
 
 class EventDetailScreen extends StatefulWidget {
   final Event event;
@@ -192,6 +196,56 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     await HistoryService.addHistory(historyItem);
   }
 
+  // ✅ Save event as a Place
+  Future<void> _savePlaceFromEvent(BuildContext context) async {
+    // Use updated event if available (after geocoding)
+    final displayEvent = _updatedEvent ?? widget.event;
+    
+    final imageUrl = displayEvent.images.isNotEmpty 
+        ? displayEvent.images[0].url 
+        : Images.Store;
+    
+    final venue = displayEvent.venues.isNotEmpty
+        ? displayEvent.venues[0]
+        : null;
+    
+    final location = venue != null
+        ? "${venue.address}${venue.city.isNotEmpty ? ', ${venue.city}' : ''}${venue.country.isNotEmpty ? ', ${venue.country}' : ''}"
+        : "Location not available";
+    
+    final place = Place(
+      id: displayEvent.id,
+      name: displayEvent.name,
+      address: location,
+      imageUrl: imageUrl,
+      rating: null, // Events don't typically have ratings
+      type: 'Event',
+      openNow: displayEvent.dates.statusCode == 'onsale',
+      photoReferences: displayEvent.images.map((img) => img.url).toList(),
+      eventDate: displayEvent.dates.start.localDate,
+      eventUrl: displayEvent.url,
+      venueName: venue?.name,
+    );
+    
+    final success = await PlacePreferencesService.savePlace(place);
+    
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${displayEvent.name} saved to your places!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Event already saved or error occurred'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
   Future<void> _saveArtistFromEvent(BuildContext context) async {
     final artistName = widget.event.name;
     final imageUrl = widget.event.images.isNotEmpty
@@ -229,6 +283,48 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           backgroundColor: Colors.orange,
         ),
       );
+    }
+  }
+
+  // ✅ Share event
+  Future<void> _shareEvent() async {
+    try {
+      final venue = widget.event.venues.isNotEmpty
+          ? widget.event.venues[0]
+          : null;
+      final location = venue != null
+          ? "${venue.city}, ${venue.country}"
+          : "Location not available";
+      
+      final eventDate = widget.event.dates.start.localDate.isNotEmpty
+          ? '📅 Date: ${widget.event.dates.start.localDate}\n'
+          : '';
+      
+      final eventUrl = widget.event.url.isNotEmpty && 
+                       widget.event.url != 'https://deespora.com'
+          ? '\n🎟️ Get tickets: ${widget.event.url}'
+          : '';
+
+      final message = '''
+Check out this event: ${widget.event.name}!
+
+${eventDate}📍 Location: $location
+${venue != null ? '🏟️ Venue: ${venue.name}' : ''}$eventUrl
+
+Find it on Google Maps:
+https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}
+''';
+
+      await Share.share(message, subject: 'Check out ${widget.event.name}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -313,10 +409,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               onReviewPressed: () {
                 print(location);
               },
+              // ✅ UPDATED: Now saves both as artist AND as place
               onSavePressed: () {
-                _saveArtistFromEvent(context);
+                _saveArtistFromEvent(context); // Save as artist
+                _savePlaceFromEvent(context);  // Save as place
               },
-              onSharePressed: () {},
+              onSharePressed: _shareEvent,
 
               // Ticket button opens ticket/website URL
               onTicketPressed: () {
@@ -338,7 +436,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               // If lat/lng is 0,0, it will use location string instead
               onVenueMapPressed: () {
                 _openLocationMap(context, venue);
-              
               },
 
               latitude: venue?.latitude ?? 0.0,

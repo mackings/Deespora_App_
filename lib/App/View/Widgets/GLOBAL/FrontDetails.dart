@@ -30,36 +30,39 @@ class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
   }
 
   // ✅ Save Catering place to SharedPreferences
-  Future<void> _savePlaceFromCatering(BuildContext context) async {
-    final imageUrl = widget.catering.photoReferences.isNotEmpty
-        ? widget.catering.photoReferences[0]
-        : Images.Store;
+Future<void> _savePlaceFromCatering(BuildContext context) async {
+  final imageUrl = widget.catering.photoReferences.isNotEmpty
+      ? widget.catering.photoReferences[0]
+      : Images.Store;
 
-    final place = Place(
-      name: widget.catering.name,
-      address: widget.catering.address,
-      imageUrl: imageUrl,
-      rating: widget.catering.rating,
+  final place = Place(
+    name: widget.catering.name,
+    address: widget.catering.address,
+    imageUrl: imageUrl,
+    rating: widget.catering.rating,
+    type: 'Catering', // ✅ Add type
+    openNow: widget.catering.openNow,
+    id: widget.catering.id, // ✅ Add id
+  );
+
+  final success = await PlacePreferencesService.savePlace(place);
+
+  if (success && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${widget.catering.name} saved to your interests!'),
+        backgroundColor: Colors.green,
+      ),
     );
-
-    final success = await PlacePreferencesService.savePlace(place);
-
-    if (success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.catering.name} saved to your interests!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Place already saved or error occurred'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
+  } else if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Place already saved or error occurred'),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
+}
 
   // ✅ Track when the user opens this store
   Future<void> _trackHistory() async {

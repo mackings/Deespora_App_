@@ -28,37 +28,44 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     _trackHistory();
   }
 
-  // ✅ Save restaurant to SharedPreferences
-  Future<void> _saveRestaurantPlace(BuildContext context) async {
-    final imageUrl = widget.restaurant.photoReferences.isNotEmpty
-        ? widget.restaurant.photoReferences[0]
-        : Images.Store;
 
-    final place = Place(
-      name: widget.restaurant.name,
-      address: widget.restaurant.vicinity,
-      imageUrl: imageUrl,
-      rating: widget.restaurant.rating,
+
+
+Future<void> _saveRestaurantPlace(BuildContext context) async {
+  final imageUrl = widget.restaurant.photoReferences.isNotEmpty
+      ? widget.restaurant.photoReferences[0]
+      : Images.Store;
+
+  final place = Place(
+    name: widget.restaurant.name,
+    address: widget.restaurant.vicinity,
+    imageUrl: imageUrl,
+    rating: widget.restaurant.rating,
+    type: 'Restaurant', // ✅ Add type
+    openNow: widget.restaurant.openNow,
+    id: widget.restaurant.id, // ✅ Add id
+  );
+
+  final success = await PlacePreferencesService.savePlace(place);
+
+  if (success && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${widget.restaurant.name} saved to your interests!'),
+        backgroundColor: Colors.green,
+      ),
     );
-
-    final success = await PlacePreferencesService.savePlace(place);
-
-    if (success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.restaurant.name} saved to your interests!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Restaurant already saved or error occurred'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
+  } else if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Restaurant already saved or error occurred'),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
+}
+
+
 
   // ✅ Track history when user opens this restaurant
   Future<void> _trackHistory() async {
