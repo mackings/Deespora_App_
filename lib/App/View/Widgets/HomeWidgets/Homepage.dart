@@ -1,5 +1,6 @@
 import 'package:dspora/App/View/Interests/Views/home.dart';
 import 'package:dspora/App/View/Notifications/View/Nothome.dart';
+import 'package:dspora/App/View/Profile/View/profile.dart';
 import 'package:dspora/App/dashboard.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/NavBar.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class _HomePageState extends State<HomePage> {
     const Dashboard(),
     const InterestHome(),
     const Notification_home(),
-     const Notification_home(),         
+     const ProfileView()         
     
   ];
 
