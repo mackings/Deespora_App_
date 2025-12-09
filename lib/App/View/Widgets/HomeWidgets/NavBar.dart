@@ -41,7 +41,7 @@ class CustomBottomNavBar extends StatelessWidget {
         children: [
           Container(
             height: 84,
-            margin: const EdgeInsets.symmetric(horizontal: 16), // Add side margins if needed
+            margin: const EdgeInsets.symmetric(horizontal: 12), // Add side margins if needed
             decoration: ShapeDecoration(
               color: Colors.white,
               shape: RoundedRectangleBorder(
@@ -65,7 +65,7 @@ class CustomBottomNavBar extends StatelessWidget {
                   child: GestureDetector(
                     onTap: item.onTap,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 3.0),
+                      padding: const EdgeInsets.symmetric(vertical: 9.0, horizontal: 5.0),
                       child: Container(
                         decoration: BoxDecoration(
                           color: isActive ? activeColor : Colors.transparent,
