@@ -74,9 +74,10 @@ class _HomeCarouselState extends State<HomeCarousel> {
       );
     }
 
+
     // ✅ Carousel with auto-scroll
     return SizedBox(
-      height: 130,
+      height: 170,
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
@@ -123,6 +124,7 @@ class _HomeCarouselState extends State<HomeCarousel> {
                     ),
                   );
                 }),
+
               ),
             ),
           ),

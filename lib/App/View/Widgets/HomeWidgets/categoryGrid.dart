@@ -58,7 +58,7 @@ class _CategoryCard extends StatelessWidget {
       onTap: item.onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: item.backgroundColor.withOpacity(0.12),
+          color: item.backgroundColor,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Column(

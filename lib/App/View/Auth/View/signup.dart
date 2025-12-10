@@ -81,58 +81,119 @@ class _SignUpState extends ConsumerState<SignUp> {
 
   void _onChanged() => setState(() {});
 
-  Future<void> _handleContinue() async {
-    if (!allComplete) {
-      _showSnackBar("Please complete all fields correctly");
-      return;
-    }
 
-    // Validate email format
-    if (!_isValidEmail(email.text.trim())) {
-      _showSnackBar("Please enter a valid email address");
-      return;
-    }
 
-    // Validate phone number
-    if (phone.text.trim().isEmpty || phone.text.trim().length < 7) {
-      _showSnackBar("Please enter a valid phone number");
-      return;
-    }
+  // Future<void> _handleContinue() async {
+  //   if (!allComplete) {
+  //     _showSnackBar("Please complete all fields correctly");
+  //     return;
+  //   }
 
-    final fullPhone = '$_selectedCountryCode${phone.text.trim()}';
-    debugPrint("📞 Final phone to send: $fullPhone");
+  //   // Validate email format
+  //   if (!_isValidEmail(email.text.trim())) {
+  //     _showSnackBar("Please enter a valid email address");
+  //     return;
+  //   }
 
-    setState(() => _isLoading = true);
+  //   // Validate phone number
+  //   if (phone.text.trim().isEmpty || phone.text.trim().length < 7) {
+  //     _showSnackBar("Please enter a valid phone number");
+  //     return;
+  //   }
 
-    try {
-      final result = await _authApi.register(
-        firstname: firstname.text.trim(),
-        lastname: lastname.text.trim(),
-        email: email.text.trim(),
-        phone: fullPhone,
-        password: password.text.trim(),
-      );
+  //   final fullPhone = '$_selectedCountryCode${phone.text.trim()}';
+  //   debugPrint("📞 Final phone to send: $fullPhone");
 
-      if (mounted) setState(() => _isLoading = false);
+  //   setState(() => _isLoading = true);
 
-      if (result['success']) {
-        // Navigate to email verification screen
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Success(email: email.text.trim()),
-            ),
-          );
-        }
-      } else {
-        _showSnackBar(result['message'] ?? "Registration failed");
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-      _showSnackBar("Error: ${e.toString()}");
-    }
+  //   try {
+  //     final result = await _authApi.register(
+  //       firstname: firstname.text.trim(),
+  //       lastname: lastname.text.trim(),
+  //       email: email.text.trim(),
+  //       phone: fullPhone,
+  //       password: password.text.trim(),
+  //     );
+
+  //     if (mounted) setState(() => _isLoading = false);
+
+  //     if (result['success']) {
+  //       // Navigate to email verification screen
+  //       if (mounted) {
+  //         Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => Success(email: email.text.trim()),
+  //           ),
+  //         );
+  //       }
+  //     } else {
+  //       _showSnackBar(result['message'] ?? "Registration failed");
+  //     }
+  //   } catch (e) {
+  //     if (mounted) setState(() => _isLoading = false);
+  //     _showSnackBar("Error: ${e.toString()}");
+  //   }
+  // }
+
+Future<void> _handleContinue() async {
+  if (!allComplete) {
+    _showSnackBar("Please complete all fields correctly");
+    return;
   }
+
+  // Validate email format
+  if (!_isValidEmail(email.text.trim())) {
+    _showSnackBar("Please enter a valid email address");
+    return;
+  }
+
+  // Validate phone number
+  if (phone.text.trim().isEmpty || phone.text.trim().length < 7) {
+    _showSnackBar("Please enter a valid phone number");
+    return;
+  }
+
+  final fullPhone = '$_selectedCountryCode${phone.text.trim()}';
+  debugPrint("📞 Final phone to send: $fullPhone");
+
+  setState(() => _isLoading = true);
+
+  try {
+    final result = await _authApi.register(
+      firstname: firstname.text.trim(),
+      lastname: lastname.text.trim(),
+      email: email.text.trim(),
+      phone: fullPhone,
+      password: password.text.trim(),
+    );
+
+    if (mounted) setState(() => _isLoading = false);
+
+    if (result['success']) {
+      // Navigate to Success page with phone number
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Success(
+              phoneNumber: fullPhone, // Pass phone instead of email
+            ),
+          ),
+        );
+      }
+    } else {
+      _showSnackBar(result['message'] ?? "Registration failed");
+    }
+  } catch (e) {
+    if (mounted) setState(() => _isLoading = false);
+    _showSnackBar("Error: ${e.toString()}");
+  }
+}
+
+
+
+
 
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(

@@ -8,9 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class Success extends ConsumerStatefulWidget {
-  final String email; // Received from SignUp
+  final String? email; // Optional - for backward compatibility
+  final String? phoneNumber; // Phone number for verification
 
-  const Success({super.key, required this.email});
+  const Success({
+    super.key, 
+    this.email,
+    this.phoneNumber,
+  });
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _SuccessState();
@@ -47,6 +52,7 @@ class _SuccessState extends ConsumerState<Success> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SvgPicture.asset("assets/svg/check.svg"),
+                    const SizedBox(height: 20),
                     CustomText(
                       text: "Welcome to Deespora! 👋",
                       color: Colors.white,
@@ -54,18 +60,44 @@ class _SuccessState extends ConsumerState<Success> {
                       textAlign: TextAlign.center,
                       fontSize: 33,
                     ),
+                    const SizedBox(height: 15),
                     CustomText(
                       text:
-                          "Your account has been created. Let’s explore your community.",
+                          "Your account has been created successfully!",
                       textAlign: TextAlign.center,
                       color: const Color.fromARGB(255, 184, 201, 197),
+                      fontSize: 16,
                     ),
+                    const SizedBox(height: 10),
+                    CustomText(
+                      text:
+                          "A verification code has been sent to your phone number.",
+                      textAlign: TextAlign.center,
+                      color: const Color.fromARGB(255, 184, 201, 197),
+                      fontSize: 14,
+                    ),
+                    if (widget.phoneNumber != null) ...[
+                      const SizedBox(height: 10),
+                      CustomText(
+                        text: widget.phoneNumber!,
+                        textAlign: TextAlign.center,
+                        color: Colors.white,
+                        fontSize: 16,
+                        title: true,
+                      ),
+                    ],
                     const SizedBox(height: 30),
                     CustomBtn(
-                      text: "Continue",
+                      text: "Verify Phone Number",
                       onPressed: () {
-                        // Pass email to VerifyAccount
-                        Nav.pushReplacement(VerifyAccount(email: widget.email));
+                        // Navigate to phone verification
+                        Nav.pushReplacement(
+                          VerifyAccount(
+                            phoneNumber: widget.phoneNumber,
+                            verificationType: "phone",
+                            isPasswordReset: false,
+                          ),
+                        );
                       },
                       outlined: true,
                       color: Colors.white70,

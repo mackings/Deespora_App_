@@ -59,56 +59,53 @@ class AuthApi {
 
   // ---------------- REGISTER ----------------
 
-  Future<Map<String, dynamic>> register({
-    required String firstname,
-    required String lastname,
-    required String email,
-    required String phone,
-    required String password,
-  }) async {
-    final payload = {
-      "firstName": firstname,
-      "lastName": lastname,
-      "email": email,
-      "phoneNumber": phone,
-      "password": password,
-    };
+// ---------------- REGISTER ----------------
 
-    try {
-      final response = await _dio.post('register', data: payload);
+Future<Map<String, dynamic>> register({
+  required String firstname,
+  required String lastname,
+  required String email,
+  required String phone,
+  required String password,
+}) async {
+  final payload = {
+    "firstName": firstname,
+    "lastName": lastname,
+    "email": email,
+    "phoneNumber": phone,
+    "password": password,
+  };
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Automatically send email OTP after successful registration
-        try {
-          await sendOtp(email: email);
-        } catch (otpError) {
-          debugPrint("⚠️ [REGISTER] Failed to send OTP: $otpError");
-        }
+  try {
+    final response = await _dio.post('register', data: payload);
 
-        return {
-          "success": true,
-          "message": response.data['message'] ?? "Registration successful",
-          "data": response.data['data'],
-        };
-      }
-
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // REMOVED: Automatic email OTP sending since backend now sends phone OTP
+      
       return {
-        "success": false,
-        "message": response.data['message'] ?? 'Registration failed',
-      };
-    } on DioException catch (e) {
-      return {
-        "success": false,
-        "message": _extractErrorMessage(e),
-      };
-    } catch (e) {
-      debugPrint("🔥 [REGISTER] Unexpected error: $e");
-      return {
-        "success": false,
-        "message": "An unexpected error occurred. Please try again.",
+        "success": true,
+        "message": response.data['message'] ?? "Registration successful",
+        "data": response.data['data'],
       };
     }
+
+    return {
+      "success": false,
+      "message": response.data['message'] ?? 'Registration failed',
+    };
+  } on DioException catch (e) {
+    return {
+      "success": false,
+      "message": _extractErrorMessage(e),
+    };
+  } catch (e) {
+    debugPrint("🔥 [REGISTER] Unexpected error: $e");
+    return {
+      "success": false,
+      "message": "An unexpected error occurred. Please try again.",
+    };
   }
+}
 
   // ---------------- SEND OTP (Email) ----------------
 
@@ -175,7 +172,7 @@ class AuthApi {
     final payload = {"phoneNumber": phoneNumber};
 
     try {
-      final response = await _dio.post('auth/send-phone-otp', data: payload);
+      final response = await _dio.post('phone/send-otp', data: payload);
 
       return {
         "success": true,
@@ -205,7 +202,7 @@ class AuthApi {
     final payload = {"phoneNumber": phoneNumber, "code": code};
 
     try {
-      final response = await _dio.post('auth/verify-phone-otp', data: payload);
+      final response = await _dio.post('phone/verify-otp', data: payload);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data['data'];

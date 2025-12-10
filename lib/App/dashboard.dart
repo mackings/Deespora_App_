@@ -57,34 +57,34 @@ class _DashboardState extends ConsumerState<Dashboard> {
     _initDashboard();
   }
 
-  void _initCategories() {
-    categories = [
-      CategoryItem(
-        title: 'Restaurants',
-        svgAsset: 'assets/img/restaurant.png',
-        backgroundColor: const Color(0x7FFDD75C),
-        onTap: () => Nav.push(const RestaurantHome()),
-      ),
-      CategoryItem(
-        title: 'Catering',
-        svgAsset: 'assets/img/catering.png',
-        backgroundColor: const Color(0x7F32871F),
-        onTap: () => _handleCategoryTap('Catering', () => Nav.push(CateringHome())),
-      ),
-      CategoryItem(
-        title: 'Events',
-        svgAsset: 'assets/img/event.png',
-        backgroundColor: const Color(0x7FDA763F),
-        onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
-      ),
-      CategoryItem(
-        title: 'Real Estate',
-        svgAsset: 'assets/img/realestate.png',
-        backgroundColor:  const Color(0x7FB287EE),
-        onTap: () => _handleCategoryTap('Real Estate', () => Nav.push(RealEstateHome())),
-      ),
-    ];
-  }
+void _initCategories() {
+  categories = [
+    CategoryItem(
+      title: 'Restaurants',
+      svgAsset: 'assets/img/restaurant.png',
+      backgroundColor: const Color(0xFFFFF4CC), // Soft yellow
+      onTap: () => Nav.push(const RestaurantHome()),
+    ),
+    CategoryItem(
+      title: 'Catering',
+      svgAsset: 'assets/img/catering.png',
+      backgroundColor: const Color(0xFF9BC4A0), // Sage green
+      onTap: () => _handleCategoryTap('Catering', () => Nav.push(CateringHome())),
+    ),
+    CategoryItem(
+      title: 'Events',
+      svgAsset: 'assets/img/event.png',
+      backgroundColor: const Color(0xFFE8B4A0), // Peachy beige
+      onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
+    ),
+    CategoryItem(
+      title: 'Real Estate',
+      svgAsset: 'assets/img/realestate.png',
+      backgroundColor: const Color(0xFFD4C4F0), // Soft lavender
+      onTap: () => _handleCategoryTap('Real Estate', () => Nav.push(RealEstateHome())),
+    ),
+  ];
+}
 
   Future<void> _initDashboard() async {
     debugPrint('🔵 Init dashboard start');
@@ -344,16 +344,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
                       ),
 
                       const SizedBox(height: 10),
-
-                      /// ---------- Search ------------
-                      // HomeSearch(
-                      //   controller: searchController,
-                      //   hintText: 'Search Deespora',
-                      //   onChanged: (value) {},
-                      //   validator: (value) => value == null || value.isEmpty
-                      //       ? 'Enter search text'
-                      //       : null,
-                      // ),
 
                       const SizedBox(height: 20),
 
