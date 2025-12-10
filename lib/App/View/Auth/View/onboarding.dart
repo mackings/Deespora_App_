@@ -49,7 +49,7 @@ class _OnboardingState extends ConsumerState<Onboarding> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 420),
+                    const SizedBox(height: 450),
                     CustomText(
                       text:
                           "Welcome To Your Best Guide in Diaspora, Deespora",

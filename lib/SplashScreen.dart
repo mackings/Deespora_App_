@@ -60,8 +60,8 @@ class _SplashScreenState extends State<SplashScreen> {
               child: FittedBox(
                fit: BoxFit.contain, // ✅ PREVENTS over-zoom
                 child: SizedBox(
-                  width: _controller.value.size.width,
-                 height: _controller.value.size.height,
+                  width: _controller.value.size.width-20,
+                 height: _controller.value.size.height -20,
                   child: VideoPlayer(_controller),
                 ),
               ),
