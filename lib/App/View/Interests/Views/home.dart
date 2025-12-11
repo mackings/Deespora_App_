@@ -195,12 +195,12 @@ class _InterestHomeState extends State<InterestHome> {
 
   // ✅ Navigate to history item
   void _navigateToHistoryItem(HistoryItem item) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Save "${item.title}" to view full details'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(
+    //     content: Text('Save "${item.title}" to view full details'),
+    //     duration: const Duration(seconds: 2),
+    //   ),
+    // );
   }
 
   String _formatTimestamp(DateTime timestamp) {

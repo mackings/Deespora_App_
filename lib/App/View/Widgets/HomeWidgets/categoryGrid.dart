@@ -77,7 +77,7 @@ class _CategoryCard extends StatelessWidget {
             const SizedBox(height: 10),
 
             // Label
-CustomText(text: item.title,content: false,),
+CustomText(text: item.title,title: true,fontSize: 15,),
 
           ],
         ),
