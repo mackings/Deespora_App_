@@ -65,7 +65,10 @@ class EventGalleryHeader extends StatelessWidget {
         ),
 
         // HEADER
-        CustomText(text: eventName, title: true, fontSize: 24),
+        Padding(
+          padding: const EdgeInsets.only(left: 20),
+          child: CustomText(text: eventName, title: true, fontSize: 24,shorten: true,),
+        ),
         CustomText(text: '$rating • $ratingsCount ratings', fontSize: 14),
 
         // ACTION BUTTONS
