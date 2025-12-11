@@ -1,9 +1,11 @@
+import 'package:dspora/App/View/Auth/View/onboarding2.dart';
 import 'package:dspora/App/View/Profile/Api/ProfileService.dart';
 import 'package:dspora/App/View/Profile/Widgets/profileWidgets.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -167,14 +169,19 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
-  void _showDeleteDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => DeleteAccountDialog(
-        onDeleteConfirmed: _handleDeleteAccount,
-      ),
-    );
-  }
+void _showDeleteDialog() {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => DeleteAccountBottomSheet(
+      onDeleteConfirmed: _handleDeleteAccount,
+    ),
+  );
+}
 
   void _showEditProfileModal() {
     showModalBottomSheet(
@@ -244,21 +251,39 @@ class _ProfileViewState extends State<ProfileView> {
                         onTap: _showEditProfileModal,
                       ),
                       const SizedBox(height: 12),
-                      SettingsMenuItem(
-                        icon: Icons.settings_outlined,
-                        title: "Preferences Settings",
-                        onTap: () {
-                          // Navigate to preferences page
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      SettingsMenuItem(
-                        icon: Icons.description_outlined,
-                        title: "Terms of service",
-                        onTap: () {
-                          // Navigate to terms page
-                        },
-                      ),
+SettingsMenuItem(
+  icon: Icons.settings_outlined,
+  title: "Terms of service",
+  onTap: () async {
+    final uri = Uri.parse('https://deespora.com/termsofservice');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    }
+  },
+),
+const SizedBox(height: 12),
+SettingsMenuItem(
+  icon: Icons.description_outlined,
+  title: "Privacy policy",
+  onTap: () async {
+    final uri = Uri.parse('https://deespora.com/privacypolicy');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    }
+  },
+),
+
+const SizedBox(height: 50),
+SettingsMenuItem(
+  icon: Icons.exit_to_app_sharp,
+  title: "Log out",
+  onTap: () {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const Second_Onboarding()),
+      (route) => false,
+    );
+  },
+),
                     ],
                   ),
                 ),

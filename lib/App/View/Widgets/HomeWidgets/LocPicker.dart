@@ -19,7 +19,14 @@ class CitySelector extends StatefulWidget {
 }
 
 class _CitySelectorState extends State<CitySelector> {
+  final TextEditingController _searchController = TextEditingController();
   String searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,41 +35,28 @@ class _CitySelectorState extends State<CitySelector> {
         .where((city) => city.toLowerCase().contains(searchQuery.toLowerCase()))
         .toList();
 
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: 600,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
+    return Padding(
+      padding: MediaQuery.of(context).viewInsets,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Search Field
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 40, 20, 16),
+            padding: const EdgeInsets.all(16.0),
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
+                controller: _searchController,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(
                     Icons.search,
                     color: Colors.black,
                     size: 20,
                   ),
-                  hintText: 'Location',
+                  hintText: 'Change Location',
                   hintStyle: GoogleFonts.plusJakartaSans(),
                   filled: true,
                   fillColor: Colors.transparent,
@@ -87,51 +81,50 @@ class _CitySelectorState extends State<CitySelector> {
           ),
 
           // Cities List
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
               itemCount: filteredCities.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final city = filteredCities[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: () => widget.onCitySelected(city),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            margin: const EdgeInsets.only(right: 16),
-                            child: SvgPicture.asset('assets/svg/loc.svg')
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-CustomText(text: "Location"),
-                                const SizedBox(height: 2),
-CustomText(text: city,)
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                return ListTile(
+                  leading: const Icon(
+                    Icons.location_on_outlined,
+                    color: Colors.teal,
                   ),
+                  title: CustomText(text: city),
+                  onTap: () {
+                   // Navigator.pop(context);
+                    widget.onCitySelected(city);
+                  },
                 );
               },
             ),
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
   }
+}
+
+// Usage example:
+void showCitySelector(BuildContext context, List<String> cities) {
+  showModalBottomSheet(
+    backgroundColor: Colors.white,
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) {
+      return CitySelector(
+        cities: cities,
+        onCitySelected: (city) {
+          // Handle city selection
+          print('Selected city: $city');
+        },
+      );
+    },
+  );
 }
