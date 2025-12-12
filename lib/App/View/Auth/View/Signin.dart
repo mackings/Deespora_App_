@@ -27,7 +27,7 @@ class _SignInState extends ConsumerState<SignIn> {
 
   int _selectedIndex = 0;
   bool _isLoading = false;
-  String _selectedCountryCode = '+234';
+  String _selectedCountryCode = '+1'; // Changed default to US
 
   @override
   void dispose() {
@@ -170,12 +170,14 @@ class _SignInState extends ConsumerState<SignIn> {
                     /// Email login fields
                     if (_selectedIndex == 0) ...[
                       CustomTextField(
+                        key: const ValueKey('email_field'),
                         title: "Email",
                         hintText: "Enter email",
                         controller: email,
                       ),
                       const SizedBox(height: 20),
                       CustomTextField(
+                        key: const ValueKey('email_password_field'),
                         title: "Password",
                         hintText: "Enter password",
                         controller: password,
@@ -184,6 +186,7 @@ class _SignInState extends ConsumerState<SignIn> {
                     ] else ...[
                       /// Phone login fields
                       CustomTextField(
+                        key: const ValueKey('phone_field'),
                         title: "Phone",
                         hintText: "Enter phone number",
                         controller: phone,
@@ -197,6 +200,7 @@ class _SignInState extends ConsumerState<SignIn> {
                       ),
                       const SizedBox(height: 20),
                       CustomTextField(
+                        key: const ValueKey('phone_password_field'),
                         title: "Password",
                         hintText: "Enter password",
                         controller: password,

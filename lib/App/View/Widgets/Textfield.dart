@@ -38,12 +38,37 @@ class _CustomTextFieldState extends State<CustomTextField> {
   void initState() {
     super.initState();
     print("🚀 initState called, isPhone: ${widget.isPhone}");
+    
+    // Set default US immediately for phone fields
+    if (widget.isPhone) {
+      _selectedCountry = Country(
+        name: 'United States',
+        code: '+1',
+        flag: 'https://flagcdn.com/w320/us.png',
+      );
+      // Notify parent immediately with default
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onCountrySelected?.call('+1');
+      });
+      // Then load full list in background
+      _fetchCountriesDirectly();
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // still lazy-load on first tap
+    // Ensure country is set when widget is first built
+    if (widget.isPhone && _selectedCountry == null) {
+      setState(() {
+        _selectedCountry = Country(
+          name: 'United States',
+          code: '+1',
+          flag: 'https://flagcdn.com/w320/us.png',
+        );
+      });
+      widget.onCountrySelected?.call('+1');
+    }
   }
 
   /// 👉 Modified to use CountriesData instead of API
@@ -60,9 +85,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
         setState(() {
           _countries = list;
 
-          // Default to Nigeria if available
+          // Default to United States if available
           _selectedCountry = _countries.firstWhere(
-            (country) => country.name.toLowerCase().contains('nigeria'),
+            (country) => country.name.toLowerCase().contains('united states'),
             orElse: () => _countries.first,
           );
         });
@@ -82,14 +107,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
       setState(() {
         _countries = [
           Country(
-            name: 'Nigeria',
-            code: '+234',
-            flag: 'https://flagcdn.com/w320/ng.png',
-          ),
-          Country(
             name: 'United States',
             code: '+1',
             flag: 'https://flagcdn.com/w320/us.png',
+          ),
+          Country(
+            name: 'Nigeria',
+            code: '+234',
+            flag: 'https://flagcdn.com/w320/ng.png',
           ),
           Country(
             name: 'United Kingdom',
@@ -102,7 +127,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             flag: 'https://flagcdn.com/w320/gh.png',
           ),
         ];
-        _selectedCountry = _countries.first;
+        _selectedCountry = _countries.first; // Now defaults to US
       });
 
       print("🔄 Using fallback countries");
@@ -120,86 +145,85 @@ class _CustomTextFieldState extends State<CustomTextField> {
       return;
     }
 
-final result = await showModalBottomSheet<Country>(
-  context: context,
-  isScrollControlled: true,
-  backgroundColor: Colors.white,
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-  ),
-  builder: (context) => Padding(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // drag indicator
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(height: 16),
+    final result = await showModalBottomSheet<Country>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // drag indicator
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
 
-        Text(
-          'Select Country',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
+            Text(
+              'Select Country',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
 
-        SizedBox(
-          height: 200,
-         // height: MediaQuery.of(context).size.height * 0.45, // shorter
-          child: ListView.builder(
-            itemCount: _countries.length,
-            itemBuilder: (context, index) {
-              final country = _countries[index];
-              return ListTile(
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    country.flag,
-                    width: 28,
-                    height: 18,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+            SizedBox(
+              height: 200,
+              // height: MediaQuery.of(context).size.height * 0.45, // shorter
+              child: ListView.builder(
+                itemCount: _countries.length,
+                itemBuilder: (context, index) {
+                  final country = _countries[index];
+                  return ListTile(
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(
+                        country.flag,
                         width: 28,
                         height: 18,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.flag, size: 14),
-                      );
-                    },
-                  ),
-                ),
-                title: Text(
-                  country.name,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: Text(
-                  country.code,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                onTap: () => Navigator.pop(context, country),
-              );
-            },
-          ),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 28,
+                            height: 18,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.flag, size: 14),
+                          );
+                        },
+                      ),
+                    ),
+                    title: Text(
+                      country.name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      country.code,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    onTap: () => Navigator.pop(context, country),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  ),
-);
-
+      ),
+    );
 
     if (result != null) {
       setState(() => _selectedCountry = result);

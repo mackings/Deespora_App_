@@ -125,6 +125,55 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
     }
   }
 
+  // ✅ RESEND CODE FUNCTION
+  Future<void> _handleResendCode() async {
+    setState(() => _isLoading = true);
+
+    try {
+      Map<String, dynamic> result;
+
+      if (widget.verificationType == "email") {
+        // Resend email OTP
+        result = await AuthApi().requestPasswordReset(
+          email: widget.email,
+          phoneNumber: null,
+        );
+      } else {
+        // Resend phone OTP
+        result = await AuthApi().requestPasswordReset(
+          email: null,
+          phoneNumber: widget.phoneNumber,
+        );
+      }
+
+      setState(() => _isLoading = false);
+
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✅ Code resent successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? "Failed to resend code"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   // Dialog for email password reset
   void _showPasswordDialog() {
     final passwordController = TextEditingController();
@@ -279,6 +328,21 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
                           );
                         }
                       },
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // ✅ RESEND CODE BUTTON
+                    TextButton(
+                      onPressed: _handleResendCode,
+                      child: const Text(
+                        "Resend Code",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
+                        ),
+                      ),
                     ),
                   ],
                 ),

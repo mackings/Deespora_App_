@@ -27,7 +27,7 @@ class _ResetPasswordState extends ConsumerState<ResetPassword> {
 
   int _selectedIndex = 0;
   bool _isLoading = false;
-  String _selectedCountryCode = '+234'; // Default Nigeria
+  String _selectedCountryCode = '+1'; // Default to US
 
   /// Handle Reset Password Request
   Future<void> _handleResetRequest() async {
@@ -38,7 +38,6 @@ class _ResetPasswordState extends ConsumerState<ResetPassword> {
       return;
     }
 
-    // Basic validation
     if (_selectedIndex == 0 && !_isValidEmail(input)) {
       _showSnackBar("Please enter a valid email address");
       return;
@@ -51,14 +50,13 @@ class _ResetPasswordState extends ConsumerState<ResetPassword> {
 
     setState(() => _isLoading = true);
 
-    // Combine country code with phone number
     String? fullPhoneNumber;
     if (_selectedIndex == 1) {
       fullPhoneNumber = '$_selectedCountryCode$input';
       print("📱 Sending phone number: $fullPhoneNumber");
     }
 
-    // Call the unified API with either email or phone
+    // Make the request
     final result = await _authApi.requestPasswordReset(
       email: _selectedIndex == 0 ? input : null,
       phoneNumber: _selectedIndex == 1 ? fullPhoneNumber : null,
@@ -122,11 +120,13 @@ class _ResetPasswordState extends ConsumerState<ResetPassword> {
                     ),
                     const SizedBox(height: 10),
                     CustomText(
-                      text: "Enter your ${_selectedIndex == 0 ? 'email' : 'phone number'} to receive a reset code",
+                      text:
+                          "Enter your ${_selectedIndex == 0 ? 'email' : 'phone number'} to receive a reset code",
                       fontSize: 14,
                     ),
                     const SizedBox(height: 30),
 
+                    /// TAB SWITCHER
                     Bar(
                       tabs: const ["Email", "Phone"],
                       selectedIndex: _selectedIndex,
@@ -134,30 +134,56 @@ class _ResetPasswordState extends ConsumerState<ResetPassword> {
                         setState(() => _selectedIndex = index);
                       },
                     ),
+
                     const SizedBox(height: 30),
 
+                    /// EMAIL FIELD
                     if (_selectedIndex == 0)
                       CustomTextField(
+                        key: const ValueKey('email_field'),
                         title: "Email",
                         hintText: "Enter email",
                         controller: email,
-                       // keyboardType: TextInputType.emailAddress,
                       )
+
+                    /// PHONE FIELD
                     else
                       CustomTextField(
+                        key: const ValueKey('phone_field'),
                         title: "Phone",
                         hintText: "Enter phone number",
                         controller: phone,
                         isPhone: true,
-                       // keyboardType: TextInputType.phone,
+                        onCountrySelected: (countryCode) {
+                          setState(() {
+                            _selectedCountryCode = countryCode;
+                            print("🌍 Country code updated to: $countryCode");
+                          });
+                        },
                       ),
 
                     const SizedBox(height: 20),
 
+                    /// RESET BUTTON
                     CustomBtn(
                       text: "Reset Password",
                       onPressed: _handleResetRequest,
                     ),
+
+                    const SizedBox(height: 15),
+
+                    // /// 🔥 RESEND BUTTON — NO COUNTDOWN
+                    // TextButton(
+                    //   onPressed: _handleResetRequest,
+                    //   child: const Text(
+                    //     "Resend Code",
+                    //     style: TextStyle(
+                    //       fontSize: 14,
+                    //       fontWeight: FontWeight.bold,
+                    //       color: Colors.teal,
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
