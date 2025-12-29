@@ -78,6 +78,22 @@ class _OtpSheetState extends State<_OtpSheet> {
 
   String get _code => _controllers.map((c) => c.text).join();
 
+  void _handlePaste(String pastedText) {
+    // Remove any non-digit characters
+    final digitsOnly = pastedText.replaceAll(RegExp(r'\D'), '');
+
+    if (digitsOnly.isEmpty) return;
+
+    // Fill the controllers with pasted digits
+    for (int i = 0; i < length && i < digitsOnly.length; i++) {
+      _controllers[i].text = digitsOnly[i];
+    }
+
+    // Focus the last filled field or the next empty one
+    final lastIndex = digitsOnly.length < length ? digitsOnly.length : length - 1;
+    _focusNodes[lastIndex].requestFocus();
+  }
+
   Future<void> _handleReset() async {
     if (_code.length != length) {
       setState(() => _error = "Please enter the full token");
@@ -123,12 +139,25 @@ class _OtpSheetState extends State<_OtpSheet> {
       focusNode: _focusNodes[i],
       textAlign: TextAlign.center,
       keyboardType: TextInputType.number,
-      maxLength: 1,
       decoration: InputDecoration(
         counterText: '',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
       onChanged: (v) {
+        // Handle paste operation (multi-character input)
+        if (v.length > 1) {
+          _handlePaste(v);
+          return;
+        }
+
+        // Keep only one character in this field
+        if (v.isNotEmpty) {
+          _controllers[i].text = v[v.length - 1];
+          _controllers[i].selection = TextSelection.fromPosition(
+            TextPosition(offset: _controllers[i].text.length),
+          );
+        }
+
         if (v.isNotEmpty && i < length - 1) {
           _focusNodes[i + 1].requestFocus();
         }

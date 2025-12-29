@@ -63,7 +63,7 @@ void _initCategories() {
       title: 'Restaurants',
       svgAsset: 'assets/img/restaurant.png',
       backgroundColor: const Color(0xFFFFF4CC), // Soft yellow
-      onTap: () => Nav.push(const RestaurantHome()),
+      onTap: () => Nav.push(const RestaurantHome()), // Accessible to guests
     ),
     CategoryItem(
       title: 'Catering',
@@ -75,7 +75,7 @@ void _initCategories() {
       title: 'Events',
       svgAsset: 'assets/img/event.png',
       backgroundColor: const Color(0xFFE8B4A0), // Peachy beige
-      onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
+      onTap: () => Nav.push(const EventHome()), // Accessible to guests
     ),
     CategoryItem(
       title: 'Real Estate',

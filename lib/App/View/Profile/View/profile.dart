@@ -16,20 +16,31 @@ class ProfileView extends StatefulWidget {
 
 class _ProfileViewState extends State<ProfileView> {
   final ProfileApi _profileApi = ProfileApi();
-  
+
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
   bool _isLoading = true;
+  bool _isGuest = false;
   String _fullName = "";
   String _phoneDisplay = "";
 
   @override
   void initState() {
     super.initState();
+    _checkGuestStatus();
     _loadProfileData();
+  }
+
+  Future<void> _checkGuestStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userName = prefs.getString('userName');
+
+    setState(() {
+      _isGuest = userName == null || userName.isEmpty || userName == 'Guest';
+    });
   }
 
   @override
@@ -170,6 +181,11 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
 void _showDeleteDialog() {
+  if (_isGuest) {
+    _showGuestRestrictionDialog();
+    return;
+  }
+
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.white,
@@ -184,6 +200,11 @@ void _showDeleteDialog() {
 }
 
   void _showEditProfileModal() {
+    if (_isGuest) {
+      _showGuestRestrictionDialog();
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -194,6 +215,34 @@ void _showDeleteDialog() {
         emailController: _emailController,
         phoneController: _phoneController,
         onUpdate: _handleUpdateProfile,
+      ),
+    );
+  }
+
+  void _showGuestRestrictionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Account Required'),
+        content: const Text(
+          'This feature is only available for registered users. Please create an account or sign in to continue.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const Second_Onboarding()),
+                (route) => false,
+              );
+            },
+            child: const Text('Sign Up / Sign In'),
+          ),
+        ],
       ),
     );
   }

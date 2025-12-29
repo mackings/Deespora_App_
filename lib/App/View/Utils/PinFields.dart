@@ -48,10 +48,43 @@ class _PinInputFieldsState extends State<PinInputFields> {
     super.dispose();
   }
 
+  void _handlePaste(String pastedText) {
+    // Remove any non-digit characters
+    final digitsOnly = pastedText.replaceAll(RegExp(r'\D'), '');
+
+    if (digitsOnly.isEmpty) return;
+
+    // Fill the controllers with pasted digits
+    for (int i = 0; i < widget.length && i < digitsOnly.length; i++) {
+      _controllers[i].text = digitsOnly[i];
+    }
+
+    // Focus the last filled field or the next empty one
+    final lastIndex = digitsOnly.length < widget.length
+        ? digitsOnly.length
+        : widget.length - 1;
+    _focusNodes[lastIndex].requestFocus();
+
+    // Check if complete
+    String currentPin = _controllers.map((c) => c.text).join();
+    if (currentPin.length == widget.length) {
+      widget.onCompleted(currentPin);
+    }
+  }
+
   void _onChanged(int index, String value) {
+    // Handle paste operation (multi-character input)
     if (value.length > 1) {
-      // keep only the last character
-      _controllers[index].text = value.substring(value.length - 1);
+      _handlePaste(value);
+      return;
+    }
+
+    // Keep only one character in this field
+    if (value.isNotEmpty) {
+      _controllers[index].text = value[value.length - 1];
+      _controllers[index].selection = TextSelection.fromPosition(
+        TextPosition(offset: _controllers[index].text.length),
+      );
     }
 
     if (value.isNotEmpty && index < widget.length - 1) {
@@ -81,7 +114,6 @@ class _PinInputFieldsState extends State<PinInputFields> {
             textAlign: TextAlign.center,
             style: widget.textStyle ?? const TextStyle(fontSize: 24),
             obscureText: widget.obscureText,
-            maxLength: 1,
             decoration: InputDecoration(
               counterText: '',
               border: OutlineInputBorder(
