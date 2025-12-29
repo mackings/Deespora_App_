@@ -378,7 +378,11 @@ void _initCategories() {
                         ),
                       ),
 
+                       const SizedBox(height: 15),
+
                       CategoryGrid(items: categories),
+
+                       const SizedBox(height: 20),
 
                       /// ---------- Events Near You ------------
                       Align(
@@ -390,44 +394,44 @@ void _initCategories() {
                         ),
                       ),
 
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 20),
 
                       // ✅ UPDATED: Events Near You carousel now properly identifies events
-                      Skeletonizer(
-                        enabled: _loading,
-                        child: EventCarousel(
-                          imageUrls: _loading
-                              ? List.generate(8, (index) => '')
-                              : _events.length > 1
-                                  ? _events
-                                      .skip(1)
-                                      .take(8)
-                                      .map(
-                                        (e) => e.images.isNotEmpty
-                                            ? e.images.first.url
-                                            : 'https://via.placeholder.com/400x200',
-                                      )
-                                      .toList()
-                                  : ['https://via.placeholder.com/400x200'],
-                          height: 100,
-                          autoPlay: !_loading,
-                          onTap: _loading
-                              ? (index) {}
-                              : (index) {
-                                  if (_events.length > index + 1) {
-                                    final event = _events.skip(1).toList()[index];
-                                    // ✅ UPDATED: Added isFromAdvert parameter
-                                    Nav.push(
-                                      EventDetailScreen(
-                                        event: event,
-                                        isFromAdvert: false, // These are regular events
-                                      ),
-                                    );
-                                  }
-                                },
-                          loading: _loading,
-                        ),
-                      ),
+Skeletonizer(
+  enabled: _loading,
+  child: EventCarousel(
+    imageUrls: _loading
+        ? List.generate(8, (index) => '')
+        : _events.length > 1
+            ? _events
+                .skip(1)
+                .take(8)
+                .map(
+                  (e) => e.images.isNotEmpty
+                      ? e.images.first.url
+                      : 'https://via.placeholder.com/400x200',
+                )
+                .toList()
+            : ['https://via.placeholder.com/400x200'],
+    events: _loading ? null : _events.skip(1).take(8).toList(), // Pass events
+    height: 100,
+    autoPlay: !_loading,
+    onTap: _loading
+        ? (index) {}
+        : (index) {
+            if (_events.length > index + 1) {
+              final event = _events.skip(1).toList()[index];
+              Nav.push(
+                EventDetailScreen(
+                  event: event,
+                  isFromAdvert: false,
+                ),
+              );
+            }
+          },
+    loading: _loading,
+  ),
+),
                     ],
                   ),
                 ),

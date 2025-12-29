@@ -100,6 +100,8 @@ class _ResetPasswordState extends ConsumerState<ResetPassword> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(backgroundColor: Colors.white),
       body: LoadingOverlay(
         isLoading: _isLoading,
         text: "Sending reset request...",

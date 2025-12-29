@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 
-
 class CategoryItem {
   final String title;
   final String svgAsset;       
@@ -18,8 +17,6 @@ class CategoryItem {
   });
 }
 
-
-
 class CategoryGrid extends StatelessWidget {
   final List<CategoryItem> items;
 
@@ -33,9 +30,9 @@ class CategoryGrid extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,       
-        childAspectRatio: 1.3,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
+        childAspectRatio: 2.5,  // Adjusted for horizontal card
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -45,7 +42,6 @@ class CategoryGrid extends StatelessWidget {
     );
   }
 }
-
 
 class _CategoryCard extends StatelessWidget {
   final CategoryItem item;
@@ -57,32 +53,36 @@ class _CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: item.onTap,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: item.backgroundColor,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-           
+            // Icon
             SizedBox(
-              height: 50,
-              width: 50,
+              height: 40,
+              width: 40,
               child: Image.asset(
                 item.svgAsset,
                 fit: BoxFit.contain,
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(width: 12),
 
             // Label
-CustomText(text: item.title,title: true,fontSize: 15,),
-
+            Expanded(
+              child: CustomText(
+                text: item.title,
+                title: true,
+                fontSize: 15,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
-

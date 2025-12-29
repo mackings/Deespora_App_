@@ -65,7 +65,7 @@ class _OnboardingState extends ConsumerState<Onboarding> {
                     ),
                     const SizedBox(height: 30),
                     CustomBtn(
-                      text: "Get Started >>>",
+                      text: "Get Started",
                       onPressed: () {
                         Nav.push(Second_Onboarding());
                       },

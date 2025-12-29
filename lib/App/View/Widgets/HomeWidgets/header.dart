@@ -104,7 +104,7 @@ class HomeHeader extends StatelessWidget {
               // 👤 User Name (Left)
               Expanded(
                 child: CustomText(
-                  text: capitalizeFirst(name),
+                  text: "Hi ${capitalizeFirst(name)}",
                   content: false,
                   title: true,
                   fontSize: 20,

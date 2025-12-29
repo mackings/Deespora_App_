@@ -331,6 +331,20 @@ class _EditProfileModalState extends State<EditProfileModal> {
     }
   }
 
+  void _handleClear() {
+    widget.firstNameController.clear();
+    widget.lastNameController.clear();
+    widget.emailController.clear();
+    widget.phoneController.clear();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("All fields cleared"),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -351,14 +365,28 @@ class _EditProfileModalState extends State<EditProfileModal> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
-              const Text(
-                "Personal information",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
+              // Header with Clear Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Personal information",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _handleClear,
+                    icon: const Icon(Icons.clear_all, size: 18),
+                    label: const Text("Clear"),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               
@@ -383,7 +411,7 @@ class _EditProfileModalState extends State<EditProfileModal> {
               ),
               const SizedBox(height: 20),
 
-              // Phone Number (FIXED: was using emailController)
+              // Phone Number
               CustomTextField(
                 label: "Phone Number",
                 controller: widget.phoneController,
@@ -404,6 +432,8 @@ class _EditProfileModalState extends State<EditProfileModal> {
     );
   }
 }
+
+
 
 // Delete Account Dialog with Password Input (StatefulWidget)
 class DeleteAccountBottomSheet extends StatefulWidget {

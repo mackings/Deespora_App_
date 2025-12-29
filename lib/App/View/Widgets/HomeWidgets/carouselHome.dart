@@ -77,7 +77,7 @@ class _HomeCarouselState extends State<HomeCarousel> {
 
     // ✅ Carousel with auto-scroll
     return SizedBox(
-      height: 170,
+      height: 250,
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
