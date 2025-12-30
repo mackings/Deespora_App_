@@ -22,18 +22,17 @@ class HomeCarousel extends StatefulWidget {
 class _HomeCarouselState extends State<HomeCarousel> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
-  Timer? _autoScrollTimer; // 👈 timer for auto scroll
+  Timer? _autoScrollTimer;
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ Start auto-scroll only if there are items
     if (widget.items.isNotEmpty) {
       _autoScrollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
         if (_pageController.hasClients && widget.items.isNotEmpty) {
           int nextPage = _currentIndex + 1;
-          if (nextPage >= widget.items.length) nextPage = 0; // loop back
+          if (nextPage >= widget.items.length) nextPage = 0;
 
           _pageController.animateToPage(
             nextPage,
@@ -47,7 +46,7 @@ class _HomeCarouselState extends State<HomeCarousel> {
 
   @override
   void dispose() {
-    _autoScrollTimer?.cancel(); // 👈 cancel timer
+    _autoScrollTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -55,7 +54,6 @@ class _HomeCarouselState extends State<HomeCarousel> {
   @override
   Widget build(BuildContext context) {
     if (widget.loading) {
-      // ✅ Loading skeleton
       return SizedBox(
         height: 130,
         child: ListView.separated(
@@ -74,8 +72,6 @@ class _HomeCarouselState extends State<HomeCarousel> {
       );
     }
 
-
-    // ✅ Carousel with auto-scroll
     return SizedBox(
       height: 250,
       child: Stack(
@@ -93,7 +89,7 @@ class _HomeCarouselState extends State<HomeCarousel> {
             },
           ),
 
-          // ✅ Indicators
+          // Indicators
           Positioned(
             bottom: 12,
             child: Container(
@@ -124,7 +120,6 @@ class _HomeCarouselState extends State<HomeCarousel> {
                     ),
                   );
                 }),
-
               ),
             ),
           ),
@@ -133,9 +128,6 @@ class _HomeCarouselState extends State<HomeCarousel> {
     );
   }
 }
-
-
-
 
 class _CarouselCard extends StatelessWidget {
   final CarouselItem item;
@@ -170,26 +162,26 @@ class _CarouselCard extends StatelessWidget {
                 ),
               ),
               
-              // Gradient overlay for better text readability
+              // Gradient overlay for better text readability (top gradient)
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent,
                       Colors.black.withOpacity(0.7),
+                      Colors.transparent,
                     ],
-                    stops: const [0.3, 1.0],
+                    stops: const [0.0, 0.5],
                   ),
                 ),
               ),
               
-              // Position content at the bottom
+              // Position content at the top left
               Positioned(
                 left: 12,
                 right: 12,
-                bottom: 20,
+                top: 20,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +237,6 @@ class _CarouselCard extends StatelessWidget {
   }
 }
 
-
 /// Model for each slide
 class CarouselItem {
   final String imageUrl;
@@ -260,7 +251,4 @@ class CarouselItem {
     this.onTap,
   });
 }
-
-
-
 

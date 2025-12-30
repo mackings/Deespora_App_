@@ -231,7 +231,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     if (!_isDataLoaded) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please wait for real estate listings to load'),
+          content: Text('Please wait for Worship listings to load'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -264,7 +264,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
               
               // Filter title
               const Text(
-                'Filter Real Estate',
+                'Filter Worship',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -293,7 +293,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: FeatureHeader(
-        title: "Real Estate",
+        title: "Worship",
         location: _selectedCity,
         onBack: () => Navigator.pop(context),
         onLocationTap: () {
@@ -321,6 +321,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
           );
         },
       ),
+
       body: Column(
         children: [
           // Search bar with filter button
@@ -388,6 +389,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     );
   }
 
+
   Widget _buildListView(List<RealEstateModel> realEstateList) {
     return RefreshIndicator(
       color: Colors.teal,
@@ -400,7 +402,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
           return GlobalStoreFront(
             imageUrl: r.photoReferences.isNotEmpty ? r.photoReferences.first : '',
             storeName: r.name,
-            category: "Real Estate",
+            category: "Worship",
             location: r.address,
             rating: r.rating,
             onTap: () {

@@ -78,7 +78,7 @@ void _initCategories() {
       onTap: () => Nav.push(const EventHome()), // Accessible to guests
     ),
     CategoryItem(
-      title: 'Real Estate',
+      title: 'Worship',
       svgAsset: 'assets/img/realestate.png',
       backgroundColor: const Color(0xFFD4C4F0), // Soft lavender
       onTap: () => _handleCategoryTap('Real Estate', () => Nav.push(RealEstateHome())),
@@ -330,6 +330,7 @@ void _initCategories() {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
                   child: Column(
                     children: [
+                      
                       HomeHeader(
                         name: _userName ?? '',
                         location: _selectedCity,

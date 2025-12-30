@@ -34,7 +34,7 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
     address: widget.realestate.address,
     imageUrl: imageUrl,
     rating: widget.realestate.rating,
-    type: 'RealEstate', // ✅ Add type
+    type: 'Worship', // ✅ Add type
     openNow: widget.realestate.openNow,
     id: widget.realestate.id, // ✅ Add id
   );
@@ -68,7 +68,7 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
     final historyItem = HistoryItem(
       title: widget.realestate.name,
       subtitle: widget.realestate.address,
-      type: 'RealEstate',
+      type: 'Worship',
       timestamp: DateTime.now(),
     );
     await HistoryService.addHistory(historyItem);
