@@ -77,7 +77,7 @@ class _CategoryCard extends StatelessWidget {
               child: CustomText(
                 text: item.title,
                 title: true,
-                fontSize: 15,
+                fontSize: 12,
               ),
             ),
           ],

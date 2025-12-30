@@ -75,7 +75,7 @@ void _initCategories() {
       title: 'Events',
       svgAsset: 'assets/img/event.png',
       backgroundColor: const Color(0xFFE8B4A0), // Peachy beige
-      onTap: () => Nav.push(const EventHome()), // Accessible to guests
+      onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
     ),
     CategoryItem(
       title: 'Worship',
@@ -266,7 +266,7 @@ void _initCategories() {
   // Build carousel items combining events and promoted adverts
   List<CarouselItem> _buildMixedCarouselItems() {
     List<CarouselItem> items = [];
-    
+
     // Add promoted adverts first (convert to Event for detail screen)
     for (var advert in _promotedAdverts.take(2)) {
       items.add(
@@ -276,20 +276,23 @@ void _initCategories() {
               : 'https://via.placeholder.com/400x200',
           title: advert.title,
           date: advert.eventDate.toString().split(' ')[0],
-          // ✅ UPDATED: Added isFromAdvert parameter for adverts
           onTap: () {
-            final event = advert.toEvent();
-            Nav.push(
-              EventDetailScreen(
-                event: event,
-                isFromAdvert: true, // Important: Triggers geocoding
-              ),
-            );
+            if (_isGuest) {
+              _showGuestSignupDialog();
+            } else {
+              final event = advert.toEvent();
+              Nav.push(
+                EventDetailScreen(
+                  event: event,
+                  isFromAdvert: true,
+                ),
+              );
+            }
           },
         ),
       );
     }
-    
+
     // Add events
     for (var event in _events.take(4 - items.length)) {
       items.add(
@@ -299,32 +302,37 @@ void _initCategories() {
               : 'https://via.placeholder.com/400x200',
           title: event.name,
           date: event.dates.start.localDate,
-          // ✅ UPDATED: Added isFromAdvert parameter for events
           onTap: () {
-            Nav.push(
-              EventDetailScreen(
-                event: event,
-                isFromAdvert: false, // Regular event, has coordinates
-              ),
-            );
+            if (_isGuest) {
+              _showGuestSignupDialog();
+            } else {
+              Nav.push(
+                EventDetailScreen(
+                  event: event,
+                  isFromAdvert: false,
+                ),
+              );
+            }
           },
         ),
       );
     }
-    
+
     return items;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
-      body: Container(
-        color: const Color(0xFFFFFFFF),
-        child: SafeArea(
-          child: Container(
-            color: const Color(0xFFFFFFFF),
-            child: SingleChildScrollView(
+    return PopScope(
+      canPop: false, // Disable back button/swipe
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFFFFFF),
+        body: Container(
+          color: const Color(0xFFFFFFFF),
+          child: SafeArea(
+            child: Container(
+              color: const Color(0xFFFFFFFF),
+              child: SingleChildScrollView(
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
@@ -420,7 +428,9 @@ Skeletonizer(
     onTap: _loading
         ? (index) {}
         : (index) {
-            if (_events.length > index + 1) {
+            if (_isGuest) {
+              _showGuestSignupDialog();
+            } else if (_events.length > index + 1) {
               final event = _events.skip(1).toList()[index];
               Nav.push(
                 EventDetailScreen(
@@ -441,6 +451,6 @@ Skeletonizer(
           ),
         ),
       ),
-    );
+    ));
   }
 }

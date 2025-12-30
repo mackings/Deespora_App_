@@ -1,8 +1,9 @@
 import 'package:dspora/App/View/Auth/View/onboarding2.dart';
+import 'package:dspora/App/View/Auth/View/Signin.dart';
+import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Profile/Api/ProfileService.dart';
 import 'package:dspora/App/View/Profile/Widgets/profileWidgets.dart';
-import 'package:flutter/material.dart';
-
+import 'package:dspora/App/View/Widgets/HomeWidgets/GuestSignupAlert.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -41,6 +42,13 @@ class _ProfileViewState extends State<ProfileView> {
     setState(() {
       _isGuest = userName == null || userName.isEmpty || userName == 'Guest';
     });
+
+    // Show dialog immediately for guests
+    if (_isGuest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showGuestRestrictionDialog();
+      });
+    }
   }
 
   @override
@@ -181,11 +189,6 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
 void _showDeleteDialog() {
-  if (_isGuest) {
-    _showGuestRestrictionDialog();
-    return;
-  }
-
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.white,
@@ -200,11 +203,6 @@ void _showDeleteDialog() {
 }
 
   void _showEditProfileModal() {
-    if (_isGuest) {
-      _showGuestRestrictionDialog();
-      return;
-    }
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -222,27 +220,29 @@ void _showDeleteDialog() {
   void _showGuestRestrictionDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Account Required'),
-        content: const Text(
-          'This feature is only available for registered users. Please create an account or sign in to continue.',
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GuestSignupDialog(
+          title: 'Want more personalized results?',
+          onCreateAccount: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SignUp()),
+            );
+          },
+          onLogin: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SignIn()),
+            );
+          },
+          onClose: () {
+            Navigator.pop(context);
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const Second_Onboarding()),
-                (route) => false,
-              );
-            },
-            child: const Text('Sign Up / Sign In'),
-          ),
-        ],
       ),
     );
   }
@@ -284,15 +284,15 @@ void _showDeleteDialog() {
                         subtitle: "Manage your app preferences, privacy, and\nnotifications.",
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Profile Card
                       ProfileCard(
                         name: _fullName,
                         phone: _phoneDisplay,
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Menu Items
                       SettingsMenuItem(
                         icon: Icons.person_outline,
