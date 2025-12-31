@@ -220,7 +220,7 @@ void _showDeleteDialog() {
   void _showGuestRestrictionDialog() {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: GuestSignupDialog(
@@ -240,7 +240,7 @@ void _showDeleteDialog() {
             );
           },
           onClose: () {
-            Navigator.pop(context);
+           // Navigator.pop(context);
           },
         ),
       ),

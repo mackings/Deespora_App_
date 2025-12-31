@@ -59,8 +59,6 @@ class AuthApi {
 
   // ---------------- REGISTER ----------------
 
-// ---------------- REGISTER ----------------
-
 Future<Map<String, dynamic>> register({
   required String firstname,
   required String lastname,
@@ -80,8 +78,6 @@ Future<Map<String, dynamic>> register({
     final response = await _dio.post('register', data: payload);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      // REMOVED: Automatic email OTP sending since backend now sends phone OTP
-      
       return {
         "success": true,
         "message": response.data['message'] ?? "Registration successful",
@@ -305,87 +301,85 @@ Future<Map<String, dynamic>> register({
     }
   }
 
+  // ---------------- REQUEST PASSWORD RESET ----------------
 
+  Future<Map<String, dynamic>> requestPasswordReset({
+    String? email,
+    String? phoneNumber,
+  }) async {
+    final payload = <String, dynamic>{};
+    
+    if (email != null && email.isNotEmpty) {
+      payload['email'] = email;
+    }
+    
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      payload['phoneNumber'] = phoneNumber;
+    }
 
-Future<Map<String, dynamic>> requestPasswordReset({
-  String? email,
-  String? phoneNumber,
-}) async {
-  // Build payload based on what's provided
-  final payload = <String, dynamic>{};
-  
-  if (email != null && email.isNotEmpty) {
-    payload['email'] = email;
-  }
-  
-  if (phoneNumber != null && phoneNumber.isNotEmpty) {
-    payload['phoneNumber'] = phoneNumber;
-  }
+    try {
+      final response = await _dio.post('request-password-reset', data: payload);
 
-  try {
-    final response = await _dio.post('request-password-reset', data: payload);
-
-    return {
-      "success": true,
-      "message": response.data['message'] ?? "Reset code sent successfully",
-      "data": response.data['data'],
-    };
-  } on DioException catch (e) {
-    return {
-      "success": false,
-      "message": _extractErrorMessage(e),
-    };
-  } catch (e) {
-    debugPrint("🔥 [REQUEST PASSWORD RESET] Unexpected error: $e");
-    return {
-      "success": false,
-      "message": "Failed to send reset code. Please try again.",
-    };
-  }
-}
-
-// ---------------- RESET PASSWORD (EMAIL OR PHONE) ----------------
-
-Future<Map<String, dynamic>> resetPassword({
-  String? email,
-  String? phoneNumber,
-  required String token,
-  required String newPassword,
-}) async {
-  final payload = <String, dynamic>{
-    "token": token,
-    "password": newPassword,
-  };
-
-  if (email != null && email.isNotEmpty) {
-    payload['email'] = email;
-  }
-  
-  if (phoneNumber != null && phoneNumber.isNotEmpty) {
-    payload['phoneNumber'] = phoneNumber;
+      return {
+        "success": true,
+        "message": response.data['message'] ?? "Reset code sent successfully",
+        "data": response.data['data'],
+      };
+    } on DioException catch (e) {
+      return {
+        "success": false,
+        "message": _extractErrorMessage(e),
+      };
+    } catch (e) {
+      debugPrint("🔥 [REQUEST PASSWORD RESET] Unexpected error: $e");
+      return {
+        "success": false,
+        "message": "Failed to send reset code. Please try again.",
+      };
+    }
   }
 
-  try {
-    final response = await _dio.post('reset-password', data: payload);
+  // ---------------- RESET PASSWORD (EMAIL OR PHONE) ----------------
 
-    return {
-      "success": true,
-      "message": response.data['message'] ?? "Password reset successful",
+  Future<Map<String, dynamic>> resetPassword({
+    String? email,
+    String? phoneNumber,
+    required String token,
+    required String newPassword,
+  }) async {
+    final payload = <String, dynamic>{
+      "token": token,
+      "password": newPassword,
     };
-  } on DioException catch (e) {
-    return {
-      "success": false,
-      "message": _extractErrorMessage(e),
-    };
-  } catch (e) {
-    debugPrint("🔥 [RESET PASSWORD] Unexpected error: $e");
-    return {
-      "success": false,
-      "message": "Password reset failed. Please try again.",
-    };
+
+    if (email != null && email.isNotEmpty) {
+      payload['email'] = email;
+    }
+    
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      payload['phoneNumber'] = phoneNumber;
+    }
+
+    try {
+      final response = await _dio.post('reset-password', data: payload);
+
+      return {
+        "success": true,
+        "message": response.data['message'] ?? "Password reset successful",
+      };
+    } on DioException catch (e) {
+      return {
+        "success": false,
+        "message": _extractErrorMessage(e),
+      };
+    } catch (e) {
+      debugPrint("🔥 [RESET PASSWORD] Unexpected error: $e");
+      return {
+        "success": false,
+        "message": "Password reset failed. Please try again.",
+      };
+    }
   }
-}
-
 
   // ---------------- REQUEST PASSWORD RESET (PHONE) ----------------
 
@@ -450,9 +444,6 @@ Future<Map<String, dynamic>> resetPassword({
     }
   }
 
-
-
-
   // ---------------- LOGOUT ----------------
 
   Future<void> logout() async {
@@ -475,6 +466,9 @@ Future<Map<String, dynamic>> resetPassword({
 
       if (data['token'] != null) {
         await prefs.setString('token', data['token']);
+        
+        // ✅ Save login timestamp for session expiration (1 hour)
+        await prefs.setInt('loginTimestamp', DateTime.now().millisecondsSinceEpoch);
       }
 
       if (user != null) {
@@ -593,13 +587,53 @@ Future<Map<String, dynamic>> resetPassword({
     }
   }
 
-  /// Check if user is logged in
+  /// Check if user is logged in and session hasn't expired
   Future<bool> isLoggedIn() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getString('token') != null;
+      final token = prefs.getString('token');
+      
+      if (token == null) return false;
+      
+      // ✅ Check if session has expired (1 hour = 3600000 milliseconds)
+      final loginTimestamp = prefs.getInt('loginTimestamp');
+      if (loginTimestamp == null) return false;
+      
+      final loginTime = DateTime.fromMillisecondsSinceEpoch(loginTimestamp);
+      final now = DateTime.now();
+      final difference = now.difference(loginTime);
+      
+      // If more than 1 hour has passed, logout
+      if (difference.inHours >= 1) {
+        debugPrint("⏰ Session expired after ${difference.inMinutes} minutes");
+        await logout(); // Clear expired session
+        return false;
+      }
+      
+      debugPrint("✅ Session valid. Time remaining: ${60 - difference.inMinutes} minutes");
+      return true;
     } catch (e) {
+      debugPrint("❌ Error checking login status: $e");
       return false;
+    }
+  }
+
+  /// Get remaining session time in minutes
+  Future<int?> getRemainingSessionTime() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final loginTimestamp = prefs.getInt('loginTimestamp');
+      
+      if (loginTimestamp == null) return null;
+      
+      final loginTime = DateTime.fromMillisecondsSinceEpoch(loginTimestamp);
+      final now = DateTime.now();
+      final difference = now.difference(loginTime);
+      
+      final remainingMinutes = 60 - difference.inMinutes;
+      return remainingMinutes > 0 ? remainingMinutes : 0;
+    } catch (e) {
+      return null;
     }
   }
 }

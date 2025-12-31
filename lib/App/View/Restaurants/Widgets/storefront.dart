@@ -1,8 +1,6 @@
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 
-import 'package:dspora/App/View/Widgets/customtext.dart';
-import 'package:flutter/material.dart';
 
 class StoreFront extends StatelessWidget {
   final String imageUrl;

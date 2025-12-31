@@ -332,7 +332,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                 Expanded(
                   child: FeatureSearch(
                     controller: _searchController,
-                    hintText: 'Search Real Estate Listings',
+                    hintText: 'Search Worship',
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -379,7 +379,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                 }
 
                 return const Center(
-                  child: Text('No real estate listings found.'),
+                  child: Text('No worship listing found.'),
                 );
               },
             ),

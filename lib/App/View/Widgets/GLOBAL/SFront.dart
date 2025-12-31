@@ -27,7 +27,7 @@ class GlobalStoreFront extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: Container(
           width: MediaQuery.of(context).size.width,
-          height: 130,
+          height: 137,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -100,7 +100,7 @@ class GlobalStoreFront extends StatelessWidget {
                             child: CustomText(
                               text: location,
                               content: true,
-                              fontSize: 12,
+                              fontSize: 10,
                               shorten: true,
                             ),
                           ),
