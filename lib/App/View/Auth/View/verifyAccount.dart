@@ -1,5 +1,6 @@
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
 import 'package:dspora/App/View/Auth/View/Signin.dart';
+import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Utils/PinFields.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/Textfield.dart';
@@ -271,6 +272,15 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
       isLoading: _isLoading,
       text: "Verifying OTP...",
       child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+            onPressed: () => Nav.pushReplacement(SignUp()),
+          ),
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
             child: Center(

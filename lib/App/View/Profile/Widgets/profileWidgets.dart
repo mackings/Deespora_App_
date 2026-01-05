@@ -1,3 +1,5 @@
+import 'package:dspora/App/View/Utils/navigator.dart';
+import 'package:dspora/App/View/Widgets/custombtn.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter/material.dart';
@@ -6,12 +8,8 @@ import 'package:flutter/material.dart';
 class SectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
-  
-  const SectionHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-  });
+
+  const SectionHeader({super.key, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +27,7 @@ class SectionHeader extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-            height: 1.5,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
         ),
       ],
     );
@@ -45,7 +39,7 @@ class ProfileCard extends StatelessWidget {
   final String name;
   final String phone;
   final String? imageUrl;
-  
+
   const ProfileCard({
     super.key,
     required this.name,
@@ -76,16 +70,9 @@ class ProfileCard extends StatelessWidget {
                 ),
                 child: imageUrl != null
                     ? ClipOval(
-                        child: Image.network(
-                          imageUrl!,
-                          fit: BoxFit.cover,
-                        ),
+                        child: Image.network(imageUrl!, fit: BoxFit.cover),
                       )
-                    : const Icon(
-                        Icons.person,
-                        size: 40,
-                        color: Colors.white,
-                      ),
+                    : const Icon(Icons.person, size: 40, color: Colors.white),
               ),
               Positioned(
                 bottom: 0,
@@ -102,7 +89,7 @@ class ProfileCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Name
           Text(
             name,
@@ -113,15 +100,9 @@ class ProfileCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          
+
           // Phone
-          Text(
-            phone,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(phone, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         ],
       ),
     );
@@ -134,7 +115,7 @@ class SettingsMenuItem extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
   final bool showArrow;
-  
+
   const SettingsMenuItem({
     super.key,
     required this.icon,
@@ -158,28 +139,20 @@ class SettingsMenuItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: Colors.black87,
-            ),
+            Icon(icon, size: 24, color: Colors.black87),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
                 style: const TextStyle(
                   fontSize: 15,
-                 // fontWeight: FontWeight.w500,
+                  // fontWeight: FontWeight.w500,
                   color: Colors.black87,
                 ),
               ),
             ),
             if (showArrow)
-              Icon(
-                Icons.chevron_right,
-                size: 24,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.chevron_right, size: 24, color: Colors.grey[400]),
           ],
         ),
       ),
@@ -192,7 +165,7 @@ class CustomTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final bool readOnly;
-  
+
   const CustomTextField({
     super.key,
     required this.label,
@@ -217,10 +190,7 @@ class CustomTextField extends StatelessWidget {
         TextField(
           controller: controller,
           readOnly: readOnly,
-          style: const TextStyle(
-            color: Colors.black87,
-            fontSize: 15,
-          ),
+          style: const TextStyle(color: Colors.black87, fontSize: 15),
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey[100],
@@ -245,7 +215,7 @@ class ActionButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color? backgroundColor;
   final Color? textColor;
-  
+
   const ActionButton({
     super.key,
     required this.text,
@@ -271,10 +241,7 @@ class ActionButton extends StatelessWidget {
         ),
         child: Text(
           text,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -336,7 +303,7 @@ class _EditProfileModalState extends State<EditProfileModal> {
     widget.lastNameController.clear();
     widget.emailController.clear();
     widget.phoneController.clear();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("All fields cleared"),
@@ -383,27 +350,30 @@ class _EditProfileModalState extends State<EditProfileModal> {
                     label: const Text("Clear"),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // First Name
               CustomTextField(
                 label: "First name",
                 controller: widget.firstNameController,
               ),
               const SizedBox(height: 20),
-              
+
               // Last Name
               CustomTextField(
                 label: "Last name",
                 controller: widget.lastNameController,
               ),
               const SizedBox(height: 20),
-              
+
               // Email Address
               CustomTextField(
                 label: "Email Address",
@@ -417,12 +387,22 @@ class _EditProfileModalState extends State<EditProfileModal> {
                 controller: widget.phoneController,
               ),
               const SizedBox(height: 32),
-              
+
               // Update Button
               ActionButton(
                 text: _isLoading ? "Updating..." : "Update",
                 onPressed: _isLoading ? () {} : _handleUpdate,
                 backgroundColor: _isLoading ? Colors.grey : null,
+              ),
+
+              const SizedBox(height: 25),
+
+              CustomBtn(
+                outlined: true,
+                onPressed: () {
+                  Nav.pop();
+                },
+                text: "Cancel",
               ),
               const SizedBox(height: 16),
             ],
@@ -433,19 +413,15 @@ class _EditProfileModalState extends State<EditProfileModal> {
   }
 }
 
-
-
 // Delete Account Dialog with Password Input (StatefulWidget)
 class DeleteAccountBottomSheet extends StatefulWidget {
   final Future<void> Function(String password) onDeleteConfirmed;
 
-  const DeleteAccountBottomSheet({
-    super.key,
-    required this.onDeleteConfirmed,
-  });
+  const DeleteAccountBottomSheet({super.key, required this.onDeleteConfirmed});
 
   @override
-  State<DeleteAccountBottomSheet> createState() => _DeleteAccountBottomSheetState();
+  State<DeleteAccountBottomSheet> createState() =>
+      _DeleteAccountBottomSheetState();
 }
 
 class _DeleteAccountBottomSheetState extends State<DeleteAccountBottomSheet> {
@@ -496,11 +472,7 @@ class _DeleteAccountBottomSheetState extends State<DeleteAccountBottomSheet> {
           const Text(
             "Deleting your account will remove all your data, preferences, and history. You won't be able to recover this information later.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: Colors.black87,
-            ),
+            style: TextStyle(fontSize: 15, height: 1.5, color: Colors.black87),
           ),
           const SizedBox(height: 8),
           Text(
@@ -513,7 +485,7 @@ class _DeleteAccountBottomSheetState extends State<DeleteAccountBottomSheet> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Password Input Field
           TextField(
             controller: _passwordController,
@@ -544,7 +516,7 @@ class _DeleteAccountBottomSheetState extends State<DeleteAccountBottomSheet> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           Row(
             children: [
               Expanded(
@@ -587,10 +559,7 @@ class _DeleteAccountBottomSheetState extends State<DeleteAccountBottomSheet> {
                   ),
                   child: const Text(
                     "Cancel",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

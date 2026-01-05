@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+
+
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
 
@@ -31,23 +33,26 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   void initState() {
     super.initState();
-    _checkGuestStatus();
-    _loadProfileData();
+    _checkGuestStatusAndRedirect();
   }
 
-  Future<void> _checkGuestStatus() async {
+  Future<void> _checkGuestStatusAndRedirect() async {
     final prefs = await SharedPreferences.getInstance();
     final userName = prefs.getString('userName');
 
-    setState(() {
-      _isGuest = userName == null || userName.isEmpty || userName == 'Guest';
-    });
+    final isGuest = userName == null || userName.isEmpty || userName == 'Guest';
 
-    // Show dialog immediately for guests
-    if (_isGuest) {
+    if (isGuest) {
+      // Redirect guest users immediately
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showGuestRestrictionDialog();
       });
+    } else {
+      // Load profile data only for authenticated users
+      setState(() {
+        _isGuest = false;
+      });
+      _loadProfileData();
     }
   }
 
@@ -188,19 +193,19 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
-void _showDeleteDialog() {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.white,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) => DeleteAccountBottomSheet(
-      onDeleteConfirmed: _handleDeleteAccount,
-    ),
-  );
-}
+  void _showDeleteDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DeleteAccountBottomSheet(
+        onDeleteConfirmed: _handleDeleteAccount,
+      ),
+    );
+  }
 
   void _showEditProfileModal() {
     showModalBottomSheet(
@@ -226,21 +231,24 @@ void _showDeleteDialog() {
         child: GuestSignupDialog(
           title: 'Want more personalized results?',
           onCreateAccount: () {
-            Navigator.pop(context);
+            Navigator.pop(context); // Close dialog
+            Navigator.pop(context); // Go back from ProfileView
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => SignUp()),
             );
           },
           onLogin: () {
-            Navigator.pop(context);
+            Navigator.pop(context); // Close dialog
+            Navigator.pop(context); // Go back from ProfileView
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => SignIn()),
             );
           },
           onClose: () {
-           // Navigator.pop(context);
+            Navigator.pop(context); // Close dialog
+            Navigator.pop(context); // Go back from ProfileView
           },
         ),
       ),
@@ -300,39 +308,38 @@ void _showDeleteDialog() {
                         onTap: _showEditProfileModal,
                       ),
                       const SizedBox(height: 12),
-SettingsMenuItem(
-  icon: Icons.settings_outlined,
-  title: "Terms of service",
-  onTap: () async {
-    final uri = Uri.parse('https://deespora.com/termsofservice');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-    }
-  },
-),
-const SizedBox(height: 12),
-SettingsMenuItem(
-  icon: Icons.description_outlined,
-  title: "Privacy policy",
-  onTap: () async {
-    final uri = Uri.parse('https://deespora.com/privacypolicy');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-    }
-  },
-),
-
-const SizedBox(height: 50),
-SettingsMenuItem(
-  icon: Icons.exit_to_app_sharp,
-  title: "Log out",
-  onTap: () {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const Second_Onboarding()),
-      (route) => false,
-    );
-  },
-),
+                      SettingsMenuItem(
+                        icon: Icons.settings_outlined,
+                        title: "Terms of service",
+                        onTap: () async {
+                          final uri = Uri.parse('https://deespora.com/termsofservice');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      SettingsMenuItem(
+                        icon: Icons.description_outlined,
+                        title: "Privacy policy",
+                        onTap: () async {
+                          final uri = Uri.parse('https://deespora.com/privacypolicy');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 50),
+                      SettingsMenuItem(
+                        icon: Icons.exit_to_app_sharp,
+                        title: "Log out",
+                        onTap: () {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (context) => const Second_Onboarding()),
+                            (route) => false,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

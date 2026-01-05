@@ -72,12 +72,10 @@ class _EventHomeState extends State<EventHome> {
   void initState() {
     super.initState();
     _initialLoadFuture = _fetchInitialEvents(); // fetch once
-    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -185,6 +183,7 @@ class _EventHomeState extends State<EventHome> {
             child: FeatureSearch(
               controller: _searchController,
               hintText: 'Search Events',
+              onChanged: (value) => _onSearchChanged(),
             ),
           ),
           Expanded(

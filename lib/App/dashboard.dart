@@ -62,25 +62,29 @@ void _initCategories() {
     CategoryItem(
       title: 'Restaurants',
       svgAsset: 'assets/img/restaurant.png',
-      backgroundColor: const Color(0xFFFFF4CC), // Soft yellow
+      backgroundColor: Color(0xFFF8F8F8),
+ // Soft yellow
       onTap: () => Nav.push(const RestaurantHome()), // Accessible to guests
     ),
     CategoryItem(
       title: 'Catering',
       svgAsset: 'assets/img/catering.png',
-      backgroundColor: const Color(0xFF9BC4A0), // Sage green
+      backgroundColor: Color(0xFFF8F8F8),
+ // Sage green
       onTap: () => _handleCategoryTap('Catering', () => Nav.push(CateringHome())),
     ),
     CategoryItem(
       title: 'Events',
       svgAsset: 'assets/img/event.png',
-      backgroundColor: const Color(0xFFE8B4A0), // Peachy beige
+      backgroundColor: const Color(0xFFF8F8F8),
+ // Peachy beige
       onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
     ),
     CategoryItem(
       title: 'Worship',
       svgAsset: 'assets/img/realestate.png',
-      backgroundColor: const Color(0xFFD4C4F0), // Soft lavender
+      backgroundColor: const Color(0xFFF8F8F8),
+// Soft lavender
       onTap: () => _handleCategoryTap('Real Estate', () => Nav.push(RealEstateHome())),
     ),
   ];

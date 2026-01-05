@@ -1,6 +1,7 @@
 import 'package:dspora/App/View/RealEstate/Api/realestateService.dart';
 import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
 import 'package:dspora/App/View/RealEstate/Widget/realEstate.dart';
+import 'package:dspora/App/View/RealEstate/Widget/statusFilter.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/FrontDetails.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
@@ -10,6 +11,7 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+
 
 
 class RealEstateHome extends StatefulWidget {
@@ -24,64 +26,75 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   final TextEditingController _searchController = TextEditingController();
 
   String _selectedCity = 'US';
+  String _cacheKey = 'US'; // Track which cache key has the data
   final Map<String, List<RealEstateModel>> _realEstateCache = {};
-  List<RealEstateModel> _filteredRealEstate = [];
+  List<RealEstateModel> _displayedRealEstate = []; // ✅ What actually shows
 
-  late Future<List<RealEstateModel>> _realEstateFuture;
-  
-  // ✅ Filter state
   String _selectedStatus = 'All';
-  bool _isDataLoaded = false;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   final List<String> usCities = [
-    "New York",
-    "Los Angeles",
-    "Chicago",
-    "Houston",
-    "Miami",
-    "San Francisco",
-    "Boston",
-    "Washington",
-    "Seattle",
-    "Atlanta",
-    "Las Vegas",
-    "Orlando",
-    "Dallas",
-    "Denver",
-    "Philadelphia",
-    "Phoenix",
-    "San Diego",
-    "Austin",
-    "Nashville",
-    "Portland",
-    "Detroit",
-    "Minneapolis",
-    "Charlotte",
-    "Indianapolis",
-    "Columbus",
-    "San Antonio",
-    "Tampa",
-    "Baltimore",
-    "Cleveland",
-    "Kansas City",
+    "New York", "Los Angeles", "Chicago", "Houston", "Miami",
+    "San Francisco", "Boston", "Washington", "Seattle", "Atlanta",
+    "Las Vegas", "Orlando", "Dallas", "Denver", "Philadelphia",
+    "Phoenix", "San Diego", "Austin", "Nashville", "Portland",
+    "Detroit", "Minneapolis", "Charlotte", "Indianapolis", "Columbus",
+    "San Antonio", "Tampa", "Baltimore", "Cleveland", "Kansas City",
   ];
 
   @override
   void initState() {
     super.initState();
-    _realEstateFuture = _fetchAndCacheRealEstate('US');
-    _loadUserLocation();
-    _searchController.addListener(_onSearchChanged);
+    _loadInitialData();
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadUserLocation() async {
+  // ✅ Step 1: Load initial data
+  Future<void> _loadInitialData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Load US data first
+      debugPrint('🔄 Loading US data...');
+      final usData = await _realEstateService.fetchRealEstate(city: 'US');
+      
+      debugPrint('✅ Loaded ${usData.length} US listings');
+
+      _realEstateCache['US'] = usData;
+
+      setState(() {
+        _cacheKey = 'US';
+        _isLoading = false;
+      });
+
+      // Apply filters immediately with US data
+      _applyFilters();
+
+      // Try to get user location (non-blocking)
+      _detectAndLoadUserLocation();
+      
+    } catch (e) {
+      debugPrint('❌ Error loading initial data: $e');
+      setState(() {
+        _errorMessage = 'Failed to load data: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  
+
+  // ✅ Step 2: Detect user location and load that city's data
+  Future<void> _detectAndLoadUserLocation() async {
     try {
       LocationPermission permission = await Geolocator.requestPermission();
 
@@ -102,136 +115,153 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
       if (placemarks.isNotEmpty) {
         final detectedCity = placemarks.first.locality ?? 'US';
-        debugPrint("📍 User city detected: $detectedCity");
+        debugPrint("📍 Detected city: $detectedCity");
         
-        // ✅ FIX: Wait for initial data to load before applying filters
-        if (_realEstateCache.containsKey('US') && _isDataLoaded) {
-          setState(() {
-            _selectedCity = detectedCity;
-          });
-          _applyAllFilters(detectedCity);
-        } else {
-          // Data not loaded yet, just set the city
-          setState(() {
-            _selectedCity = detectedCity;
-          });
+        if (detectedCity != 'US' && detectedCity != _selectedCity) {
+          // Load the detected city's data
+          await _loadCityData(detectedCity);
         }
       }
     } catch (e) {
-      debugPrint("❌ Error getting location: $e");
+      debugPrint("❌ Location error: $e");
     }
   }
 
-  Future<List<RealEstateModel>> _fetchAndCacheRealEstate(String city) async {
-    if (_realEstateCache.containsKey(city)) {
-      setState(() {
-        _isDataLoaded = true;
-      });
-      _applyAllFilters(city);
-      return _realEstateCache[city]!;
-    }
+  // ✅ Step 3: Load data for a specific city
+  Future<void> _loadCityData(String city) async {
+    debugPrint('🔄 Loading data for: $city');
 
-    final result = await _realEstateService.fetchRealEstate(city: city);
-    
-    setState(() {
-      _realEstateCache[city] = result;
-      _isDataLoaded = true;
-    });
-    
-    // ✅ Apply filters after state is fully updated
-    _applyAllFilters(city);
-    
-    return result;
-  }
-
-  // ✅ Apply all filters (city, search, status)
-  void _applyAllFilters(String city) {
-    if (!_isDataLoaded) return;
-
-    final allRealEstates = _realEstateCache[city] ?? [];
-    
-    // Start with a copy of all data
-    List<RealEstateModel> filtered = List.from(allRealEstates);
-
-    // Step 1: Apply city filter - only if city is not 'US'
-    if (city != 'US') {
-      var cityFiltered = filtered
-          .where((r) =>
-              r.address.toLowerCase().contains(city.toLowerCase()) ||
-              r.name.toLowerCase().contains(city.toLowerCase()))
-          .toList();
-      
-      if (cityFiltered.isNotEmpty) {
-        filtered = cityFiltered;
-      }
-    }
-
-    // Step 2: Apply search query
-    final query = _searchController.text.toLowerCase();
-    if (query.isNotEmpty) {
-      filtered = filtered
-          .where((r) =>
-              r.name.toLowerCase().contains(query) ||
-              r.address.toLowerCase().contains(query))
-          .toList();
-    }
-
-    // Step 3: Apply status filter (Open/Closed)
-    if (_selectedStatus == 'Open') {
-      filtered = filtered.where((r) => r.openNow == true).toList();
-    } else if (_selectedStatus == 'Closed') {
-      filtered = filtered.where((r) => r.openNow == false).toList();
-    }
-    // If 'All', don't filter by status
-
-    setState(() {
-      _filteredRealEstate = filtered;
-    });
-    
-    debugPrint('✅ Filtered ${filtered.length} real estate listings (City: $city, Status: $_selectedStatus)');
-  }
-
-  void _loadRealEstate(String city) {
     setState(() {
       _selectedCity = city;
-      _isDataLoaded = false;
-      _realEstateFuture = _fetchAndCacheRealEstate(city);
-      _searchController.clear();
+      _cacheKey = city;
+      _isLoading = true;
     });
-  }
 
-  Future<void> _onRefresh() async {
-    final freshData = await _realEstateService.fetchRealEstate(city: _selectedCity);
-    setState(() {
-      _realEstateCache[_selectedCity] = freshData;
-      _isDataLoaded = true;
-    });
-    _applyAllFilters(_selectedCity);
-    setState(() {
-      _realEstateFuture = Future.value(freshData);
-    });
-  }
+    try {
+      // Check cache first
+      if (!_realEstateCache.containsKey(city)) {
+        final data = await _realEstateService.fetchRealEstate(city: city);
+        debugPrint('✅ Loaded ${data.length} listings for $city');
+        _realEstateCache[city] = data;
+      } else {
+        debugPrint('📦 Using cached data for $city');
+      }
 
-  void _onSearchChanged() {
-    if (_isDataLoaded && _realEstateCache.containsKey(_selectedCity)) {
-      _applyAllFilters(_selectedCity);
+      _applyFilters();
+
+    } catch (e) {
+      debugPrint('❌ Error loading $city: $e');
+      setState(() {
+        _errorMessage = 'Failed to load $city data';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
+  // ✅ Step 4: Apply all filters (search + status + city)
+  void _applyFilters() {
+    debugPrint('🔍 Applying filters...');
+    debugPrint('   City: $_selectedCity');
+    debugPrint('   Cache Key: $_cacheKey');
+    debugPrint('   Status: $_selectedStatus');
+    debugPrint('   Search: "${_searchController.text}"');
+
+    // Get data for current cache key
+    List<RealEstateModel> data = _realEstateCache[_cacheKey] ?? [];
+    debugPrint('   Raw data count: ${data.length}');
+
+    if (data.isEmpty) {
+      setState(() {
+        _displayedRealEstate = [];
+      });
+      return;
+    }
+
+    // Start with all data
+    List<RealEstateModel> filtered = List.from(data);
+
+    // Filter 1: City-specific filter (only if not 'US')
+    if (_selectedCity != 'US') {
+      filtered = filtered.where((r) {
+        final cityMatch = r.address.toLowerCase().contains(_selectedCity.toLowerCase()) ||
+                         r.name.toLowerCase().contains(_selectedCity.toLowerCase());
+        return cityMatch;
+      }).toList();
+      debugPrint('   After city filter: ${filtered.length}');
+    }
+
+    // Filter 2: Search query
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      filtered = filtered.where((r) {
+        final nameMatch = r.name.toLowerCase().contains(query);
+        final addressMatch = r.address.toLowerCase().contains(query);
+        return nameMatch || addressMatch;
+      }).toList();
+      debugPrint('   After search filter: ${filtered.length}');
+    }
+
+    // Filter 3: Status (Open/Closed)
+    if (_selectedStatus == 'Open') {
+      filtered = filtered.where((r) => r.openNow == true).toList();
+      debugPrint('   After status filter (Open): ${filtered.length}');
+    } else if (_selectedStatus == 'Closed') {
+      filtered = filtered.where((r) => r.openNow == false).toList();
+      debugPrint('   After status filter (Closed): ${filtered.length}');
+    }
+
+    debugPrint('✅ Final filtered count: ${filtered.length}');
+
+    setState(() {
+      _displayedRealEstate = filtered;
+    });
+  }
+
+  // ✅ Called when search text changes
+  void _onSearchChanged() {
+    debugPrint('🔍 Search changed: "${_searchController.text}"');
+    _applyFilters();
+  }
+
+  // ✅ Called when user selects a new city
+  void _onCitySelected(String city) {
+    debugPrint('🏙️ City selected: $city');
+    _searchController.clear(); // Clear search when changing cities
+    _loadCityData(city);
+  }
+
+  // ✅ Called when user changes status filter
   void _onStatusChanged(String status) {
+    debugPrint('🔘 Status changed: $status');
     setState(() {
       _selectedStatus = status;
     });
-    _applyAllFilters(_selectedCity);
+    _applyFilters();
     Navigator.pop(context);
+  }
+
+  // ✅ Pull to refresh
+  Future<void> _onRefresh() async {
+    debugPrint('🔄 Refreshing data for $_cacheKey');
+    try {
+      final freshData = await _realEstateService.fetchRealEstate(city: _cacheKey);
+      _realEstateCache[_cacheKey] = freshData;
+      _applyFilters();
+      debugPrint('✅ Refresh complete');
+    } catch (e) {
+      debugPrint('❌ Refresh error: $e');
+    }
   }
 
   // ✅ Show filter modal
   void _showFilterModal() {
-    if (!_isDataLoaded) {
+    if (_isLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please wait for Worship listings to load'),
+          content: Text('Please wait for listings to load'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -250,7 +280,6 @@ class _RealEstateHomeState extends State<RealEstateHome> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
               Container(
                 margin: const EdgeInsets.only(top: 12),
                 width: 40,
@@ -261,8 +290,6 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // Filter title
               const Text(
                 'Filter Worship',
                 style: TextStyle(
@@ -271,15 +298,11 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                   color: Colors.black87,
                 ),
               ),
-              
               const SizedBox(height: 24),
-              
-              // Status filter buttons
               RealEstateStatusFilter(
                 selectedStatus: _selectedStatus,
                 onStatusChanged: _onStatusChanged,
               ),
-              
               const SizedBox(height: 32),
             ],
           ),
@@ -310,10 +333,10 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                   cities: usCities,
                   onCitySelected: (city) {
                     Navigator.pop(context);
-                    _loadRealEstate(city);
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Selected $city')));
+                    _onCitySelected(city);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Selected $city')),
+                    );
                   },
                 ),
               );
@@ -321,7 +344,6 @@ class _RealEstateHomeState extends State<RealEstateHome> {
           );
         },
       ),
-
       body: Column(
         children: [
           // Search bar with filter button
@@ -333,10 +355,10 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                   child: FeatureSearch(
                     controller: _searchController,
                     hintText: 'Search Worship',
+                    onChanged: (value) => _onSearchChanged(),
                   ),
                 ),
                 const SizedBox(width: 12),
-                // ✅ Filter button
                 GestureDetector(
                   onTap: _showFilterModal,
                   child: Container(
@@ -356,51 +378,72 @@ class _RealEstateHomeState extends State<RealEstateHome> {
             ),
           ),
           
-          // Real Estate list
+          // Content area
           Expanded(
-            child: FutureBuilder<List<RealEstateModel>>(
-              future: _realEstateFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  if (_realEstateCache.containsKey(_selectedCity)) {
-                    return _buildListView(_filteredRealEstate);
-                  }
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.teal),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  return _buildListView(_filteredRealEstate);
-                }
-
-                return const Center(
-                  child: Text('No worship listing found.'),
-                );
-              },
-            ),
+            child: _buildContent(),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildContent() {
+    // Show loading on initial load
+    if (_isLoading && _displayedRealEstate.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.teal),
+      );
+    }
 
-  Widget _buildListView(List<RealEstateModel> realEstateList) {
+    // Show error if exists and no data
+    if (_errorMessage != null && _displayedRealEstate.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_errorMessage!),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadInitialData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show empty state
+    if (_displayedRealEstate.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? 'No results for "${_searchController.text}"'
+                  : 'No worship listings found',
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show list
     return RefreshIndicator(
       color: Colors.teal,
       onRefresh: _onRefresh,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: realEstateList.length,
+        itemCount: _displayedRealEstate.length,
         itemBuilder: (context, index) {
-          final r = realEstateList[index];
+          final r = _displayedRealEstate[index];
           return GlobalStoreFront(
-            imageUrl: r.photoReferences.isNotEmpty ? r.photoReferences.first : '',
+            imageUrl: r.photoReferences.isNotEmpty 
+                ? r.photoReferences.first 
+                : '',
             storeName: r.name,
             category: "Worship",
             location: r.address,
@@ -415,9 +458,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   }
 }
 
-
-
-// ✅ Real Estate Status Filter Component
+// ✅ Status Filter Widget
 class RealEstateStatusFilter extends StatelessWidget {
   final String selectedStatus;
   final Function(String) onStatusChanged;

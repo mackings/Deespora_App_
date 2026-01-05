@@ -94,7 +94,7 @@ class StoreFront extends StatelessWidget {
                       CustomText(
                         text: storeName,
                         title: true,
-                        fontSize: 15,
+                        fontSize: 13,
                         shorten: true,
                       ),
 
@@ -114,7 +114,7 @@ class StoreFront extends StatelessWidget {
                             child: CustomText(
                               text: location,
                               content: true,
-                              fontSize: 12,
+                              fontSize: 10,
                               shorten: true,
                             ),
                           ),

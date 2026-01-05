@@ -26,11 +26,12 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   final TextEditingController _searchController = TextEditingController();
 
   String _selectedCity = 'US';
+  String _cacheKey = 'US'; // Track which cache key has the data
   final Map<String, List<Restaurant>> _restaurantsCache = {};
   List<Restaurant> _filteredRestaurants = [];
 
   late Future<List<Restaurant>> _restaurantsFuture;
-  
+
   // ✅ Simple filter state - only status
   String _selectedStatus = 'All';
   bool _isDataLoaded = false;
@@ -73,12 +74,10 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     super.initState();
     _restaurantsFuture = _fetchAndCacheRestaurants('US');
     _loadUserLocation();
-    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -109,9 +108,10 @@ class _RestaurantHomeState extends State<RestaurantHome> {
         setState(() {
           _selectedCity = detectedCity;
         });
-        
-        if (_restaurantsCache.containsKey('US')) {
-          _applyAllFilters(_selectedCity);
+
+        // Apply filters using the cache key (which is 'US')
+        if (_restaurantsCache.containsKey(_cacheKey)) {
+          _applyAllFilters(_cacheKey);
         }
       }
     } catch (e) {
@@ -123,6 +123,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     if (_restaurantsCache.containsKey(city)) {
       setState(() {
         _isDataLoaded = true;
+        _cacheKey = city;
       });
       _applyAllFilters(city);
       return _restaurantsCache[city]!;
@@ -132,44 +133,66 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     _restaurantsCache[city] = result;
     setState(() {
       _isDataLoaded = true;
+      _cacheKey = city;
     });
     _applyAllFilters(city);
     return result;
   }
 
   void _applyAllFilters(String city) {
-    if (!_isDataLoaded) return;
+    if (!_isDataLoaded || !_restaurantsCache.containsKey(city)) {
+      debugPrint('⚠️ Cannot apply filters - data not loaded yet');
+      return;
+    }
 
     final allRestaurants = _restaurantsCache[city] ?? [];
+    
+    // 🔥 DEBUG: Print what we're working with
+    debugPrint('🔍 Applying filters to ${allRestaurants.length} restaurants');
+    debugPrint('   City: $city');
+    debugPrint('   Search query: "${_searchController.text}"');
+    debugPrint('   Status filter: $_selectedStatus');
+    
     List<Restaurant> filtered = allRestaurants;
 
-    // Step 1: Apply city filter
-    filtered = filtered
-        .where((r) =>
-            r.vicinity.toLowerCase().contains(city.toLowerCase()) ||
-            r.name.toLowerCase().contains(city.toLowerCase()))
-        .toList();
+    // Step 1: Apply city filter (only if city is not 'US')
+    if (city != 'US') {
+      filtered = filtered
+          .where((r) =>
+              r.vicinity.toLowerCase().contains(city.toLowerCase()) ||
+              r.name.toLowerCase().contains(city.toLowerCase()))
+          .toList();
 
-    if (filtered.isEmpty) {
-      filtered = allRestaurants;
+      // If no results, show all
+      if (filtered.isEmpty) {
+        debugPrint('   ⚠️ No city matches, showing all');
+        filtered = allRestaurants;
+      } else {
+        debugPrint('   ✅ After city filter: ${filtered.length} restaurants');
+      }
     }
 
     // Step 2: Apply search query
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered
           .where((r) =>
               r.name.toLowerCase().contains(query) ||
               r.vicinity.toLowerCase().contains(query))
           .toList();
+      debugPrint('   ✅ After search filter: ${filtered.length} restaurants');
     }
 
     // Step 3: Apply status filter (Open/Closed)
     if (_selectedStatus == 'Open') {
       filtered = filtered.where((r) => r.openNow == true).toList();
+      debugPrint('   ✅ After status filter (Open): ${filtered.length} restaurants');
     } else if (_selectedStatus == 'Closed') {
       filtered = filtered.where((r) => r.openNow == false).toList();
+      debugPrint('   ✅ After status filter (Closed): ${filtered.length} restaurants');
     }
+
+    debugPrint('   🎯 Final filtered count: ${filtered.length}');
 
     setState(() {
       _filteredRestaurants = filtered;
@@ -179,32 +202,44 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   void _loadRestaurants(String city) {
     setState(() {
       _selectedCity = city;
+      _cacheKey = city;
       _isDataLoaded = false;
+      _filteredRestaurants = []; // 🔥 Clear filtered list
       _restaurantsFuture = _fetchAndCacheRestaurants(city);
       _searchController.clear();
+      _selectedStatus = 'All'; // 🔥 Reset status filter
     });
   }
 
   Future<void> _onRefresh() async {
-    final freshData = await _apiService.fetchRestaurants(city: _selectedCity);
+    final freshData = await _apiService.fetchRestaurants(city: _cacheKey);
     setState(() {
-      _restaurantsCache[_selectedCity] = freshData;
+      _restaurantsCache[_cacheKey] = freshData;
       _isDataLoaded = true;
-      _applyAllFilters(_selectedCity);
+      _applyAllFilters(_cacheKey);
       _restaurantsFuture = Future.value(freshData);
     });
   }
 
   void _onSearchChanged() {
-    if (_isDataLoaded && _restaurantsCache.containsKey(_selectedCity)) {
-      _applyAllFilters(_selectedCity);
+    debugPrint('🔍 _onSearchChanged called');
+    debugPrint('   _isDataLoaded: $_isDataLoaded');
+    debugPrint('   _selectedCity: $_selectedCity');
+    debugPrint('   _cacheKey: $_cacheKey');
+    debugPrint('   Cache has key: ${_restaurantsCache.containsKey(_cacheKey)}');
+    debugPrint('   Search text: "${_searchController.text}"');
+
+    if (_isDataLoaded && _restaurantsCache.containsKey(_cacheKey)) {
+      _applyAllFilters(_cacheKey);
+    } else {
+      debugPrint('   ⚠️ Skipping filter - data not ready');
     }
   }
 
   void _onStatusChanged(String status) {
     setState(() {
       _selectedStatus = status;
-      _applyAllFilters(_selectedCity);
+      _applyAllFilters(_cacheKey);
     });
     Navigator.pop(context); // Close the modal after selection
   }
@@ -315,6 +350,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
                   child: FeatureSearch(
                     controller: _searchController,
                     hintText: 'Search Restaurants',
+                    onChanged: (value) => _onSearchChanged(),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -343,8 +379,10 @@ class _RestaurantHomeState extends State<RestaurantHome> {
             child: FutureBuilder<List<Restaurant>>(
               future: _restaurantsFuture,
               builder: (context, snapshot) {
+                // 🔥 Show loading only if data isn't cached
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  if (_restaurantsCache.containsKey(_selectedCity)) {
+                  if (_isDataLoaded && _filteredRestaurants.isNotEmpty) {
+                    // Show cached data while refreshing
                     return _buildListView(_filteredRestaurants);
                   }
                   return const Center(
@@ -353,10 +391,52 @@ class _RestaurantHomeState extends State<RestaurantHome> {
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _onRefresh,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                // 🔥 Show filtered restaurants (not snapshot.data)
+                if (_isDataLoaded) {
+                  if (_filteredRestaurants.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchController.text.isNotEmpty
+                                ? 'No restaurants found matching "${_searchController.text}"'
+                                : 'No restaurants found',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          if (_searchController.text.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                              child: const Text('Clear Search'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }
                   return _buildListView(_filteredRestaurants);
                 }
 
@@ -400,8 +480,6 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     );
   }
 }
-
-
 
 // ✅ Simple Status Filter Component
 class RestaurantStatusFilter extends StatelessWidget {

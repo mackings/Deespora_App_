@@ -22,11 +22,12 @@ class _CateringHomeState extends State<CateringHome> {
   final TextEditingController _searchController = TextEditingController();
 
   String _selectedCity = 'US';
+  String _cacheKey = 'US'; // Track which cache key has the data
   final Map<String, List<Catering>> _cateringCache = {};
   List<Catering> _filteredCatering = [];
 
   late Future<List<Catering>> _cateringFuture;
-  
+
   // ✅ Filter state
   String _selectedStatus = 'All';
   bool _isDataLoaded = false;
@@ -69,12 +70,10 @@ class _CateringHomeState extends State<CateringHome> {
     super.initState();
     _cateringFuture = _fetchAndCacheCatering('US');
     _loadUserLocation();
-    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -104,9 +103,10 @@ class _CateringHomeState extends State<CateringHome> {
         setState(() {
           _selectedCity = detectedCity;
         });
-        
-        if (_cateringCache.containsKey('US')) {
-          _applyAllFilters(_selectedCity);
+
+        // Apply filters using the cache key (which is 'US')
+        if (_cateringCache.containsKey(_cacheKey)) {
+          _applyAllFilters(_cacheKey);
         }
       }
     } catch (e) {
@@ -118,6 +118,7 @@ class _CateringHomeState extends State<CateringHome> {
     if (_cateringCache.containsKey(city)) {
       setState(() {
         _isDataLoaded = true;
+        _cacheKey = city;
       });
       _applyAllFilters(city);
       return _cateringCache[city]!;
@@ -127,6 +128,7 @@ class _CateringHomeState extends State<CateringHome> {
     _cateringCache[city] = result;
     setState(() {
       _isDataLoaded = true;
+      _cacheKey = city;
     });
     _applyAllFilters(city);
     return result;
@@ -134,38 +136,59 @@ class _CateringHomeState extends State<CateringHome> {
 
   // ✅ Apply all filters (city, search, status)
   void _applyAllFilters(String city) {
-    if (!_isDataLoaded) return;
+    if (!_isDataLoaded || !_cateringCache.containsKey(city)) {
+      debugPrint('⚠️ Cannot apply filters - data not loaded yet');
+      return;
+    }
 
     final allCatering = _cateringCache[city] ?? [];
+    
+    // 🔥 DEBUG: Print what we're working with
+    debugPrint('🔍 Applying filters to ${allCatering.length} catering companies');
+    debugPrint('   City: $city');
+    debugPrint('   Search query: "${_searchController.text}"');
+    debugPrint('   Status filter: $_selectedStatus');
+    
     List<Catering> filtered = allCatering;
 
-    // Step 1: Apply city filter
-    filtered = filtered
-        .where((r) =>
-            r.address.toLowerCase().contains(city.toLowerCase()) ||
-            r.name.toLowerCase().contains(city.toLowerCase()))
-        .toList();
+    // Step 1: Apply city filter (only if city is not 'US')
+    if (city != 'US') {
+      filtered = filtered
+          .where((r) =>
+              r.address.toLowerCase().contains(city.toLowerCase()) ||
+              r.name.toLowerCase().contains(city.toLowerCase()))
+          .toList();
 
-    if (filtered.isEmpty) {
-      filtered = allCatering;
+      // If no results, show all
+      if (filtered.isEmpty) {
+        debugPrint('   ⚠️ No city matches, showing all');
+        filtered = allCatering;
+      } else {
+        debugPrint('   ✅ After city filter: ${filtered.length} catering companies');
+      }
     }
 
     // Step 2: Apply search query
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered
           .where((r) =>
               r.name.toLowerCase().contains(query) ||
               r.address.toLowerCase().contains(query))
           .toList();
+      debugPrint('   ✅ After search filter: ${filtered.length} catering companies');
     }
 
-    // Step 3: Apply status filter (Open/Closed) - assuming Catering has openNow property
+    // Step 3: Apply status filter (Open/Closed)
     if (_selectedStatus == 'Open') {
       filtered = filtered.where((c) => c.openNow == true).toList();
+      debugPrint('   ✅ After status filter (Open): ${filtered.length} catering companies');
     } else if (_selectedStatus == 'Closed') {
       filtered = filtered.where((c) => c.openNow == false).toList();
+      debugPrint('   ✅ After status filter (Closed): ${filtered.length} catering companies');
     }
+
+    debugPrint('   🎯 Final filtered count: ${filtered.length}');
 
     setState(() {
       _filteredCatering = filtered;
@@ -175,34 +198,37 @@ class _CateringHomeState extends State<CateringHome> {
   void _loadCatering(String city) {
     setState(() {
       _selectedCity = city;
+      _cacheKey = city;
       _isDataLoaded = false;
+      _filteredCatering = []; // 🔥 Clear filtered list
       _cateringFuture = _fetchAndCacheCatering(city);
       _searchController.clear();
+      _selectedStatus = 'All'; // 🔥 Reset status filter
     });
   }
 
   Future<void> _onRefresh() async {
     final freshData = await _cateringService.fetchCaterings(
-      city: _selectedCity,
+      city: _cacheKey,
     );
     setState(() {
-      _cateringCache[_selectedCity] = freshData;
+      _cateringCache[_cacheKey] = freshData;
       _isDataLoaded = true;
-      _applyAllFilters(_selectedCity);
+      _applyAllFilters(_cacheKey);
       _cateringFuture = Future.value(freshData);
     });
   }
 
   void _onSearchChanged() {
-    if (_isDataLoaded && _cateringCache.containsKey(_selectedCity)) {
-      _applyAllFilters(_selectedCity);
+    if (_isDataLoaded && _cateringCache.containsKey(_cacheKey)) {
+      _applyAllFilters(_cacheKey);
     }
   }
 
   void _onStatusChanged(String status) {
     setState(() {
       _selectedStatus = status;
-      _applyAllFilters(_selectedCity);
+      _applyAllFilters(_cacheKey);
     });
     Navigator.pop(context);
   }
@@ -313,6 +339,7 @@ class _CateringHomeState extends State<CateringHome> {
                   child: FeatureSearch(
                     controller: _searchController,
                     hintText: 'Search Catering Companies',
+                    onChanged: (value) => _onSearchChanged(),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -341,8 +368,10 @@ class _CateringHomeState extends State<CateringHome> {
             child: FutureBuilder<List<Catering>>(
               future: _cateringFuture,
               builder: (context, snapshot) {
+                // 🔥 Show loading only if data isn't cached
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  if (_cateringCache.containsKey(_selectedCity)) {
+                  if (_isDataLoaded && _filteredCatering.isNotEmpty) {
+                    // Show cached data while refreshing
                     return _buildListView(_filteredCatering);
                   }
                   return const Center(
@@ -351,10 +380,52 @@ class _CateringHomeState extends State<CateringHome> {
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _onRefresh,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                // 🔥 Show filtered catering (not snapshot.data)
+                if (_isDataLoaded) {
+                  if (_filteredCatering.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchController.text.isNotEmpty
+                                ? 'No catering companies found matching "${_searchController.text}"'
+                                : 'No catering companies found',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          if (_searchController.text.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                              child: const Text('Clear Search'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }
                   return _buildListView(_filteredCatering);
                 }
 
