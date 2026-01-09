@@ -11,6 +11,8 @@ class Restaurant {
   final bool openNow;
   final List<String> photoReferences;
   final List<Review> reviews;
+  final double? distanceKm;
+  final int? distanceMinutes;
 
   Restaurant({
     required this.id,
@@ -20,6 +22,8 @@ class Restaurant {
     required this.openNow,
     required this.photoReferences,
     required this.reviews,
+    this.distanceKm,
+    this.distanceMinutes,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -38,6 +42,10 @@ class Restaurant {
               ?.map((r) => Review.fromJson(r))
               .toList() ??
           [],
+      distanceKm: json['distanceKm'] != null
+          ? (json['distanceKm'] as num).toDouble()
+          : null,
+      distanceMinutes: json['distanceMinutes'] as int?,
     );
   }
 }

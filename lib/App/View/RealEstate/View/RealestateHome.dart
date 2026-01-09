@@ -11,8 +11,7 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-
-
+import 'package:skeletonizer/skeletonizer.dart';
 
 class RealEstateHome extends StatefulWidget {
   const RealEstateHome({super.key});
@@ -22,17 +21,21 @@ class RealEstateHome extends StatefulWidget {
 }
 
 class _RealEstateHomeState extends State<RealEstateHome> {
-  final RealEstateService _realEstateService = RealEstateService();
+  final WorshipService _worshipService = WorshipService();
   final TextEditingController _searchController = TextEditingController();
 
   String _selectedCity = 'US';
   String _cacheKey = 'US'; // Track which cache key has the data
-  final Map<String, List<RealEstateModel>> _realEstateCache = {};
-  List<RealEstateModel> _displayedRealEstate = []; // ✅ What actually shows
+  final Map<String, List<WorshipModel>> _worshipCache = {};
+  List<WorshipModel> _filteredWorship = [];
+  List<WorshipModel> _originalData = []; // Store original full data
+
+  late Future<List<WorshipModel>> _worshipFuture;
 
   String _selectedStatus = 'All';
-  bool _isLoading = false;
-  String? _errorMessage;
+  bool _isDataLoaded = false;
+  bool _userHasSelectedCity = false; // Track if user manually selected a city
+  bool _isApiSearchActive = false; // Track if we're showing API search results
 
   final List<String> usCities = [
     "New York", "Los Angeles", "Chicago", "Houston", "Miami",
@@ -46,7 +49,8 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    _worshipFuture = _fetchAndCacheWorship('US');
+    _loadUserLocation();
   }
 
   @override
@@ -55,46 +59,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     super.dispose();
   }
 
-  // ✅ Step 1: Load initial data
-  Future<void> _loadInitialData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // Load US data first
-      debugPrint('🔄 Loading US data...');
-      final usData = await _realEstateService.fetchRealEstate(city: 'US');
-      
-      debugPrint('✅ Loaded ${usData.length} US listings');
-
-      _realEstateCache['US'] = usData;
-
-      setState(() {
-        _cacheKey = 'US';
-        _isLoading = false;
-      });
-
-      // Apply filters immediately with US data
-      _applyFilters();
-
-      // Try to get user location (non-blocking)
-      _detectAndLoadUserLocation();
-      
-    } catch (e) {
-      debugPrint('❌ Error loading initial data: $e');
-      setState(() {
-        _errorMessage = 'Failed to load data: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  
-
-  // ✅ Step 2: Detect user location and load that city's data
-  Future<void> _detectAndLoadUserLocation() async {
+  Future<void> _loadUserLocation() async {
     try {
       LocationPermission permission = await Geolocator.requestPermission();
 
@@ -115,153 +80,243 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
       if (placemarks.isNotEmpty) {
         final detectedCity = placemarks.first.locality ?? 'US';
-        debugPrint("📍 Detected city: $detectedCity");
-        
-        if (detectedCity != 'US' && detectedCity != _selectedCity) {
-          // Load the detected city's data
-          await _loadCityData(detectedCity);
+        debugPrint("📍 User city detected: $detectedCity");
+        setState(() {
+          _selectedCity = detectedCity;
+        });
+
+        // Apply filters using the cache key (which is 'US')
+        if (_worshipCache.containsKey(_cacheKey)) {
+          _applyAllFilters(_cacheKey);
         }
       }
     } catch (e) {
-      debugPrint("❌ Location error: $e");
+      debugPrint("❌ Error getting location: $e");
     }
   }
 
-  // ✅ Step 3: Load data for a specific city
-  Future<void> _loadCityData(String city) async {
-    debugPrint('🔄 Loading data for: $city');
+  Future<List<WorshipModel>> _fetchAndCacheWorship(String city) async {
+    if (_worshipCache.containsKey(city)) {
+      setState(() {
+        _isDataLoaded = true;
+        _cacheKey = city;
+      });
+      _applyAllFilters(city);
+      return _worshipCache[city]!;
+    }
 
+    // Use API method - backend handles caching
+    final result = await _worshipService.fetchWorship();
+    _worshipCache[city] = result;
+    _originalData = result; // Store original full data
     setState(() {
-      _selectedCity = city;
+      _isDataLoaded = true;
       _cacheKey = city;
-      _isLoading = true;
     });
-
-    try {
-      // Check cache first
-      if (!_realEstateCache.containsKey(city)) {
-        final data = await _realEstateService.fetchRealEstate(city: city);
-        debugPrint('✅ Loaded ${data.length} listings for $city');
-        _realEstateCache[city] = data;
-      } else {
-        debugPrint('📦 Using cached data for $city');
-      }
-
-      _applyFilters();
-
-    } catch (e) {
-      debugPrint('❌ Error loading $city: $e');
-      setState(() {
-        _errorMessage = 'Failed to load $city data';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    _applyAllFilters(city);
+    return result;
   }
 
-  // ✅ Step 4: Apply all filters (search + status + city)
-  void _applyFilters() {
-    debugPrint('🔍 Applying filters...');
-    debugPrint('   City: $_selectedCity');
-    debugPrint('   Cache Key: $_cacheKey');
-    debugPrint('   Status: $_selectedStatus');
-    debugPrint('   Search: "${_searchController.text}"');
-
-    // Get data for current cache key
-    List<RealEstateModel> data = _realEstateCache[_cacheKey] ?? [];
-    debugPrint('   Raw data count: ${data.length}');
-
-    if (data.isEmpty) {
-      setState(() {
-        _displayedRealEstate = [];
-      });
+  // Apply all filters (city, search, status)
+  void _applyAllFilters(String city) {
+    if (!_isDataLoaded || !_worshipCache.containsKey(city)) {
+      debugPrint('⚠️ Cannot apply filters - data not loaded yet');
       return;
     }
 
-    // Start with all data
-    List<RealEstateModel> filtered = List.from(data);
+    final allWorship = _worshipCache[city] ?? [];
 
-    // Filter 1: City-specific filter (only if not 'US')
-    if (_selectedCity != 'US') {
-      filtered = filtered.where((r) {
-        final cityMatch = r.address.toLowerCase().contains(_selectedCity.toLowerCase()) ||
-                         r.name.toLowerCase().contains(_selectedCity.toLowerCase());
-        return cityMatch;
-      }).toList();
-      debugPrint('   After city filter: ${filtered.length}');
+    debugPrint('🔍 Applying filters to ${allWorship.length} worship places');
+    debugPrint('   City: $city');
+    debugPrint('   Search query: "${_searchController.text}"');
+    debugPrint('   Status filter: $_selectedStatus');
+
+    List<WorshipModel> filtered = allWorship;
+
+    // Step 1: Apply city filter (only if city is not 'US')
+    if (city != 'US') {
+      filtered = filtered
+          .where((w) =>
+              w.address.toLowerCase().contains(city.toLowerCase()) ||
+              w.name.toLowerCase().contains(city.toLowerCase()))
+          .toList();
+
+      // If no results, show all
+      if (filtered.isEmpty) {
+        debugPrint('   ⚠️ No city matches, showing all');
+        filtered = allWorship;
+      } else {
+        debugPrint('   ✅ After city filter: ${filtered.length} worship places');
+      }
     }
 
-    // Filter 2: Search query
+    // Step 2: Apply search query
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
-      filtered = filtered.where((r) {
-        final nameMatch = r.name.toLowerCase().contains(query);
-        final addressMatch = r.address.toLowerCase().contains(query);
-        return nameMatch || addressMatch;
-      }).toList();
-      debugPrint('   After search filter: ${filtered.length}');
+      filtered = filtered
+          .where((w) =>
+              w.name.toLowerCase().contains(query) ||
+              w.address.toLowerCase().contains(query))
+          .toList();
+      debugPrint('   ✅ After search filter: ${filtered.length} worship places');
     }
 
-    // Filter 3: Status (Open/Closed)
+    // Step 3: Apply status filter (Open/Closed)
     if (_selectedStatus == 'Open') {
-      filtered = filtered.where((r) => r.openNow == true).toList();
-      debugPrint('   After status filter (Open): ${filtered.length}');
+      filtered = filtered.where((w) => w.openNow == true).toList();
+      debugPrint('   ✅ After status filter (Open): ${filtered.length} worship places');
     } else if (_selectedStatus == 'Closed') {
-      filtered = filtered.where((r) => r.openNow == false).toList();
-      debugPrint('   After status filter (Closed): ${filtered.length}');
+      filtered = filtered.where((w) => w.openNow == false).toList();
+      debugPrint('   ✅ After status filter (Closed): ${filtered.length} worship places');
     }
 
-    debugPrint('✅ Final filtered count: ${filtered.length}');
+    debugPrint('   🎯 Final filtered count: ${filtered.length}');
 
     setState(() {
-      _displayedRealEstate = filtered;
+      _filteredWorship = filtered;
     });
   }
 
-  // ✅ Called when search text changes
+  void _loadWorship(String city) {
+    setState(() {
+      _selectedCity = city;
+      _cacheKey = city;
+      _isDataLoaded = false;
+      _filteredWorship = []; // Clear filtered list
+      _worshipFuture = _fetchAndCacheWorship(city);
+      _searchController.clear();
+      _selectedStatus = 'All'; // Reset status filter
+      _userHasSelectedCity = true; // Mark that user manually selected a city
+      _isApiSearchActive = false; // Reset API search mode
+    });
+  }
+
+  Future<void> _onRefresh() async {
+    // Use API method - backend handles caching
+    final freshData = await _worshipService.fetchWorship();
+    setState(() {
+      _worshipCache[_cacheKey] = freshData;
+      _isDataLoaded = true;
+      _applyAllFilters(_cacheKey);
+      _worshipFuture = Future.value(freshData);
+    });
+  }
+
   void _onSearchChanged() {
-    debugPrint('🔍 Search changed: "${_searchController.text}"');
-    _applyFilters();
+    final query = _searchController.text.trim();
+
+    // If search is empty, restore original data
+    if (query.isEmpty) {
+      setState(() {
+        _isApiSearchActive = false;
+      });
+      // Restore original full data to cache
+      if (_originalData.isNotEmpty) {
+        _worshipCache[_cacheKey] = _originalData;
+      }
+      // Apply filters on original data
+      if (_isDataLoaded && _worshipCache.containsKey(_cacheKey)) {
+        _applyAllFilters(_cacheKey);
+      }
+      return;
+    }
+
+    // If search has 3+ characters, use API search
+    if (query.length >= 3) {
+      _performApiSearch(query);
+    } else {
+      // For short queries, filter locally on original data
+      setState(() {
+        _isApiSearchActive = false;
+      });
+      // Make sure we're filtering original data
+      if (_originalData.isNotEmpty) {
+        _worshipCache[_cacheKey] = _originalData;
+      }
+      if (_isDataLoaded && _worshipCache.containsKey(_cacheKey)) {
+        _applyAllFilters(_cacheKey);
+      }
+    }
   }
 
-  // ✅ Called when user selects a new city
-  void _onCitySelected(String city) {
-    debugPrint('🏙️ City selected: $city');
-    _searchController.clear(); // Clear search when changing cities
-    _loadCityData(city);
+  // New method to search via API
+  Future<void> _performApiSearch(String keyword) async {
+    setState(() {
+      _isDataLoaded = false;
+      _userHasSelectedCity = true; // User is actively searching
+      _isApiSearchActive = true; // Mark as API search mode
+    });
+
+    try {
+      debugPrint('🔍 Searching via API: $keyword in $_selectedCity');
+      final results = await _worshipService.searchWorship(
+        city: _selectedCity,
+        keyword: keyword,
+      );
+
+      setState(() {
+        _worshipCache[_cacheKey] = results;
+        _isDataLoaded = true;
+        _worshipFuture = Future.value(results);
+      });
+
+      // Don't apply local filters - API already filtered
+      // Just apply status filter only
+      _applyStatusFilterOnly();
+    } catch (e) {
+      debugPrint('❌ Search error: $e');
+      setState(() {
+        _isDataLoaded = true;
+        _isApiSearchActive = false;
+      });
+    }
   }
 
-  // ✅ Called when user changes status filter
+  // Apply only status filter (used after API search)
+  void _applyStatusFilterOnly() {
+    if (!_isDataLoaded || !_worshipCache.containsKey(_cacheKey)) {
+      return;
+    }
+
+    final allWorship = _worshipCache[_cacheKey] ?? [];
+    List<WorshipModel> filtered = allWorship;
+
+    // Only apply status filter - don't filter by search or city
+    if (_selectedStatus == 'Open') {
+      filtered = filtered.where((w) => w.openNow == true).toList();
+    } else if (_selectedStatus == 'Closed') {
+      filtered = filtered.where((w) => w.openNow == false).toList();
+    }
+
+    debugPrint('✅ Applied status-only filter: ${filtered.length} worship places');
+
+    setState(() {
+      _filteredWorship = filtered;
+    });
+  }
+
   void _onStatusChanged(String status) {
-    debugPrint('🔘 Status changed: $status');
     setState(() {
       _selectedStatus = status;
     });
-    _applyFilters();
+
+    // If API search is active, only apply status filter
+    // Otherwise apply all filters (including local search)
+    if (_isApiSearchActive) {
+      _applyStatusFilterOnly();
+    } else {
+      _applyAllFilters(_cacheKey);
+    }
+
     Navigator.pop(context);
   }
 
-  // ✅ Pull to refresh
-  Future<void> _onRefresh() async {
-    debugPrint('🔄 Refreshing data for $_cacheKey');
-    try {
-      final freshData = await _realEstateService.fetchRealEstate(city: _cacheKey);
-      _realEstateCache[_cacheKey] = freshData;
-      _applyFilters();
-      debugPrint('✅ Refresh complete');
-    } catch (e) {
-      debugPrint('❌ Refresh error: $e');
-    }
-  }
-
-  // ✅ Show filter modal
+  // Show filter modal
   void _showFilterModal() {
-    if (_isLoading) {
+    if (!_isDataLoaded) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please wait for listings to load'),
+          content: Text('Please wait for worship places to load'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -280,6 +335,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Handle bar
               Container(
                 margin: const EdgeInsets.only(top: 12),
                 width: 40,
@@ -290,6 +346,8 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Filter title
               const Text(
                 'Filter Worship',
                 style: TextStyle(
@@ -298,11 +356,15 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                   color: Colors.black87,
                 ),
               ),
+
               const SizedBox(height: 24),
+
+              // Status filter buttons
               RealEstateStatusFilter(
                 selectedStatus: _selectedStatus,
                 onStatusChanged: _onStatusChanged,
               ),
+
               const SizedBox(height: 32),
             ],
           ),
@@ -333,7 +395,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                   cities: usCities,
                   onCitySelected: (city) {
                     Navigator.pop(context);
-                    _onCitySelected(city);
+                    _loadWorship(city);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Selected $city')),
                     );
@@ -359,6 +421,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                // Filter button
                 GestureDetector(
                   onTap: _showFilterModal,
                   child: Container(
@@ -377,79 +440,159 @@ class _RealEstateHomeState extends State<RealEstateHome> {
               ],
             ),
           ),
-          
-          // Content area
+
+          // Worship list
           Expanded(
-            child: _buildContent(),
+            child: FutureBuilder<List<WorshipModel>>(
+              future: _worshipFuture,
+              builder: (context, snapshot) {
+                // Show loading only if data isn't cached
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (_isDataLoaded && _filteredWorship.isNotEmpty) {
+                    // Show cached data while refreshing
+                    return _buildListView(_filteredWorship);
+                  }
+                  return _buildSkeletonLoader();
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _onRefresh,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Show filtered worship (not snapshot.data)
+                if (_isDataLoaded) {
+                  if (_filteredWorship.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchController.text.isNotEmpty
+                                ? 'No worship places found matching "${_searchController.text}"'
+                                : 'No worship places found',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          if (_searchController.text.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchChanged();
+                              },
+                              child: const Text('Clear Search'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }
+                  return _buildListView(_filteredWorship);
+                }
+
+                return const Center(child: Text('No worship places found.'));
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent() {
-    // Show loading on initial load
-    if (_isLoading && _displayedRealEstate.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.teal),
-      );
-    }
-
-    // Show error if exists and no data
-    if (_errorMessage != null && _displayedRealEstate.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(_errorMessage!),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadInitialData,
-              child: const Text('Retry'),
+  Widget _buildSkeletonLoader() {
+    return Skeletonizer(
+      enabled: true,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 5,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  spreadRadius: 1,
+                  blurRadius: 6,
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    }
-
-    // Show empty state
-    if (_displayedRealEstate.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search_off, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              _searchController.text.isNotEmpty
-                  ? 'No results for "${_searchController.text}"'
-                  : 'No worship listings found',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 20,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 150,
+                        height: 16,
+                        color: Colors.grey[300],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    }
+          );
+        },
+      ),
+    );
+  }
 
-    // Show list
+  Widget _buildListView(List<WorshipModel> worshipList) {
     return RefreshIndicator(
       color: Colors.teal,
       onRefresh: _onRefresh,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _displayedRealEstate.length,
+        itemCount: worshipList.length,
         itemBuilder: (context, index) {
-          final r = _displayedRealEstate[index];
+          final w = worshipList[index];
           return GlobalStoreFront(
-            imageUrl: r.photoReferences.isNotEmpty 
-                ? r.photoReferences.first 
+            imageUrl: w.photoReferences.isNotEmpty
+                ? w.photoReferences.first
                 : '',
-            storeName: r.name,
+            storeName: w.name,
             category: "Worship",
-            location: r.address,
-            rating: r.rating,
+            location: w.address,
+            rating: w.rating,
             onTap: () {
-              Nav.push(RealestateStoreDetails(realestate: r));
+              Nav.push(RealestateStoreDetails(realestate: w));
             },
           );
         },
@@ -458,7 +601,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   }
 }
 
-// ✅ Status Filter Widget
+// Status Filter Widget
 class RealEstateStatusFilter extends StatelessWidget {
   final String selectedStatus;
   final Function(String) onStatusChanged;

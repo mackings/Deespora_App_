@@ -123,23 +123,55 @@ class _EventHomeState extends State<EventHome> {
 
   /// ✅ Apply search on top of current city filter
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      final cityFiltered = _allEvents.where((e) {
-        final venueMatch = e.venues.any((v) => v.name.toLowerCase().contains(_selectedCity.toLowerCase()));
-        final nameMatch = e.name.toLowerCase().contains(_selectedCity.toLowerCase());
-        return venueMatch || nameMatch || _selectedCity == 'US';
-      }).toList();
+    final query = _searchController.text.trim();
 
-      if (query.isEmpty) {
-        _filteredEvents = cityFiltered;
-      } else {
-        _filteredEvents = cityFiltered.where((e) {
-          return e.name.toLowerCase().contains(query) ||
-              e.venues.any((v) => v.name.toLowerCase().contains(query));
+    // If search is empty, just apply city filter
+    if (query.isEmpty) {
+      _applyCityFilter(_selectedCity);
+      return;
+    }
+
+    // If search has 3+ characters, use API search
+    if (query.length >= 3) {
+      _performApiSearch(query);
+    } else {
+      // For short queries, filter locally
+      final queryLower = query.toLowerCase();
+      setState(() {
+        final cityFiltered = _allEvents.where((e) {
+          final venueMatch = e.venues.any((v) => v.name.toLowerCase().contains(_selectedCity.toLowerCase()));
+          final nameMatch = e.name.toLowerCase().contains(_selectedCity.toLowerCase());
+          return venueMatch || nameMatch || _selectedCity == 'US';
         }).toList();
-      }
-    });
+
+        _filteredEvents = cityFiltered.where((e) {
+          return e.name.toLowerCase().contains(queryLower) ||
+              e.venues.any((v) => v.name.toLowerCase().contains(queryLower));
+        }).toList();
+      });
+    }
+  }
+
+  /// New method to search events via API
+  Future<void> _performApiSearch(String keyword) async {
+    try {
+      debugPrint('🔍 Searching events via API: $keyword in $_selectedCity');
+      final results = await _apiService.searchEvents(
+        keyword: keyword,
+        city: _selectedCity != 'US' ? _selectedCity : null,
+        size: 50,
+      );
+
+      setState(() {
+        _allEvents = results;
+        _filteredEvents = results;
+      });
+
+      debugPrint('✅ Found ${results.length} events');
+    } catch (e) {
+      debugPrint('❌ Event search error: $e');
+      // Keep existing data on error
+    }
   }
 
   @override

@@ -84,8 +84,7 @@ void _initCategories() {
       title: 'Worship',
       svgAsset: 'assets/img/realestate.png',
       backgroundColor: const Color(0xFFF8F8F8),
-// Soft lavender
-      onTap: () => _handleCategoryTap('Real Estate', () => Nav.push(RealEstateHome())),
+      onTap: () => _handleCategoryTap('Worship', () => Nav.push(RealEstateHome())),
     ),
   ];
 }

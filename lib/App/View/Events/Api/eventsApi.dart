@@ -17,7 +17,7 @@ Future<List<Event>> fetchAllEvents({String? city}) async {
   const Duration retryDelay = Duration(seconds: 2);
 
   int attempt = 0;
-  DioError? lastError;
+  DioException? lastError;
 
   while (attempt < maxRetries) {
     attempt++;
@@ -37,14 +37,14 @@ Future<List<Event>> fetchAllEvents({String? city}) async {
         return data.map((e) => Event.fromJson(e)).toList();
       } else {
         // For non-200 status, throw to go into catch and retry
-        throw DioError(
+        throw DioException(
           requestOptions: response.requestOptions,
           response: response,
           error: 'Status code: ${response.statusCode}',
-          type: DioErrorType.badResponse,
+          type: DioExceptionType.badResponse,
         );
       }
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       lastError = e;
       debugPrint('⚠️ Fetch events failed (attempt $attempt): ${e.message}');
 
@@ -52,19 +52,19 @@ Future<List<Event>> fetchAllEvents({String? city}) async {
       if (attempt < maxRetries &&
           (e.response?.statusCode != null &&
               e.response!.statusCode! >= 500 ||
-              e.type == DioErrorType.connectionTimeout ||
-              e.type == DioErrorType.receiveTimeout ||
-              e.type == DioErrorType.badResponse)) {
+              e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.badResponse)) {
         debugPrint('⏳ Retrying in ${retryDelay.inSeconds}s...');
         await Future.delayed(retryDelay);
         continue;
       } else {
-        // Not retryable or we’ve exhausted retries
+        // Not retryable or we've exhausted retries
         break;
       }
     } catch (e) {
       debugPrint('❌ Unexpected error fetching events: $e');
-      rethrow; // don’t retry unexpected errors
+      rethrow; // don't retry unexpected errors
     }
   }
 
@@ -73,19 +73,23 @@ Future<List<Event>> fetchAllEvents({String? city}) async {
       'Failed to fetch events after $maxRetries attempts: ${lastError?.message}');
 }
 
-  /// 🔎 Search events
+  /// 🔎 Search events with flexible filters
   Future<List<Event>> searchEvents({
     required String keyword,
     String? city,
     int size = 50,
+    String? countryCode,
+    String? startDateTime,
   }) async {
     try {
       final response = await _dio.post(
-        "$_baseUrl/searchEvent",
+        "$_baseUrl/search-events",
         data: {
           'keyword': keyword,
-          if (city != null) 'city': city,
           'size': size,
+          if (city != null) 'city': city,
+          if (countryCode != null) 'countryCode': countryCode,
+          if (startDateTime != null) 'startDateTime': startDateTime,
         },
       );
 
@@ -97,8 +101,8 @@ Future<List<Event>> fetchAllEvents({String? city}) async {
           "Failed to search events. Status code: ${response.statusCode}",
         );
       }
-    } on DioError catch (e) {
-      throw Exception("DioError: ${e.message}");
+    } on DioException catch (e) {
+      throw Exception("DioException: ${e.message}");
     } catch (e) {
       throw Exception("Unexpected error: $e");
     }
@@ -116,8 +120,8 @@ Future<List<Event>> fetchAllEvents({String? city}) async {
           "Failed to fetch event. Status code: ${response.statusCode}",
         );
       }
-    } on DioError catch (e) {
-      throw Exception("DioError: ${e.message}");
+    } on DioException catch (e) {
+      throw Exception("DioException: ${e.message}");
     } catch (e) {
       throw Exception("Unexpected error: $e");
     }

@@ -25,6 +25,7 @@ class _CateringHomeState extends State<CateringHome> {
   String _cacheKey = 'US'; // Track which cache key has the data
   final Map<String, List<Catering>> _cateringCache = {};
   List<Catering> _filteredCatering = [];
+  bool _isApiSearch = false;
 
   late Future<List<Catering>> _cateringFuture;
 
@@ -124,7 +125,8 @@ class _CateringHomeState extends State<CateringHome> {
       return _cateringCache[city]!;
     }
 
-    final result = await _cateringService.fetchCaterings(city: city);
+    // Use new API method - backend handles caching
+    final result = await _cateringService.fetchCaterings();
     _cateringCache[city] = result;
     setState(() {
       _isDataLoaded = true;
@@ -168,9 +170,9 @@ class _CateringHomeState extends State<CateringHome> {
       }
     }
 
-    // Step 2: Apply search query
+    // Step 2: Apply search query (skip if API already filtered)
     final query = _searchController.text.trim().toLowerCase();
-    if (query.isNotEmpty) {
+    if (query.isNotEmpty && !_isApiSearch) {
       filtered = filtered
           .where((r) =>
               r.name.toLowerCase().contains(query) ||
@@ -200,6 +202,7 @@ class _CateringHomeState extends State<CateringHome> {
       _selectedCity = city;
       _cacheKey = city;
       _isDataLoaded = false;
+      _isApiSearch = false;
       _filteredCatering = []; // 🔥 Clear filtered list
       _cateringFuture = _fetchAndCacheCatering(city);
       _searchController.clear();
@@ -208,9 +211,8 @@ class _CateringHomeState extends State<CateringHome> {
   }
 
   Future<void> _onRefresh() async {
-    final freshData = await _cateringService.fetchCaterings(
-      city: _cacheKey,
-    );
+    // Use new API method - backend handles caching
+    final freshData = await _cateringService.fetchCaterings();
     setState(() {
       _cateringCache[_cacheKey] = freshData;
       _isDataLoaded = true;
@@ -220,8 +222,55 @@ class _CateringHomeState extends State<CateringHome> {
   }
 
   void _onSearchChanged() {
-    if (_isDataLoaded && _cateringCache.containsKey(_cacheKey)) {
+    final query = _searchController.text.trim();
+
+    // If search is empty, just filter locally
+    if (query.isEmpty) {
+      _isApiSearch = false;
+      if (_isDataLoaded && _cateringCache.containsKey(_cacheKey)) {
+        _applyAllFilters(_cacheKey);
+      }
+      return;
+    }
+
+    // If search has 3+ characters, use API search
+    if (query.length >= 3) {
+      _performApiSearch(query);
+    } else {
+      _isApiSearch = false;
+      // For short queries, filter locally
+      if (_isDataLoaded && _cateringCache.containsKey(_cacheKey)) {
+        _applyAllFilters(_cacheKey);
+      }
+    }
+  }
+
+  // New method to search via API
+  Future<void> _performApiSearch(String keyword) async {
+    setState(() {
+      _isDataLoaded = false;
+      _isApiSearch = true;
+    });
+
+    try {
+      debugPrint('🔍 Searching via API: $keyword in $_selectedCity');
+      final results = await _cateringService.searchCatering(
+        city: _selectedCity,
+        keyword: keyword,
+      );
+
+      setState(() {
+        _cateringCache[_cacheKey] = results;
+        _isDataLoaded = true;
+        _cateringFuture = Future.value(results);
+      });
+
       _applyAllFilters(_cacheKey);
+    } catch (e) {
+      debugPrint('❌ Search error: $e');
+      setState(() {
+        _isDataLoaded = true;
+      });
     }
   }
 

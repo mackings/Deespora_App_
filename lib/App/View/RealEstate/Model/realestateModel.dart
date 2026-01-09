@@ -1,10 +1,9 @@
 import 'package:dspora/App/View/Widgets/GLOBAL/GlobalModel.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-
 final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? "";
 
-class RealEstateModel {
+class WorshipModel {
   final String id;
   final String name;
   final String address;
@@ -13,7 +12,7 @@ class RealEstateModel {
   final List<String> photoReferences;
   final List<GlobalReview> reviews;
 
-  RealEstateModel({
+  WorshipModel({
     required this.id,
     required this.name,
     required this.address,
@@ -23,8 +22,8 @@ class RealEstateModel {
     required this.reviews,
   });
 
-  factory RealEstateModel.fromJson(Map<String, dynamic> json) {
-    return RealEstateModel(
+  factory WorshipModel.fromJson(Map<String, dynamic> json) {
+    return WorshipModel(
       id: json['place_id'] ?? '',
       name: json['name'] ?? '',
       address: json['formatted_address'] ?? '',
@@ -42,3 +41,7 @@ class RealEstateModel {
     );
   }
 }
+
+// Keep legacy model for backward compatibility during migration
+@Deprecated('Use WorshipModel instead')
+typedef RealEstateModel = WorshipModel;

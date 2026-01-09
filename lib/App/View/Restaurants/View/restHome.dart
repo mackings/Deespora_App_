@@ -129,7 +129,8 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       return _restaurantsCache[city]!;
     }
 
-    final result = await _apiService.fetchRestaurants(city: city);
+    // Use new API method - backend handles caching
+    final result = await _apiService.fetchRestaurants();
     _restaurantsCache[city] = result;
     setState(() {
       _isDataLoaded = true;
@@ -212,7 +213,8 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   }
 
   Future<void> _onRefresh() async {
-    final freshData = await _apiService.fetchRestaurants(city: _cacheKey);
+    // Use new API method - backend handles caching
+    final freshData = await _apiService.fetchRestaurants();
     setState(() {
       _restaurantsCache[_cacheKey] = freshData;
       _isDataLoaded = true;
@@ -223,16 +225,53 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
   void _onSearchChanged() {
     debugPrint('🔍 _onSearchChanged called');
-    debugPrint('   _isDataLoaded: $_isDataLoaded');
-    debugPrint('   _selectedCity: $_selectedCity');
-    debugPrint('   _cacheKey: $_cacheKey');
-    debugPrint('   Cache has key: ${_restaurantsCache.containsKey(_cacheKey)}');
-    debugPrint('   Search text: "${_searchController.text}"');
+    final query = _searchController.text.trim();
+    debugPrint('   Search text: "$query"');
 
-    if (_isDataLoaded && _restaurantsCache.containsKey(_cacheKey)) {
-      _applyAllFilters(_cacheKey);
+    // If search is empty, just filter locally
+    if (query.isEmpty) {
+      if (_isDataLoaded && _restaurantsCache.containsKey(_cacheKey)) {
+        _applyAllFilters(_cacheKey);
+      }
+      return;
+    }
+
+    // If search has 3+ characters, use API search
+    if (query.length >= 3) {
+      _performApiSearch(query);
     } else {
-      debugPrint('   ⚠️ Skipping filter - data not ready');
+      // For short queries, filter locally
+      if (_isDataLoaded && _restaurantsCache.containsKey(_cacheKey)) {
+        _applyAllFilters(_cacheKey);
+      }
+    }
+  }
+
+  // New method to search via API
+  Future<void> _performApiSearch(String keyword) async {
+    setState(() {
+      _isDataLoaded = false;
+    });
+
+    try {
+      debugPrint('🔍 Searching via API: $keyword in $_selectedCity');
+      final results = await _apiService.searchRestaurants(
+        city: _selectedCity,
+        keyword: keyword,
+      );
+
+      setState(() {
+        _restaurantsCache[_cacheKey] = results;
+        _isDataLoaded = true;
+        _restaurantsFuture = Future.value(results);
+      });
+
+      _applyAllFilters(_cacheKey);
+    } catch (e) {
+      debugPrint('❌ Search error: $e');
+      setState(() {
+        _isDataLoaded = true;
+      });
     }
   }
 
