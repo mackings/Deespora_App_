@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
 import 'package:dspora/Constants/BaseUrl.dart';
+import 'package:dspora/App/Services/CacheManager.dart';
 
 class WorshipService {
   final Dio _dio = Dio();
@@ -8,6 +9,22 @@ class WorshipService {
   /// Fetch all worship/church listings (cached on backend)
   Future<List<WorshipModel>> fetchWorship() async {
     const endpoint = '${Baseurl.Url}worship';
+
+    // Check cache first
+    final cacheKey = CacheManager.getFetchCacheKey('worship');
+    final cachedData = await CacheManager.getFromCache(cacheKey);
+
+    if (cachedData != null) {
+      print('🎯 Using cached worship data');
+      try {
+        final List data = cachedData is Map
+            ? (cachedData['worship'] as List? ?? [])
+            : (cachedData as List? ?? []);
+        return data.map((e) => WorshipModel.fromJson(e)).toList();
+      } catch (e) {
+        print('⚠️ Failed to parse cached data, fetching fresh: $e');
+      }
+    }
 
     print('📡 Fetching: $endpoint');
 
@@ -25,6 +42,10 @@ class WorshipService {
             : (responseData as List? ?? []);
 
         print('✅ Parsed ${data.length} worship places');
+
+        // Save to cache
+        await CacheManager.saveToCache(cacheKey, responseData);
+
         return data.map((e) => WorshipModel.fromJson(e)).toList();
       } else {
         throw Exception('Invalid response: ${response.data}');
@@ -43,6 +64,22 @@ class WorshipService {
     final endpoint =
         '${Baseurl.Url}search-worship?city=$city&keyword=$keyword';
 
+    // Check cache first
+    final cacheKey = CacheManager.getSearchCacheKey('worship', city, keyword);
+    final cachedData = await CacheManager.getFromCache(cacheKey);
+
+    if (cachedData != null) {
+      print('🎯 Using cached search results for: $keyword in $city');
+      try {
+        final List data = cachedData is Map
+            ? (cachedData['worship'] as List? ?? [])
+            : (cachedData as List? ?? []);
+        return data.map((e) => WorshipModel.fromJson(e)).toList();
+      } catch (e) {
+        print('⚠️ Failed to parse cached search data, fetching fresh: $e');
+      }
+    }
+
     print('📡 Searching: $endpoint');
 
     try {
@@ -58,6 +95,10 @@ class WorshipService {
             : (responseData as List? ?? []);
 
         print('✅ Found ${data.length} worship places');
+
+        // Save to cache
+        await CacheManager.saveToCache(cacheKey, responseData);
+
         return data.map((e) => WorshipModel.fromJson(e)).toList();
       } else {
         throw Exception('Invalid response: ${response.data}');

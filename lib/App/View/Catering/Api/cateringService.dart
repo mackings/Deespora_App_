@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:dspora/App/View/Catering/Model/cateringModel.dart';
 import 'package:dspora/Constants/BaseUrl.dart';
+import 'package:dspora/App/Services/CacheManager.dart';
 
 class CateringService {
   final Dio _dio = Dio();
@@ -8,6 +9,27 @@ class CateringService {
   /// Fetch all catering services (cached on backend)
   Future<List<Catering>> fetchCaterings() async {
     const endpoint = '${Baseurl.Url}catering';
+
+    // Check cache first
+    final cacheKey = CacheManager.getFetchCacheKey('catering');
+    final cachedData = await CacheManager.getFromCache(cacheKey);
+
+    if (cachedData != null) {
+      print('🎯 Using cached catering data');
+      try {
+        final List caterings = cachedData is List
+            ? cachedData
+            : (cachedData is Map<String, dynamic>
+                ? (cachedData['catering'] ??
+                    cachedData['caterings'] ??
+                    cachedData['restaurants'] ??
+                    [])
+                : []);
+        return caterings.map((e) => Catering.fromJson(e)).toList();
+      } catch (e) {
+        print('⚠️ Failed to parse cached data, fetching fresh: $e');
+      }
+    }
 
     print('📡 Fetching: $endpoint');
 
@@ -30,6 +52,10 @@ class CateringService {
         if (caterings is! List) {
           throw Exception('Invalid data format: ${response.data}');
         }
+
+        // Save to cache
+        await CacheManager.saveToCache(cacheKey, data);
+
         return caterings.map((e) => Catering.fromJson(e)).toList();
       } else {
         throw Exception('Invalid response: ${response.data}');
@@ -47,6 +73,27 @@ class CateringService {
   }) async {
     final endpoint =
         '${Baseurl.Url}search-catering?city=$city&keyword=$keyword';
+
+    // Check cache first
+    final cacheKey = CacheManager.getSearchCacheKey('catering', city, keyword);
+    final cachedData = await CacheManager.getFromCache(cacheKey);
+
+    if (cachedData != null) {
+      print('🎯 Using cached search results for: $keyword in $city');
+      try {
+        final List caterings = cachedData is List
+            ? cachedData
+            : (cachedData is Map<String, dynamic>
+                ? (cachedData['catering'] ??
+                    cachedData['caterings'] ??
+                    cachedData['restaurants'] ??
+                    [])
+                : []);
+        return caterings.map((e) => Catering.fromJson(e)).toList();
+      } catch (e) {
+        print('⚠️ Failed to parse cached search data, fetching fresh: $e');
+      }
+    }
 
     print('📡 Searching: $endpoint');
 
@@ -69,6 +116,10 @@ class CateringService {
         if (caterings is! List) {
           throw Exception('Invalid data format: ${response.data}');
         }
+
+        // Save to cache
+        await CacheManager.saveToCache(cacheKey, data);
+
         return caterings.map((e) => Catering.fromJson(e)).toList();
       } else {
         throw Exception('Invalid response: ${response.data}');

@@ -38,12 +38,36 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   bool _isApiSearchActive = false; // Track if we're showing API search results
 
   final List<String> usCities = [
-    "New York", "Los Angeles", "Chicago", "Houston", "Miami",
-    "San Francisco", "Boston", "Washington", "Seattle", "Atlanta",
-    "Las Vegas", "Orlando", "Dallas", "Denver", "Philadelphia",
-    "Phoenix", "San Diego", "Austin", "Nashville", "Portland",
-    "Detroit", "Minneapolis", "Charlotte", "Indianapolis", "Columbus",
-    "San Antonio", "Tampa", "Baltimore", "Cleveland", "Kansas City",
+    "New York",
+    "Los Angeles",
+    "Chicago",
+    "Houston",
+    "Miami",
+    "San Francisco",
+    "Boston",
+    "Washington",
+    "Seattle",
+    "Atlanta",
+    "Las Vegas",
+    "Orlando",
+    "Dallas",
+    "Denver",
+    "Philadelphia",
+    "Phoenix",
+    "San Diego",
+    "Austin",
+    "Nashville",
+    "Portland",
+    "Detroit",
+    "Minneapolis",
+    "Charlotte",
+    "Indianapolis",
+    "Columbus",
+    "San Antonio",
+    "Tampa",
+    "Baltimore",
+    "Cleveland",
+    "Kansas City",
   ];
 
   @override
@@ -136,9 +160,11 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     // Step 1: Apply city filter (only if city is not 'US')
     if (city != 'US') {
       filtered = filtered
-          .where((w) =>
-              w.address.toLowerCase().contains(city.toLowerCase()) ||
-              w.name.toLowerCase().contains(city.toLowerCase()))
+          .where(
+            (w) =>
+                w.address.toLowerCase().contains(city.toLowerCase()) ||
+                w.name.toLowerCase().contains(city.toLowerCase()),
+          )
           .toList();
 
       // If no results, show all
@@ -154,9 +180,11 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered
-          .where((w) =>
-              w.name.toLowerCase().contains(query) ||
-              w.address.toLowerCase().contains(query))
+          .where(
+            (w) =>
+                w.name.toLowerCase().contains(query) ||
+                w.address.toLowerCase().contains(query),
+          )
           .toList();
       debugPrint('   ✅ After search filter: ${filtered.length} worship places');
     }
@@ -164,10 +192,14 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     // Step 3: Apply status filter (Open/Closed)
     if (_selectedStatus == 'Open') {
       filtered = filtered.where((w) => w.openNow == true).toList();
-      debugPrint('   ✅ After status filter (Open): ${filtered.length} worship places');
+      debugPrint(
+        '   ✅ After status filter (Open): ${filtered.length} worship places',
+      );
     } else if (_selectedStatus == 'Closed') {
       filtered = filtered.where((w) => w.openNow == false).toList();
-      debugPrint('   ✅ After status filter (Closed): ${filtered.length} worship places');
+      debugPrint(
+        '   ✅ After status filter (Closed): ${filtered.length} worship places',
+      );
     }
 
     debugPrint('   🎯 Final filtered count: ${filtered.length}');
@@ -288,7 +320,9 @@ class _RealEstateHomeState extends State<RealEstateHome> {
       filtered = filtered.where((w) => w.openNow == false).toList();
     }
 
-    debugPrint('✅ Applied status-only filter: ${filtered.length} worship places');
+    debugPrint(
+      '✅ Applied status-only filter: ${filtered.length} worship places',
+    );
 
     setState(() {
       _filteredWorship = filtered;
@@ -396,9 +430,9 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                   onCitySelected: (city) {
                     Navigator.pop(context);
                     _loadWorship(city);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Selected $city')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Selected $city')));
                   },
                 ),
               );
@@ -452,7 +486,8 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                     // Show cached data while refreshing
                     return _buildListView(_filteredWorship);
                   }
-                  return _buildSkeletonLoader();
+                  return Center(child: CircularProgressIndicator(color: Colors.teal));
+                  //return _buildSkeletonLoader();
                 }
 
                 if (snapshot.hasError) {
@@ -460,7 +495,11 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red,
+                        ),
                         const SizedBox(height: 16),
                         Text('Error: ${snapshot.error}'),
                         const SizedBox(height: 16),
@@ -480,7 +519,11 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                          const Icon(
+                            Icons.search_off,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             _searchController.text.isNotEmpty
@@ -626,14 +669,9 @@ class RealEstateStatusFilter extends StatelessWidget {
             onTap: () => onStatusChanged(status),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 6),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF37B6AF)
-                    : Colors.grey[100],
+                color: isSelected ? const Color(0xFF37B6AF) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(

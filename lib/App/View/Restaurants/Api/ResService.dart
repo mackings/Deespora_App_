@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
 import 'package:dspora/Constants/BaseUrl.dart';
+import 'package:dspora/App/Services/CacheManager.dart';
 
 class ApiService {
   final Dio _dio = Dio();
@@ -8,6 +9,22 @@ class ApiService {
   /// Fetch all restaurants (cached on backend)
   Future<List<Restaurant>> fetchRestaurants() async {
     const endpoint = '${Baseurl.Url}restaurants';
+
+    // Check cache first
+    final cacheKey = CacheManager.getFetchCacheKey('restaurants');
+    final cachedData = await CacheManager.getFromCache(cacheKey);
+
+    if (cachedData != null) {
+      print('🎯 Using cached restaurants data');
+      try {
+        final List restaurants = cachedData is List
+            ? cachedData
+            : (cachedData is Map<String, dynamic> ? (cachedData['restaurants'] ?? []) : []);
+        return restaurants.map((e) => Restaurant.fromJson(e)).toList();
+      } catch (e) {
+        print('⚠️ Failed to parse cached data, fetching fresh: $e');
+      }
+    }
 
     print('📡 Fetching: $endpoint');
 
@@ -25,6 +42,10 @@ class ApiService {
         if (restaurants is! List) {
           throw Exception('Invalid data format: ${response.data}');
         }
+
+        // Save to cache
+        await CacheManager.saveToCache(cacheKey, data);
+
         return restaurants.map((e) => Restaurant.fromJson(e)).toList();
       } else {
         throw Exception('Invalid response: ${response.data}');
@@ -43,6 +64,22 @@ class ApiService {
     final endpoint =
         '${Baseurl.Url}search-restaurants?city=$city&keyword=$keyword';
 
+    // Check cache first
+    final cacheKey = CacheManager.getSearchCacheKey('restaurants', city, keyword);
+    final cachedData = await CacheManager.getFromCache(cacheKey);
+
+    if (cachedData != null) {
+      print('🎯 Using cached search results for: $keyword in $city');
+      try {
+        final List restaurants = cachedData is List
+            ? cachedData
+            : (cachedData is Map<String, dynamic> ? (cachedData['restaurants'] ?? []) : []);
+        return restaurants.map((e) => Restaurant.fromJson(e)).toList();
+      } catch (e) {
+        print('⚠️ Failed to parse cached search data, fetching fresh: $e');
+      }
+    }
+
     print('📡 Searching: $endpoint');
 
     try {
@@ -59,6 +96,10 @@ class ApiService {
         if (restaurants is! List) {
           throw Exception('Invalid data format: ${response.data}');
         }
+
+        // Save to cache
+        await CacheManager.saveToCache(cacheKey, data);
+
         return restaurants.map((e) => Restaurant.fromJson(e)).toList();
       } else {
         throw Exception('Invalid response: ${response.data}');
@@ -82,10 +123,28 @@ class ApiService {
     }
 
     String endpoint = '${Baseurl.Url}restaurants/nearby?';
+    String cacheKeySuffix = '';
+
     if (lat != null && lng != null) {
       endpoint += 'lat=$lat&lng=$lng';
+      cacheKeySuffix = '${lat}_$lng';
     } else if (city != null) {
       endpoint += 'city=$city';
+      cacheKeySuffix = city;
+    }
+
+    // Check cache first
+    final cacheKey = 'cache_nearby_restaurants_$cacheKeySuffix';
+    final cachedData = await CacheManager.getFromCache(cacheKey);
+
+    if (cachedData != null) {
+      print('🎯 Using cached nearby restaurants data');
+      try {
+        final List restaurants = cachedData is List ? cachedData : [];
+        return restaurants.map((e) => Restaurant.fromJson(e)).toList();
+      } catch (e) {
+        print('⚠️ Failed to parse cached nearby data, fetching fresh: $e');
+      }
     }
 
     print('📡 Fetching nearby: $endpoint');
@@ -98,6 +157,10 @@ class ApiService {
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final List data = response.data['data'];
+
+        // Save to cache
+        await CacheManager.saveToCache(cacheKey, data);
+
         return data.map((e) => Restaurant.fromJson(e)).toList();
       } else {
         throw Exception('Invalid response: ${response.data}');
