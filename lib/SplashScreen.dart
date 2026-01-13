@@ -74,13 +74,15 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: _controller.value.isInitialized
-          ? SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: SizedBox(
-                  width: _controller.value.size.width - 20,
-                  height: _controller.value.size.height - 20,
-                  child: VideoPlayer(_controller),
+          ? Center(
+              child: ClipRect(
+                child: Transform.scale(
+                  // Slight zoom to hide any thin letterbox lines in the video itself.
+                  scale: 1.02,
+                  child: AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  ),
                 ),
               ),
             )
