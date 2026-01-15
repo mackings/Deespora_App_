@@ -120,4 +120,26 @@ class CacheManager {
     final normalizedKeyword = keyword.toLowerCase().trim();
     return 'cache_search_${type}_${normalizedCity}_$normalizedKeyword';
   }
+
+  /// Generate cache key for search operations with city or coordinates
+  static String getSearchCacheKeyWithLocation(
+    String type,
+    String keyword, {
+    String? city,
+    double? lat,
+    double? lng,
+  }) {
+    final normalizedKeyword = keyword.toLowerCase().trim();
+    if (lat != null && lng != null) {
+      final latKey = lat.toStringAsFixed(5);
+      final lngKey = lng.toStringAsFixed(5);
+      return 'cache_search_${type}_coords_${latKey}_${lngKey}_$normalizedKeyword';
+    }
+
+    if (city == null || city.trim().isEmpty) {
+      return 'cache_search_${type}_unknown_$normalizedKeyword';
+    }
+
+    return getSearchCacheKey(type, city, keyword);
+  }
 }

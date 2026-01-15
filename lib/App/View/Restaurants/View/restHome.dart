@@ -35,6 +35,12 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   // ✅ Simple filter state - only status
   String _selectedStatus = 'All';
   bool _isDataLoaded = false;
+  bool _isApiSearch = false;
+  bool _isLocationSearch = false;
+  bool _useLocationResults = false;
+  bool _userSelectedCity = false;
+  double? _userLat;
+  double? _userLng;
 
   final List<String> usCities = [
     "New York",
@@ -95,6 +101,8 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
       ).timeout(const Duration(seconds: 10));
+      _userLat = pos.latitude;
+      _userLng = pos.longitude;
 
       final placemarks = await placemarkFromCoordinates(
         pos.latitude,
@@ -104,18 +112,54 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       if (placemarks.isNotEmpty) {
         final detectedCity = placemarks.first.locality ?? 'US';
         debugPrint("📍 User city detected: $detectedCity");
+        if (_userSelectedCity) {
+          return;
+        }
 
         setState(() {
           _selectedCity = detectedCity;
         });
 
-        // Apply filters using the cache key (which is 'US')
-        if (_restaurantsCache.containsKey(_cacheKey)) {
+        if (_userLat != null && _userLng != null) {
+          await _loadNearbyRestaurants(_userLat!, _userLng!);
+        } else if (_restaurantsCache.containsKey(_cacheKey)) {
+          // Apply filters using the cache key (which is 'US')
           _applyAllFilters(_cacheKey);
         }
       }
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
+    }
+  }
+
+  String _locationCacheKey(double lat, double lng) {
+    return 'nearby_${lat.toStringAsFixed(5)}_${lng.toStringAsFixed(5)}';
+  }
+
+  Future<void> _loadNearbyRestaurants(double lat, double lng) async {
+    setState(() {
+      _isDataLoaded = false;
+      _useLocationResults = true;
+      _cacheKey = _locationCacheKey(lat, lng);
+    });
+
+    try {
+      final results = await _apiService.fetchNearbyRestaurants(
+        lat: lat,
+        lng: lng,
+      );
+      setState(() {
+        _restaurantsCache[_cacheKey] = results;
+        _isDataLoaded = true;
+        _restaurantsFuture = Future.value(results);
+      });
+      _applyAllFilters(_cacheKey);
+    } catch (e) {
+      debugPrint('❌ Nearby fetch error: $e');
+      setState(() {
+        _isDataLoaded = true;
+        _useLocationResults = false;
+      });
     }
   }
 
@@ -157,7 +201,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     List<Restaurant> filtered = allRestaurants;
 
     // Step 1: Apply city filter (only if city is not 'US')
-    if (city != 'US') {
+    if (!_useLocationResults && !_isLocationSearch && city != 'US') {
       filtered = filtered
           .where((r) =>
               r.vicinity.toLowerCase().contains(city.toLowerCase()) ||
@@ -175,7 +219,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
     // Step 2: Apply search query
     final query = _searchController.text.trim().toLowerCase();
-    if (query.isNotEmpty) {
+    if (query.isNotEmpty && !_isApiSearch) {
       filtered = filtered
           .where((r) =>
               r.name.toLowerCase().contains(query) ||
@@ -205,6 +249,10 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       _selectedCity = city;
       _cacheKey = city;
       _isDataLoaded = false;
+      _isApiSearch = false;
+      _isLocationSearch = false;
+      _useLocationResults = false;
+      _userSelectedCity = true;
       _filteredRestaurants = []; // 🔥 Clear filtered list
       _restaurantsFuture = _fetchAndCacheRestaurants(city);
       _searchController.clear();
@@ -230,6 +278,8 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
     // If search is empty, just filter locally
     if (query.isEmpty) {
+      _isApiSearch = false;
+      _isLocationSearch = false;
       if (_isDataLoaded && _restaurantsCache.containsKey(_cacheKey)) {
         _applyAllFilters(_cacheKey);
       }
@@ -251,13 +301,23 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   Future<void> _performApiSearch(String keyword) async {
     setState(() {
       _isDataLoaded = false;
+      _isApiSearch = true;
     });
 
     try {
-      debugPrint('🔍 Searching via API: $keyword in $_selectedCity');
+      final useLocation =
+          !_userSelectedCity && _userLat != null && _userLng != null;
+      _isLocationSearch = useLocation;
+      debugPrint(
+        useLocation
+            ? '🔍 Searching via API: $keyword near ($_userLat, $_userLng)'
+            : '🔍 Searching via API: $keyword in $_selectedCity',
+      );
       final results = await _apiService.searchRestaurants(
-        city: _selectedCity,
         keyword: keyword,
+        city: useLocation ? null : _selectedCity,
+        lat: useLocation ? _userLat : null,
+        lng: useLocation ? _userLng : null,
       );
 
       setState(() {

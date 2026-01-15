@@ -23,10 +23,15 @@ class WorshipModel {
   });
 
   factory WorshipModel.fromJson(Map<String, dynamic> json) {
+    final address = (json['formatted_address'] ??
+            json['vicinity'] ??
+            json['address'] ??
+            '')
+        .toString();
     return WorshipModel(
       id: json['place_id'] ?? '',
       name: json['name'] ?? '',
-      address: json['formatted_address'] ?? '',
+      address: address,
       rating: (json['rating'] ?? 0).toDouble(),
       openNow: json['opening_hours']?['open_now'] ?? false,
       photoReferences: (json['photos'] as List?)

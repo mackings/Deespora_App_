@@ -58,14 +58,40 @@ class WorshipService {
 
   /// Search worship/church listings by keyword and city
   Future<List<WorshipModel>> searchWorship({
-    required String city,
     required String keyword,
+    String? city,
+    double? lat,
+    double? lng,
   }) async {
-    final endpoint =
-        '${Baseurl.Url}search-worship?city=$city&keyword=$keyword';
+    if (keyword.trim().isEmpty) {
+      throw Exception('Keyword is required for search');
+    }
+
+    final params = <String, String>{
+      'keyword': keyword,
+    };
+
+    if (lat != null && lng != null) {
+      params['lat'] = lat.toString();
+      params['lng'] = lng.toString();
+    } else if (city != null && city.trim().isNotEmpty) {
+      params['city'] = city;
+    } else {
+      throw Exception('Either lat+lng coordinates or city must be provided');
+    }
+
+    final endpoint = Uri.parse('${Baseurl.Url}search-worship')
+        .replace(queryParameters: params)
+        .toString();
 
     // Check cache first
-    final cacheKey = CacheManager.getSearchCacheKey('worship', city, keyword);
+    final cacheKey = CacheManager.getSearchCacheKeyWithLocation(
+      'worship',
+      keyword,
+      city: city,
+      lat: lat,
+      lng: lng,
+    );
     final cachedData = await CacheManager.getFromCache(cacheKey);
 
     if (cachedData != null) {

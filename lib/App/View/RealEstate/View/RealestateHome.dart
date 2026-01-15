@@ -36,6 +36,10 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   bool _isDataLoaded = false;
   bool _userHasSelectedCity = false; // Track if user manually selected a city
   bool _isApiSearchActive = false; // Track if we're showing API search results
+  bool _isLocationSearch = false;
+  bool _userSelectedCity = false;
+  double? _userLat;
+  double? _userLng;
 
   final List<String> usCities = [
     "New York",
@@ -96,6 +100,8 @@ class _RealEstateHomeState extends State<RealEstateHome> {
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
       ).timeout(const Duration(seconds: 10));
+      _userLat = pos.latitude;
+      _userLng = pos.longitude;
 
       final placemarks = await placemarkFromCoordinates(
         pos.latitude,
@@ -105,6 +111,9 @@ class _RealEstateHomeState extends State<RealEstateHome> {
       if (placemarks.isNotEmpty) {
         final detectedCity = placemarks.first.locality ?? 'US';
         debugPrint("📍 User city detected: $detectedCity");
+        if (_userSelectedCity) {
+          return;
+        }
         setState(() {
           _selectedCity = detectedCity;
         });
@@ -219,7 +228,9 @@ class _RealEstateHomeState extends State<RealEstateHome> {
       _searchController.clear();
       _selectedStatus = 'All'; // Reset status filter
       _userHasSelectedCity = true; // Mark that user manually selected a city
+      _userSelectedCity = true;
       _isApiSearchActive = false; // Reset API search mode
+      _isLocationSearch = false;
     });
   }
 
@@ -241,6 +252,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     if (query.isEmpty) {
       setState(() {
         _isApiSearchActive = false;
+        _isLocationSearch = false;
       });
       // Restore original full data to cache
       if (_originalData.isNotEmpty) {
@@ -260,6 +272,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
       // For short queries, filter locally on original data
       setState(() {
         _isApiSearchActive = false;
+        _isLocationSearch = false;
       });
       // Make sure we're filtering original data
       if (_originalData.isNotEmpty) {
@@ -275,15 +288,23 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   Future<void> _performApiSearch(String keyword) async {
     setState(() {
       _isDataLoaded = false;
-      _userHasSelectedCity = true; // User is actively searching
       _isApiSearchActive = true; // Mark as API search mode
     });
 
     try {
-      debugPrint('🔍 Searching via API: $keyword in $_selectedCity');
+      final useLocation =
+          !_userSelectedCity && _userLat != null && _userLng != null;
+      _isLocationSearch = useLocation;
+      debugPrint(
+        useLocation
+            ? '🔍 Searching via API: $keyword near ($_userLat, $_userLng)'
+            : '🔍 Searching via API: $keyword in $_selectedCity',
+      );
       final results = await _worshipService.searchWorship(
-        city: _selectedCity,
         keyword: keyword,
+        city: useLocation ? null : _selectedCity,
+        lat: useLocation ? _userLat : null,
+        lng: useLocation ? _userLng : null,
       );
 
       setState(() {

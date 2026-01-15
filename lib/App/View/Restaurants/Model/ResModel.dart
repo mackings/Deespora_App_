@@ -27,10 +27,15 @@ class Restaurant {
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
+    final vicinity = (json['vicinity'] ??
+            json['formatted_address'] ??
+            json['address'] ??
+            '')
+        .toString();
     return Restaurant(
       id: json['place_id'] ?? '',
       name: json['name'] ?? '',
-      vicinity: json['vicinity'] ?? '',
+      vicinity: vicinity,
       rating: (json['rating'] ?? 0).toDouble(),
       openNow: json['opening_hours']?['open_now'] ?? false,
       photoReferences: (json['photos'] as List?)

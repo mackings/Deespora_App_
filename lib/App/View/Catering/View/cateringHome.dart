@@ -26,6 +26,10 @@ class _CateringHomeState extends State<CateringHome> {
   final Map<String, List<Catering>> _cateringCache = {};
   List<Catering> _filteredCatering = [];
   bool _isApiSearch = false;
+  bool _isLocationSearch = false;
+  bool _userSelectedCity = false;
+  double? _userLat;
+  double? _userLng;
 
   late Future<List<Catering>> _cateringFuture;
 
@@ -92,6 +96,8 @@ class _CateringHomeState extends State<CateringHome> {
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
       ).timeout(const Duration(seconds: 10));
+      _userLat = pos.latitude;
+      _userLng = pos.longitude;
 
       final placemarks = await placemarkFromCoordinates(
         pos.latitude,
@@ -101,6 +107,9 @@ class _CateringHomeState extends State<CateringHome> {
       if (placemarks.isNotEmpty) {
         final detectedCity = placemarks.first.locality ?? 'US';
         debugPrint("📍 User city detected: $detectedCity");
+        if (_userSelectedCity) {
+          return;
+        }
         setState(() {
           _selectedCity = detectedCity;
         });
@@ -154,7 +163,7 @@ class _CateringHomeState extends State<CateringHome> {
     List<Catering> filtered = allCatering;
 
     // Step 1: Apply city filter (only if city is not 'US')
-    if (city != 'US') {
+    if (!_isLocationSearch && city != 'US') {
       filtered = filtered
           .where((r) =>
               r.address.toLowerCase().contains(city.toLowerCase()) ||
@@ -203,6 +212,8 @@ class _CateringHomeState extends State<CateringHome> {
       _cacheKey = city;
       _isDataLoaded = false;
       _isApiSearch = false;
+      _isLocationSearch = false;
+      _userSelectedCity = true;
       _filteredCatering = []; // 🔥 Clear filtered list
       _cateringFuture = _fetchAndCacheCatering(city);
       _searchController.clear();
@@ -227,6 +238,7 @@ class _CateringHomeState extends State<CateringHome> {
     // If search is empty, just filter locally
     if (query.isEmpty) {
       _isApiSearch = false;
+      _isLocationSearch = false;
       if (_isDataLoaded && _cateringCache.containsKey(_cacheKey)) {
         _applyAllFilters(_cacheKey);
       }
@@ -253,10 +265,19 @@ class _CateringHomeState extends State<CateringHome> {
     });
 
     try {
-      debugPrint('🔍 Searching via API: $keyword in $_selectedCity');
+      final useLocation =
+          !_userSelectedCity && _userLat != null && _userLng != null;
+      _isLocationSearch = useLocation;
+      debugPrint(
+        useLocation
+            ? '🔍 Searching via API: $keyword near ($_userLat, $_userLng)'
+            : '🔍 Searching via API: $keyword in $_selectedCity',
+      );
       final results = await _cateringService.searchCatering(
-        city: _selectedCity,
         keyword: keyword,
+        city: useLocation ? null : _selectedCity,
+        lat: useLocation ? _userLat : null,
+        lng: useLocation ? _userLng : null,
       );
 
       setState(() {
