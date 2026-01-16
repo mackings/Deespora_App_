@@ -8,6 +8,7 @@ import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
+import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -41,38 +42,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   double? _userLat;
   double? _userLng;
 
-  final List<String> usCities = [
-    "New York",
-    "Los Angeles",
-    "Chicago",
-    "Houston",
-    "Miami",
-    "San Francisco",
-    "Boston",
-    "Washington",
-    "Seattle",
-    "Atlanta",
-    "Las Vegas",
-    "Orlando",
-    "Dallas",
-    "Denver",
-    "Philadelphia",
-    "Phoenix",
-    "San Diego",
-    "Austin",
-    "Nashville",
-    "Portland",
-    "Detroit",
-    "Minneapolis",
-    "Charlotte",
-    "Indianapolis",
-    "Columbus",
-    "San Antonio",
-    "Tampa",
-    "Baltimore",
-    "Cleveland",
-    "Kansas City",
-  ];
+  final List<String> usCities = USCities.list;
 
   @override
   void initState() {
@@ -116,37 +86,49 @@ class _RealEstateHomeState extends State<RealEstateHome> {
         }
         setState(() {
           _selectedCity = detectedCity;
+          _isDataLoaded = false;
+          _worshipFuture = _fetchAndCacheWorship(detectedCity);
         });
-
-        // Apply filters using the cache key (which is 'US')
-        if (_worshipCache.containsKey(_cacheKey)) {
-          _applyAllFilters(_cacheKey);
-        }
       }
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
     }
   }
 
+  String _locationCacheKey(double lat, double lng) {
+    return 'nearby_${lat.toStringAsFixed(5)}_${lng.toStringAsFixed(5)}';
+  }
+
   Future<List<WorshipModel>> _fetchAndCacheWorship(String city) async {
-    if (_worshipCache.containsKey(city)) {
+    final useLocation =
+        !_userSelectedCity && _userLat != null && _userLng != null;
+    final cacheKey = useLocation ? _locationCacheKey(_userLat!, _userLng!) : city;
+
+    if (_worshipCache.containsKey(cacheKey)) {
       setState(() {
         _isDataLoaded = true;
-        _cacheKey = city;
+        _cacheKey = cacheKey;
+        _isLocationSearch = useLocation;
       });
-      _applyAllFilters(city);
-      return _worshipCache[city]!;
+      _applyAllFilters(cacheKey);
+      return _worshipCache[cacheKey]!;
     }
 
     // Use API method - backend handles caching
-    final result = await _worshipService.fetchWorship();
-    _worshipCache[city] = result;
+    final result = useLocation
+        ? await _worshipService.fetchWorship(
+            lat: _userLat,
+            lng: _userLng,
+          )
+        : await _worshipService.fetchWorship(city: city);
+    _worshipCache[cacheKey] = result;
     _originalData = result; // Store original full data
     setState(() {
       _isDataLoaded = true;
-      _cacheKey = city;
+      _cacheKey = cacheKey;
+      _isLocationSearch = useLocation;
     });
-    _applyAllFilters(city);
+    _applyAllFilters(cacheKey);
     return result;
   }
 
@@ -166,8 +148,8 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
     List<WorshipModel> filtered = allWorship;
 
-    // Step 1: Apply city filter (only if city is not 'US')
-    if (city != 'US') {
+    // Step 1: Apply city filter (only for city-based results)
+    if (!_isLocationSearch && city != 'US') {
       filtered = filtered
           .where(
             (w) =>
@@ -176,7 +158,6 @@ class _RealEstateHomeState extends State<RealEstateHome> {
           )
           .toList();
 
-      // If no results, show all
       if (filtered.isEmpty) {
         debugPrint('   ⚠️ No city matches, showing all');
         filtered = allWorship;
@@ -224,23 +205,34 @@ class _RealEstateHomeState extends State<RealEstateHome> {
       _cacheKey = city;
       _isDataLoaded = false;
       _filteredWorship = []; // Clear filtered list
-      _worshipFuture = _fetchAndCacheWorship(city);
-      _searchController.clear();
-      _selectedStatus = 'All'; // Reset status filter
       _userHasSelectedCity = true; // Mark that user manually selected a city
       _userSelectedCity = true;
       _isApiSearchActive = false; // Reset API search mode
       _isLocationSearch = false;
+      _worshipFuture = _fetchAndCacheWorship(city);
+      _searchController.clear();
+      _selectedStatus = 'All'; // Reset status filter
     });
   }
 
   Future<void> _onRefresh() async {
     // Use API method - backend handles caching
-    final freshData = await _worshipService.fetchWorship();
+    final useLocation =
+        !_userSelectedCity && _userLat != null && _userLng != null;
+    final freshData = useLocation
+        ? await _worshipService.fetchWorship(
+            lat: _userLat,
+            lng: _userLng,
+          )
+        : await _worshipService.fetchWorship(city: _selectedCity);
+    final nextCacheKey =
+        useLocation ? _locationCacheKey(_userLat!, _userLng!) : _cacheKey;
     setState(() {
-      _worshipCache[_cacheKey] = freshData;
+      _worshipCache[nextCacheKey] = freshData;
       _isDataLoaded = true;
-      _applyAllFilters(_cacheKey);
+      _cacheKey = nextCacheKey;
+      _isLocationSearch = useLocation;
+      _applyAllFilters(nextCacheKey);
       _worshipFuture = Future.value(freshData);
     });
   }

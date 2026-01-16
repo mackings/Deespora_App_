@@ -8,6 +8,7 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/ResFilter.dart';
+import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -42,38 +43,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   double? _userLat;
   double? _userLng;
 
-  final List<String> usCities = [
-    "New York",
-    "Los Angeles",
-    "Chicago",
-    "Houston",
-    "Miami",
-    "San Francisco",
-    "Boston",
-    "Washington",
-    "Seattle",
-    "Atlanta",
-    "Las Vegas",
-    "Orlando",
-    "Dallas",
-    "Denver",
-    "Philadelphia",
-    "Phoenix",
-    "San Diego",
-    "Austin",
-    "Nashville",
-    "Portland",
-    "Detroit",
-    "Minneapolis",
-    "Charlotte",
-    "Indianapolis",
-    "Columbus",
-    "San Antonio",
-    "Tampa",
-    "Baltimore",
-    "Cleveland",
-    "Kansas City",
-  ];
+  final List<String> usCities = USCities.list;
 
   @override
   void initState() {
@@ -120,10 +90,9 @@ class _RestaurantHomeState extends State<RestaurantHome> {
           _selectedCity = detectedCity;
         });
 
-        if (_userLat != null && _userLng != null) {
+        if (_userLat != null && _userLng != null && !_userSelectedCity) {
           await _loadNearbyRestaurants(_userLat!, _userLng!);
         } else if (_restaurantsCache.containsKey(_cacheKey)) {
-          // Apply filters using the cache key (which is 'US')
           _applyAllFilters(_cacheKey);
         }
       }
@@ -144,10 +113,16 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     });
 
     try {
-      final results = await _apiService.fetchNearbyRestaurants(
+      var results = await _apiService.fetchRestaurants(
         lat: lat,
         lng: lng,
       );
+      if (results.isEmpty) {
+        results = await _apiService.fetchNearbyRestaurants(
+          lat: lat,
+          lng: lng,
+        );
+      }
       setState(() {
         _restaurantsCache[_cacheKey] = results;
         _isDataLoaded = true;
@@ -155,7 +130,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       });
       _applyAllFilters(_cacheKey);
     } catch (e) {
-      debugPrint('❌ Nearby fetch error: $e');
+      debugPrint('❌ Location fetch error: $e');
       setState(() {
         _isDataLoaded = true;
         _useLocationResults = false;
@@ -164,23 +139,32 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   }
 
   Future<List<Restaurant>> _fetchAndCacheRestaurants(String city) async {
-    if (_restaurantsCache.containsKey(city)) {
+    final useLocation = !_userSelectedCity && _userLat != null && _userLng != null;
+
+    final cacheKey = useLocation ? _locationCacheKey(_userLat!, _userLng!) : city;
+    if (_restaurantsCache.containsKey(cacheKey)) {
       setState(() {
         _isDataLoaded = true;
-        _cacheKey = city;
+        _cacheKey = cacheKey;
+        _useLocationResults = useLocation;
       });
-      _applyAllFilters(city);
-      return _restaurantsCache[city]!;
+      _applyAllFilters(cacheKey);
+      return _restaurantsCache[cacheKey]!;
     }
 
-    // Use new API method - backend handles caching
-    final result = await _apiService.fetchRestaurants();
-    _restaurantsCache[city] = result;
+    final result = useLocation
+        ? await _apiService.fetchRestaurants(
+            lat: _userLat,
+            lng: _userLng,
+          )
+        : await _apiService.fetchRestaurants(city: city);
+    _restaurantsCache[cacheKey] = result;
     setState(() {
       _isDataLoaded = true;
-      _cacheKey = city;
+      _cacheKey = cacheKey;
+      _useLocationResults = useLocation;
     });
-    _applyAllFilters(city);
+    _applyAllFilters(cacheKey);
     return result;
   }
 
@@ -200,15 +184,14 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     
     List<Restaurant> filtered = allRestaurants;
 
-    // Step 1: Apply city filter (only if city is not 'US')
-    if (!_useLocationResults && !_isLocationSearch && city != 'US') {
+    // Step 1: Apply city filter (only for city-based results)
+    if (!_useLocationResults && city != 'US') {
       filtered = filtered
           .where((r) =>
               r.vicinity.toLowerCase().contains(city.toLowerCase()) ||
               r.name.toLowerCase().contains(city.toLowerCase()))
           .toList();
 
-      // If no results, show all
       if (filtered.isEmpty) {
         debugPrint('   ⚠️ No city matches, showing all');
         filtered = allRestaurants;
@@ -247,7 +230,6 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   void _loadRestaurants(String city) {
     setState(() {
       _selectedCity = city;
-      _cacheKey = city;
       _isDataLoaded = false;
       _isApiSearch = false;
       _isLocationSearch = false;
@@ -262,7 +244,20 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
   Future<void> _onRefresh() async {
     // Use new API method - backend handles caching
-    final freshData = await _apiService.fetchRestaurants();
+    final useLocation =
+        !_userSelectedCity && _userLat != null && _userLng != null;
+    var freshData = useLocation
+        ? await _apiService.fetchRestaurants(
+            lat: _userLat,
+            lng: _userLng,
+          )
+        : await _apiService.fetchRestaurants(city: _selectedCity);
+    if (useLocation && freshData.isEmpty) {
+      freshData = await _apiService.fetchNearbyRestaurants(
+        lat: _userLat,
+        lng: _userLng,
+      );
+    }
     setState(() {
       _restaurantsCache[_cacheKey] = freshData;
       _isDataLoaded = true;

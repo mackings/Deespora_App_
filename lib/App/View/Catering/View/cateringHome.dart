@@ -6,6 +6,7 @@ import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
+import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -37,38 +38,7 @@ class _CateringHomeState extends State<CateringHome> {
   String _selectedStatus = 'All';
   bool _isDataLoaded = false;
 
-  final List<String> usCities = [
-    "New York",
-    "Los Angeles",
-    "Chicago",
-    "Houston",
-    "Miami",
-    "San Francisco",
-    "Boston",
-    "Washington",
-    "Seattle",
-    "Atlanta",
-    "Las Vegas",
-    "Orlando",
-    "Dallas",
-    "Denver",
-    "Philadelphia",
-    "Phoenix",
-    "San Diego",
-    "Austin",
-    "Nashville",
-    "Portland",
-    "Detroit",
-    "Minneapolis",
-    "Charlotte",
-    "Indianapolis",
-    "Columbus",
-    "San Antonio",
-    "Tampa",
-    "Baltimore",
-    "Cleveland",
-    "Kansas City",
-  ];
+  final List<String> usCities = USCities.list;
 
   @override
   void initState() {
@@ -112,36 +82,48 @@ class _CateringHomeState extends State<CateringHome> {
         }
         setState(() {
           _selectedCity = detectedCity;
+          _isDataLoaded = false;
+          _cateringFuture = _fetchAndCacheCatering(detectedCity);
         });
-
-        // Apply filters using the cache key (which is 'US')
-        if (_cateringCache.containsKey(_cacheKey)) {
-          _applyAllFilters(_cacheKey);
-        }
       }
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
     }
   }
 
+  String _locationCacheKey(double lat, double lng) {
+    return 'nearby_${lat.toStringAsFixed(5)}_${lng.toStringAsFixed(5)}';
+  }
+
   Future<List<Catering>> _fetchAndCacheCatering(String city) async {
-    if (_cateringCache.containsKey(city)) {
+    final useLocation =
+        !_userSelectedCity && _userLat != null && _userLng != null;
+    final cacheKey = useLocation ? _locationCacheKey(_userLat!, _userLng!) : city;
+
+    if (_cateringCache.containsKey(cacheKey)) {
       setState(() {
         _isDataLoaded = true;
-        _cacheKey = city;
+        _cacheKey = cacheKey;
+        _isLocationSearch = useLocation;
       });
-      _applyAllFilters(city);
-      return _cateringCache[city]!;
+      _applyAllFilters(cacheKey);
+      return _cateringCache[cacheKey]!;
     }
 
     // Use new API method - backend handles caching
-    final result = await _cateringService.fetchCaterings();
-    _cateringCache[city] = result;
+    final result = useLocation
+        ? await _cateringService.fetchCaterings(
+            lat: _userLat,
+            lng: _userLng,
+          )
+        : await _cateringService.fetchCaterings(city: city);
+    _cateringCache[cacheKey] = result;
     setState(() {
       _isDataLoaded = true;
-      _cacheKey = city;
+      _cacheKey = cacheKey;
+      _isLocationSearch = useLocation;
     });
-    _applyAllFilters(city);
+    _applyAllFilters(cacheKey);
     return result;
   }
 
@@ -162,7 +144,7 @@ class _CateringHomeState extends State<CateringHome> {
     
     List<Catering> filtered = allCatering;
 
-    // Step 1: Apply city filter (only if city is not 'US')
+    // Step 1: Apply city filter (only for city-based results)
     if (!_isLocationSearch && city != 'US') {
       filtered = filtered
           .where((r) =>
@@ -170,7 +152,6 @@ class _CateringHomeState extends State<CateringHome> {
               r.name.toLowerCase().contains(city.toLowerCase()))
           .toList();
 
-      // If no results, show all
       if (filtered.isEmpty) {
         debugPrint('   ⚠️ No city matches, showing all');
         filtered = allCatering;
@@ -223,11 +204,22 @@ class _CateringHomeState extends State<CateringHome> {
 
   Future<void> _onRefresh() async {
     // Use new API method - backend handles caching
-    final freshData = await _cateringService.fetchCaterings();
+    final useLocation =
+        !_userSelectedCity && _userLat != null && _userLng != null;
+    final freshData = useLocation
+        ? await _cateringService.fetchCaterings(
+            lat: _userLat,
+            lng: _userLng,
+          )
+        : await _cateringService.fetchCaterings(city: _selectedCity);
+    final nextCacheKey =
+        useLocation ? _locationCacheKey(_userLat!, _userLng!) : _cacheKey;
     setState(() {
-      _cateringCache[_cacheKey] = freshData;
+      _cateringCache[nextCacheKey] = freshData;
       _isDataLoaded = true;
-      _applyAllFilters(_cacheKey);
+      _cacheKey = nextCacheKey;
+      _isLocationSearch = useLocation;
+      _applyAllFilters(nextCacheKey);
       _cateringFuture = Future.value(freshData);
     });
   }

@@ -7,11 +7,33 @@ class CateringService {
   final Dio _dio = Dio();
 
   /// Fetch all catering services (cached on backend)
-  Future<List<Catering>> fetchCaterings() async {
-    const endpoint = '${Baseurl.Url}catering';
+  Future<List<Catering>> fetchCaterings({
+    String? city,
+    double? lat,
+    double? lng,
+  }) async {
+    final params = <String, String>{};
+
+    if (lat != null && lng != null) {
+      params['lat'] = lat.toString();
+      params['lng'] = lng.toString();
+    } else if (city != null && city.trim().isNotEmpty) {
+      params['city'] = city;
+    } else {
+      throw Exception('Either lat+lng coordinates or city must be provided');
+    }
+
+    final endpoint = Uri.parse('${Baseurl.Url}catering')
+        .replace(queryParameters: params)
+        .toString();
 
     // Check cache first
-    final cacheKey = CacheManager.getFetchCacheKey('catering');
+    final cacheKey = CacheManager.getFetchCacheKeyWithLocation(
+      'catering',
+      city: city,
+      lat: lat,
+      lng: lng,
+    );
     final cachedData = await CacheManager.getFromCache(cacheKey);
 
     if (cachedData != null) {

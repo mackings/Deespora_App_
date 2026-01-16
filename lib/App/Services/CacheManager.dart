@@ -114,6 +114,27 @@ class CacheManager {
     return 'cache_fetch_$type';
   }
 
+  /// Generate cache key for fetch operations with city or coordinates
+  static String getFetchCacheKeyWithLocation(
+    String type, {
+    String? city,
+    double? lat,
+    double? lng,
+  }) {
+    if (lat != null && lng != null) {
+      final latKey = lat.toStringAsFixed(5);
+      final lngKey = lng.toStringAsFixed(5);
+      return 'cache_fetch_${type}_coords_${latKey}_$lngKey';
+    }
+
+    if (city == null || city.trim().isEmpty) {
+      return 'cache_fetch_${type}_unknown';
+    }
+
+    final normalizedCity = city.toLowerCase().trim();
+    return 'cache_fetch_${type}_city_$normalizedCity';
+  }
+
   /// Generate cache key for search operations
   static String getSearchCacheKey(String type, String city, String keyword) {
     final normalizedCity = city.toLowerCase().trim();

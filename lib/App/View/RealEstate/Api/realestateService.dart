@@ -7,11 +7,33 @@ class WorshipService {
   final Dio _dio = Dio();
 
   /// Fetch all worship/church listings (cached on backend)
-  Future<List<WorshipModel>> fetchWorship() async {
-    const endpoint = '${Baseurl.Url}worship';
+  Future<List<WorshipModel>> fetchWorship({
+    String? city,
+    double? lat,
+    double? lng,
+  }) async {
+    final params = <String, String>{};
+
+    if (lat != null && lng != null) {
+      params['lat'] = lat.toString();
+      params['lng'] = lng.toString();
+    } else if (city != null && city.trim().isNotEmpty) {
+      params['city'] = city;
+    } else {
+      throw Exception('Either lat+lng coordinates or city must be provided');
+    }
+
+    final endpoint = Uri.parse('${Baseurl.Url}worship')
+        .replace(queryParameters: params)
+        .toString();
 
     // Check cache first
-    final cacheKey = CacheManager.getFetchCacheKey('worship');
+    final cacheKey = CacheManager.getFetchCacheKeyWithLocation(
+      'worship',
+      city: city,
+      lat: lat,
+      lng: lng,
+    );
     final cachedData = await CacheManager.getFromCache(cacheKey);
 
     if (cachedData != null) {
