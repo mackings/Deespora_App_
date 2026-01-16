@@ -9,6 +9,8 @@ class GlobalGalleryHeader extends StatelessWidget {
   final VoidCallback? onReviewPressed;
   final VoidCallback? onSavePressed;
   final VoidCallback? onSharePressed;
+  final String? saveLabel;
+  final IconData? saveIcon;
 
   const GlobalGalleryHeader({
     super.key,
@@ -19,6 +21,8 @@ class GlobalGalleryHeader extends StatelessWidget {
     this.onReviewPressed,
     this.onSavePressed,
     this.onSharePressed,
+    this.saveLabel,
+    this.saveIcon,
   });
 
   @override
@@ -89,7 +93,11 @@ class GlobalGalleryHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildActionButton(Icons.reviews, 'Review', onReviewPressed),
-              _buildActionButton(Icons.bookmark_border, 'Save', onSavePressed),
+              _buildActionButton(
+                saveIcon ?? Icons.bookmark_border,
+                saveLabel ?? 'Save',
+                onSavePressed,
+              ),
               _buildActionButton(Icons.share, 'Share', onSharePressed),
             ],
           ),

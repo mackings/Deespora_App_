@@ -156,10 +156,10 @@ class _InterestHomeState extends State<InterestHome> {
   }
 
   // ✅ Navigate to saved place - Updated to include Event handling
-  void _navigateToSavedPlace(Place place) {
+  Future<void> _navigateToSavedPlace(Place place) async {
     if (place.type == 'Restaurant') {
       final restaurant = place.toRestaurant();
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => RestaurantDetailScreen(restaurant: restaurant),
@@ -167,7 +167,7 @@ class _InterestHomeState extends State<InterestHome> {
       );
     } else if (place.type == 'RealEstate') {
       final realEstate = place.toRealEstate();
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => RealestateStoreDetails(realestate: realEstate),
@@ -175,7 +175,7 @@ class _InterestHomeState extends State<InterestHome> {
       );
     } else if (place.type == 'Catering') {
       final catering = place.toCatering();
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => GlobalStoreDetails(catering: catering),
@@ -184,13 +184,14 @@ class _InterestHomeState extends State<InterestHome> {
     } else if (place.type == 'Event') {
       // ✅ NEW: Handle Event navigation
       final event = place.toEvent();
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => EventDetailScreen(event: event),
         ),
       );
     }
+    _loadSavedData();
   }
 
   // ✅ Navigate to history item

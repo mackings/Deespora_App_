@@ -23,6 +23,7 @@ class RealestateStoreDetails extends StatefulWidget {
 }
 
 class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
+  bool _isSaved = false;
 
   Future<void> _savePlaceFromRealEstate(BuildContext context) async {
   final imageUrl = widget.realestate.photoReferences.isNotEmpty 
@@ -48,6 +49,9 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
         backgroundColor: Colors.green,
       ),
     );
+    setState(() {
+      _isSaved = true;
+    });
   } else if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -62,6 +66,104 @@ class _RealestateStoreDetailsState extends State<RealestateStoreDetails> {
   void initState() {
     super.initState();
     _trackHistory();
+    _loadSavedState();
+  }
+
+  Future<void> _loadSavedState() async {
+    final saved = await PlacePreferencesService.isPlaceSaved(
+      widget.realestate.name,
+      widget.realestate.address,
+    );
+    if (mounted) {
+      setState(() {
+        _isSaved = saved;
+      });
+    }
+  }
+
+  Future<bool> _confirmUnsave() async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Remove from saved?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This worship place will be removed from your interests.',
+                style: TextStyle(color: Colors.grey.shade600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF37B6AF),
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Unsave'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> _removePlaceFromRealEstate(BuildContext context) async {
+    final confirmed = await _confirmUnsave();
+    if (!confirmed) {
+      return;
+    }
+    final success = await PlacePreferencesService.removePlace(
+      widget.realestate.name,
+      widget.realestate.address,
+    );
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${widget.realestate.name} removed'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+      setState(() {
+        _isSaved = false;
+      });
+    }
   }
 
   Future<void> _trackHistory() async {
@@ -162,8 +264,14 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
               imageUrls: imageUrls,
               onReviewPressed: _openReviewInMaps,
               onSavePressed: () {
-                _savePlaceFromRealEstate(context);
+                if (_isSaved) {
+                  _removePlaceFromRealEstate(context);
+                } else {
+                  _savePlaceFromRealEstate(context);
+                }
               },
+              saveLabel: _isSaved ? 'Unsave' : 'Save',
+              saveIcon: _isSaved ? Icons.bookmark_remove : Icons.bookmark_border,
               onSharePressed: _sharePlace,
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},

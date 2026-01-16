@@ -15,6 +15,8 @@ class GlobalDetailWidget extends StatelessWidget {
   final VoidCallback? onReviewPressed;
   final VoidCallback? onSavePressed;
   final VoidCallback? onSharePressed;
+  final String? saveLabel;
+  final IconData? saveIcon;
   final VoidCallback? onUberEatsPressed;
   final VoidCallback? onGrubhubPressed;
   final VoidCallback? onDoorDashPressed;
@@ -32,6 +34,8 @@ class GlobalDetailWidget extends StatelessWidget {
     this.onReviewPressed,
     this.onSavePressed,
     this.onSharePressed,
+    this.saveLabel,
+    this.saveIcon,
     this.onUberEatsPressed,
     this.onGrubhubPressed,
     this.onDoorDashPressed,
@@ -51,6 +55,8 @@ class GlobalDetailWidget extends StatelessWidget {
             onReviewPressed: onReviewPressed,
             onSavePressed: onSavePressed,
             onSharePressed: onSharePressed,
+            saveLabel: saveLabel,
+            saveIcon: saveIcon,
           ),
           GlobalDetailsSection(
             storeName: storeName,

@@ -138,7 +138,7 @@ class GlobalStoreFront extends StatelessWidget {
               // 🟩 Action Button
               GestureDetector(
                 onTap: () {
-                     print(imageUrl);
+                  print(imageUrl);
                 },
                 child: Container(
                   margin: const EdgeInsets.only(right: 12),

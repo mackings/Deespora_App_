@@ -22,14 +22,91 @@ class GlobalStoreDetails extends StatefulWidget {
 }
 
 class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
+  bool _isSaved = false;
 
   @override
   void initState() {
     super.initState();
     _trackHistory();
+    _loadSavedState();
   }
 
   // ✅ Save Catering place to SharedPreferences
+  Future<void> _loadSavedState() async {
+    final saved = await PlacePreferencesService.isPlaceSaved(
+      widget.catering.name,
+      widget.catering.address,
+    );
+    if (mounted) {
+      setState(() {
+        _isSaved = saved;
+      });
+    }
+  }
+
+  Future<bool> _confirmUnsave() async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Remove from saved?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This catering place will be removed from your interests.',
+                style: TextStyle(color: Colors.grey.shade600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF37B6AF),
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Unsave'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
 Future<void> _savePlaceFromCatering(BuildContext context) async {
   final imageUrl = widget.catering.photoReferences.isNotEmpty
       ? widget.catering.photoReferences[0]
@@ -54,6 +131,9 @@ Future<void> _savePlaceFromCatering(BuildContext context) async {
         backgroundColor: Colors.green,
       ),
     );
+    setState(() {
+      _isSaved = true;
+    });
   } else if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -63,6 +143,28 @@ Future<void> _savePlaceFromCatering(BuildContext context) async {
     );
   }
 }
+
+  Future<void> _removePlaceFromCatering(BuildContext context) async {
+    final confirmed = await _confirmUnsave();
+    if (!confirmed) {
+      return;
+    }
+    final success = await PlacePreferencesService.removePlace(
+      widget.catering.name,
+      widget.catering.address,
+    );
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${widget.catering.name} removed'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+      setState(() {
+        _isSaved = false;
+      });
+    }
+  }
 
   // ✅ Track when the user opens this store
   Future<void> _trackHistory() async {
@@ -163,8 +265,14 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
               imageUrls: imageUrls,
               onReviewPressed: _openReviewInMaps,
               onSavePressed: () {
-                _savePlaceFromCatering(context);
+                if (_isSaved) {
+                  _removePlaceFromCatering(context);
+                } else {
+                  _savePlaceFromCatering(context);
+                }
               },
+              saveLabel: _isSaved ? 'Unsave' : 'Save',
+              saveIcon: _isSaved ? Icons.bookmark_remove : Icons.bookmark_border,
               onSharePressed: _sharePlace,
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},

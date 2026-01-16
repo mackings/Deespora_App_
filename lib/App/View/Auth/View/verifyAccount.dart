@@ -43,18 +43,23 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
 
       if (widget.verificationType == "email") {
         if (widget.isPasswordReset) {
-          // Email password reset - verify OTP first, then show password field
-          result = await AuthApi().verifyOtp(
-            email: widget.email!,
-            code: otpCode,
-          );
-
-          if (result['success']) {
-            // After OTP verification, navigate to set new password
+          if (newPasswordController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Please enter your new password"),
+                backgroundColor: Colors.red,
+              ),
+            );
             setState(() => _isLoading = false);
-            _showPasswordDialog();
             return;
           }
+
+          // Email password reset - use OTP token + new password
+          result = await AuthApi().resetPassword(
+            email: widget.email!,
+            token: otpCode,
+            newPassword: newPasswordController.text.trim(),
+          );
         } else {
           // Regular email verification
           result = await AuthApi().verifyOtp(
@@ -175,77 +180,6 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
     }
   }
 
-  // Dialog for email password reset
-  void _showPasswordDialog() {
-    final passwordController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("Set New Password"),
-        content: CustomTextField(
-          title: "New Password",
-          hintText: "Enter new password",
-          controller: passwordController,
-          isPassword: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (passwordController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Please enter a password"),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              Navigator.pop(context);
-              setState(() => _isLoading = true);
-
-              final result = await AuthApi().resetPassword(
-                email: widget.email!,
-                token: otpCode,
-                newPassword: passwordController.text.trim(),
-              );
-
-              setState(() => _isLoading = false);
-
-              if (result['success']) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result['message'] ?? "Password reset successful!",
-                    ),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                Nav.pushReplacement(SignIn());
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result['message'] ?? "Password reset failed",
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text("Reset Password"),
-          ),
-        ],
-      ),
-    );
-  }
-
   String get _title {
     if (widget.isPasswordReset) {
       return "Reset Password";
@@ -308,9 +242,8 @@ class _VerifyAccountState extends ConsumerState<VerifyAccount> {
                       },
                     ),
                     
-                    // Show password field for phone password reset
-                    if (widget.isPasswordReset && 
-                        widget.verificationType == "phone") ...[
+                    // Show password field for email/phone password reset
+                    if (widget.isPasswordReset) ...[
                       const SizedBox(height: 30),
                       CustomTextField(
                         title: "New Password",

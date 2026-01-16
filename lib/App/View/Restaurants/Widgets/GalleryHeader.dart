@@ -15,6 +15,8 @@ class RestaurantGalleryHeader extends StatefulWidget {
   final VoidCallback? onReviewPressed;
   final VoidCallback? onSavePressed;
   final VoidCallback? onSharePressed;
+  final String? saveLabel;
+  final IconData? saveIcon;
 
   const RestaurantGalleryHeader({
     super.key,
@@ -25,6 +27,8 @@ class RestaurantGalleryHeader extends StatefulWidget {
     this.onReviewPressed,
     this.onSavePressed,
     this.onSharePressed,
+    this.saveLabel,
+    this.saveIcon,
   });
 
   @override
@@ -152,9 +156,9 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
                 widget.onReviewPressed,
               ),
               _buildActionButton(
-                Icons.bookmark_border,
-                'Save',
-               widget.onSavePressed
+                widget.saveIcon ?? Icons.bookmark_border,
+                widget.saveLabel ?? 'Save',
+                widget.onSavePressed
               ),
               _buildActionButton(Icons.share, 'Share', widget.onSharePressed),
             ],

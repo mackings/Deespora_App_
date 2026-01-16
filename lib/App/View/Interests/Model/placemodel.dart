@@ -68,43 +68,54 @@ class Place {
 
   // ✅ Convert Place to Restaurant
   Restaurant toRestaurant() {
+    final List<String> photos = photoReferences.isNotEmpty
+        ? photoReferences
+        : (imageUrl != null && imageUrl!.isNotEmpty ? [imageUrl!] : []);
     return Restaurant(
       id: id,
       name: name,
       vicinity: address,
       rating: rating ?? 0.0,
       openNow: openNow,
-      photoReferences: photoReferences,
+      photoReferences: photos,
       reviews: [],
     );
   }
 
   // ✅ Convert Place to RealEstateModel
   RealEstateModel toRealEstate() {
+    final List<String> photos = photoReferences.isNotEmpty
+        ? photoReferences
+        : (imageUrl != null && imageUrl!.isNotEmpty ? [imageUrl!] : []);
     return RealEstateModel(
       id: id,
       name: name,
       address: address,
       rating: rating ?? 0.0,
       openNow: openNow,
-      photoReferences: photoReferences,
+      photoReferences: photos,
       reviews: [],
     );
   }
 
+
   // ✅ Convert Place to Catering
   Catering toCatering() {
+    final List<String> photos = photoReferences.isNotEmpty
+        ? photoReferences
+        : (imageUrl != null && imageUrl!.isNotEmpty ? [imageUrl!] : []);
     return Catering(
       id: id,
       name: name,
       address: address,
       rating: rating ?? 0.0,
       openNow: openNow,
-      photoReferences: photoReferences,
+      photoReferences: photos,
       reviews: [],
     );
   }
 
+  
   // ✅ Convert Place to Event
   Event toEvent() {
     final venue = EventVenue(
