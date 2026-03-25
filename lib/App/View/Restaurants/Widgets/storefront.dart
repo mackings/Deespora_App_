@@ -1,33 +1,31 @@
+import 'package:dspora/App/View/Widgets/GLOBAL/fallback_network_image.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 
-
 class StoreFront extends StatelessWidget {
-  final String imageUrl;
+  final List<String> imageUrls;
+  final String placeholderAsset;
   final String storeName;
   final String category;
   final String location;
   final double rating;
   final VoidCallback? onTap;
+  final VoidCallback? onImageUnavailable;
 
   const StoreFront({
     super.key,
-    required this.imageUrl,
+    required this.imageUrls,
+    required this.placeholderAsset,
     required this.storeName,
     required this.category,
     required this.location,
     required this.rating,
     this.onTap,
+    this.onImageUnavailable,
   });
-
-  bool _isValidUrl(String url) {
-    return url.startsWith('http') || url.startsWith('https');
-  }
 
   @override
   Widget build(BuildContext context) {
-    final bool hasImage = imageUrl.isNotEmpty && _isValidUrl(imageUrl);
-
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -52,32 +50,25 @@ class StoreFront extends StatelessWidget {
               // 🟩 Store Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: hasImage
-                    ? Image.network(
-                        imageUrl,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            width: 100,
-                            height: 100,
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.teal,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          print('❌ Image load error: $imageUrl');
-                          return _buildPlaceholder();
-                        },
-                      )
-                    : _buildPlaceholder(),
+                child: FallbackNetworkImage(
+                  imageUrls: imageUrls,
+                  assetPath: placeholderAsset,
+                  onAllCandidatesFailed: onImageUnavailable,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                  placeholderBuilder: (context) => Container(
+                    width: 100,
+                    height: 100,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.teal,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                ),
               ),
 
               const SizedBox(width: 12),
@@ -166,19 +157,6 @@ class StoreFront extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      width: 100,
-      height: 100,
-      color: Colors.grey[200],
-      child: const Icon(
-        Icons.restaurant,
-        color: Colors.grey,
-        size: 40,
       ),
     );
   }

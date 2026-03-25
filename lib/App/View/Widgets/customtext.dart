@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
 class CustomText extends StatelessWidget {
   final String text;
   final bool title;
@@ -10,6 +9,11 @@ class CustomText extends StatelessWidget {
   final Color? color;
   final double? fontSize;
   final bool underline;
+
+  // Optional layout controls (for responsiveness)
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final bool? softWrap;
 
   // ✅ New props for shortening
   final bool shorten;
@@ -24,6 +28,9 @@ class CustomText extends StatelessWidget {
     this.color,
     this.fontSize,
     this.underline = false,
+    this.maxLines,
+    this.overflow,
+    this.softWrap,
 
     // ✅ Defaults
     this.shorten = false,
@@ -65,6 +72,13 @@ class CustomText extends StatelessWidget {
       );
     }
 
-    return Text(displayText, textAlign: textAlign, style: style);
+    return Text(
+      displayText,
+      textAlign: textAlign,
+      style: style,
+      maxLines: maxLines,
+      overflow: overflow,
+      softWrap: softWrap,
+    );
   }
 }

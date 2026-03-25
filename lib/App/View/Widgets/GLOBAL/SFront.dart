@@ -1,22 +1,27 @@
+import 'package:dspora/App/View/Widgets/GLOBAL/fallback_network_image.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 
 class GlobalStoreFront extends StatelessWidget {
-  final String imageUrl;
+  final List<String> imageUrls;
+  final String placeholderAsset;
   final String storeName;
   final String category;
   final String location;
   final double rating;
   final VoidCallback? onTap;
+  final VoidCallback? onImageUnavailable;
 
   const GlobalStoreFront({
     super.key,
-    required this.imageUrl,
+    required this.imageUrls,
+    required this.placeholderAsset,
     required this.storeName,
     required this.category,
     required this.location,
     required this.rating,
     this.onTap,
+    this.onImageUnavailable,
   });
 
   @override
@@ -45,24 +50,24 @@ class GlobalStoreFront extends StatelessWidget {
               // 🟩 Store Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  imageUrl,
+                child: FallbackNetworkImage(
+                  imageUrls: imageUrls,
+                  assetPath: placeholderAsset,
+                  onAllCandidatesFailed: onImageUnavailable,
                   width: 100,
                   height: 100,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    // Fallback widget when image fails to load
-                    return Container(
-                      width: 100,
-                      height: 100,
-                      color: Colors.grey[200],
-                      child: const Icon(
-                        Icons.broken_image,
-                        color: Colors.grey,
-                        size: 40,
+                  placeholderBuilder: (context) => Container(
+                    width: 100,
+                    height: 100,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.teal,
+                        strokeWidth: 2,
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
 
@@ -136,22 +141,17 @@ class GlobalStoreFront extends StatelessWidget {
               ),
 
               // 🟩 Action Button
-              GestureDetector(
-                onTap: () {
-                  print(imageUrl);
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF37B6AF),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Colors.white,
-                  ),
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF37B6AF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.white,
                 ),
               ),
             ],

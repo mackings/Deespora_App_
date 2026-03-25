@@ -3,8 +3,6 @@ import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
 import 'package:dspora/Constants/BaseUrl.dart';
 import 'package:dspora/App/Services/CacheManager.dart';
 
-
-
 class WorshipService {
   final Dio _dio = Dio();
 
@@ -13,7 +11,9 @@ class WorshipService {
     String? city,
     double? lat,
     double? lng,
+    bool forceRefresh = false,
   }) async {
+    await CacheManager.invalidateDiscoveryImageCachesOnce();
     final params = <String, String>{};
 
     if (lat != null && lng != null) {
@@ -25,9 +25,9 @@ class WorshipService {
       throw Exception('Either lat+lng coordinates or city must be provided');
     }
 
-    final endpoint = Uri.parse('${Baseurl.Url}worship')
-        .replace(queryParameters: params)
-        .toString();
+    final endpoint = Uri.parse(
+      '${Baseurl.Url}worship',
+    ).replace(queryParameters: params).toString();
 
     // Check cache first
     final cacheKey = CacheManager.getFetchCacheKeyWithLocation(
@@ -36,9 +36,11 @@ class WorshipService {
       lat: lat,
       lng: lng,
     );
-    final cachedData = await CacheManager.getFromCache(cacheKey);
+    final cachedData = forceRefresh
+        ? null
+        : await CacheManager.getFromCache(cacheKey);
 
-    if (cachedData != null) {
+    if (!forceRefresh && cachedData != null) {
       print('🎯 Using cached worship data');
       try {
         final List data = cachedData is Map
@@ -86,14 +88,14 @@ class WorshipService {
     String? city,
     double? lat,
     double? lng,
+    bool forceRefresh = false,
   }) async {
+    await CacheManager.invalidateDiscoveryImageCachesOnce();
     if (keyword.trim().isEmpty) {
       throw Exception('Keyword is required for search');
     }
 
-    final params = <String, String>{
-      'keyword': keyword,
-    };
+    final params = <String, String>{'keyword': keyword};
 
     if (lat != null && lng != null) {
       params['lat'] = lat.toString();
@@ -104,9 +106,9 @@ class WorshipService {
       throw Exception('Either lat+lng coordinates or city must be provided');
     }
 
-    final endpoint = Uri.parse('${Baseurl.Url}search-worship')
-        .replace(queryParameters: params)
-        .toString();
+    final endpoint = Uri.parse(
+      '${Baseurl.Url}search-worship',
+    ).replace(queryParameters: params).toString();
 
     // Check cache first
     final cacheKey = CacheManager.getSearchCacheKeyWithLocation(
@@ -116,9 +118,11 @@ class WorshipService {
       lat: lat,
       lng: lng,
     );
-    final cachedData = await CacheManager.getFromCache(cacheKey);
+    final cachedData = forceRefresh
+        ? null
+        : await CacheManager.getFromCache(cacheKey);
 
-    if (cachedData != null) {
+    if (!forceRefresh && cachedData != null) {
       print('🎯 Using cached search results for: $keyword in $city');
       try {
         final List data = cachedData is Map

@@ -5,6 +5,7 @@ import 'package:dspora/App/View/Widgets/GLOBAL/FrontDetails.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
@@ -26,9 +27,15 @@ class _CateringHomeState extends State<CateringHome> {
   String _cacheKey = 'US'; // Track which cache key has the data
   final Map<String, List<Catering>> _cateringCache = {};
   List<Catering> _filteredCatering = [];
+  List<Catering> _originalData = [];
+  List<Catering> _lastSuccessfulApiSearchResults = [];
+  String _lastSuccessfulApiSearchKeyword = '';
+  int _searchRequestId = 0;
   bool _isApiSearch = false;
   bool _isLocationSearch = false;
   bool _userSelectedCity = false;
+  bool _isRefreshingImageData = false;
+  String? _lastImageRefreshSignature;
   double? _userLat;
   double? _userLng;
 
@@ -39,6 +46,81 @@ class _CateringHomeState extends State<CateringHome> {
   bool _isDataLoaded = false;
 
   final List<String> usCities = USCities.list;
+
+  bool get _hasActiveApiSearch =>
+      _isApiSearch && _searchController.text.trim().length >= 3;
+
+  List<Catering> _applyStatusFilterToCatering(List<Catering> items) {
+    if (_selectedStatus == 'Open') {
+      return items.where((c) => c.openNow == true).toList();
+    }
+    if (_selectedStatus == 'Closed') {
+      return items.where((c) => c.openNow == false).toList();
+    }
+    return items;
+  }
+
+  List<Catering> _filterApiSearchResults(List<Catering> items, String keyword) {
+    final normalizedQuery = keyword.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return items;
+    }
+
+    final queryTokens = normalizedQuery
+        .split(RegExp(r'\s+'))
+        .where((token) => token.isNotEmpty)
+        .toList();
+
+    bool matches(Catering catering) {
+      final haystack = '${catering.name} ${catering.address}'
+          .toLowerCase()
+          .trim();
+      if (haystack.contains(normalizedQuery)) {
+        return true;
+      }
+      return queryTokens.every(haystack.contains);
+    }
+
+    final filtered = items.where(matches).toList();
+    return filtered;
+  }
+
+  List<Catering> _fallbackSearchResults(String keyword) {
+    if (_lastSuccessfulApiSearchResults.isEmpty ||
+        _lastSuccessfulApiSearchKeyword.isEmpty) {
+      return const [];
+    }
+
+    final normalizedKeyword = keyword.trim().toLowerCase();
+    final normalizedLastKeyword = _lastSuccessfulApiSearchKeyword
+        .trim()
+        .toLowerCase();
+
+    if (!normalizedKeyword.startsWith(normalizedLastKeyword) &&
+        !normalizedLastKeyword.startsWith(normalizedKeyword)) {
+      return const [];
+    }
+
+    return _filterApiSearchResults(_lastSuccessfulApiSearchResults, keyword);
+  }
+
+  List<Catering> _mergeSearchResults(
+    List<Catering> primary,
+    List<Catering> secondary,
+  ) {
+    final seen = <String>{};
+    final merged = <Catering>[];
+
+    for (final catering in [...primary, ...secondary]) {
+      final key =
+          '${catering.id}|${catering.name.toLowerCase()}|${catering.address.toLowerCase()}';
+      if (seen.add(key)) {
+        merged.add(catering);
+      }
+    }
+
+    return merged;
+  }
 
   @override
   void initState() {
@@ -77,7 +159,7 @@ class _CateringHomeState extends State<CateringHome> {
       if (placemarks.isNotEmpty) {
         final detectedCity = placemarks.first.locality ?? 'US';
         debugPrint("📍 User city detected: $detectedCity");
-        if (_userSelectedCity) {
+        if (_userSelectedCity || _searchController.text.trim().isNotEmpty) {
           return;
         }
         setState(() {
@@ -98,7 +180,9 @@ class _CateringHomeState extends State<CateringHome> {
   Future<List<Catering>> _fetchAndCacheCatering(String city) async {
     final useLocation =
         !_userSelectedCity && _userLat != null && _userLng != null;
-    final cacheKey = useLocation ? _locationCacheKey(_userLat!, _userLng!) : city;
+    final cacheKey = useLocation
+        ? _locationCacheKey(_userLat!, _userLng!)
+        : city;
 
     if (_cateringCache.containsKey(cacheKey)) {
       setState(() {
@@ -112,12 +196,15 @@ class _CateringHomeState extends State<CateringHome> {
 
     // Use new API method - backend handles caching
     final result = useLocation
-        ? await _cateringService.fetchCaterings(
-            lat: _userLat,
-            lng: _userLng,
-          )
+        ? await _cateringService.fetchCaterings(lat: _userLat, lng: _userLng)
         : await _cateringService.fetchCaterings(city: city);
     _cateringCache[cacheKey] = result;
+    _originalData = result;
+
+    if (_hasActiveApiSearch) {
+      return result;
+    }
+
     setState(() {
       _isDataLoaded = true;
       _cacheKey = cacheKey;
@@ -135,28 +222,34 @@ class _CateringHomeState extends State<CateringHome> {
     }
 
     final allCatering = _cateringCache[city] ?? [];
-    
+
     // 🔥 DEBUG: Print what we're working with
-    debugPrint('🔍 Applying filters to ${allCatering.length} catering companies');
+    debugPrint(
+      '🔍 Applying filters to ${allCatering.length} catering companies',
+    );
     debugPrint('   City: $city');
     debugPrint('   Search query: "${_searchController.text}"');
     debugPrint('   Status filter: $_selectedStatus');
-    
+
     List<Catering> filtered = allCatering;
 
     // Step 1: Apply city filter (only for city-based results)
     if (!_isLocationSearch && city != 'US') {
       filtered = filtered
-          .where((r) =>
-              r.address.toLowerCase().contains(city.toLowerCase()) ||
-              r.name.toLowerCase().contains(city.toLowerCase()))
+          .where(
+            (r) =>
+                r.address.toLowerCase().contains(city.toLowerCase()) ||
+                r.name.toLowerCase().contains(city.toLowerCase()),
+          )
           .toList();
 
       if (filtered.isEmpty) {
         debugPrint('   ⚠️ No city matches, showing all');
         filtered = allCatering;
       } else {
-        debugPrint('   ✅ After city filter: ${filtered.length} catering companies');
+        debugPrint(
+          '   ✅ After city filter: ${filtered.length} catering companies',
+        );
       }
     }
 
@@ -164,20 +257,28 @@ class _CateringHomeState extends State<CateringHome> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty && !_isApiSearch) {
       filtered = filtered
-          .where((r) =>
-              r.name.toLowerCase().contains(query) ||
-              r.address.toLowerCase().contains(query))
+          .where(
+            (r) =>
+                r.name.toLowerCase().contains(query) ||
+                r.address.toLowerCase().contains(query),
+          )
           .toList();
-      debugPrint('   ✅ After search filter: ${filtered.length} catering companies');
+      debugPrint(
+        '   ✅ After search filter: ${filtered.length} catering companies',
+      );
     }
 
     // Step 3: Apply status filter (Open/Closed)
     if (_selectedStatus == 'Open') {
       filtered = filtered.where((c) => c.openNow == true).toList();
-      debugPrint('   ✅ After status filter (Open): ${filtered.length} catering companies');
+      debugPrint(
+        '   ✅ After status filter (Open): ${filtered.length} catering companies',
+      );
     } else if (_selectedStatus == 'Closed') {
       filtered = filtered.where((c) => c.openNow == false).toList();
-      debugPrint('   ✅ After status filter (Closed): ${filtered.length} catering companies');
+      debugPrint(
+        '   ✅ After status filter (Closed): ${filtered.length} catering companies',
+      );
     }
 
     debugPrint('   🎯 Final filtered count: ${filtered.length}');
@@ -207,13 +308,11 @@ class _CateringHomeState extends State<CateringHome> {
     final useLocation =
         !_userSelectedCity && _userLat != null && _userLng != null;
     final freshData = useLocation
-        ? await _cateringService.fetchCaterings(
-            lat: _userLat,
-            lng: _userLng,
-          )
+        ? await _cateringService.fetchCaterings(lat: _userLat, lng: _userLng)
         : await _cateringService.fetchCaterings(city: _selectedCity);
-    final nextCacheKey =
-        useLocation ? _locationCacheKey(_userLat!, _userLng!) : _cacheKey;
+    final nextCacheKey = useLocation
+        ? _locationCacheKey(_userLat!, _userLng!)
+        : _cacheKey;
     setState(() {
       _cateringCache[nextCacheKey] = freshData;
       _isDataLoaded = true;
@@ -229,8 +328,12 @@ class _CateringHomeState extends State<CateringHome> {
 
     // If search is empty, just filter locally
     if (query.isEmpty) {
+      _searchRequestId++;
       _isApiSearch = false;
       _isLocationSearch = false;
+      if (_originalData.isNotEmpty) {
+        _cateringCache[_cacheKey] = _originalData;
+      }
       if (_isDataLoaded && _cateringCache.containsKey(_cacheKey)) {
         _applyAllFilters(_cacheKey);
       }
@@ -239,9 +342,20 @@ class _CateringHomeState extends State<CateringHome> {
 
     // If search has 3+ characters, use API search
     if (query.length >= 3) {
-      _performApiSearch(query);
+      final fallbackResults = _fallbackSearchResults(query);
+      if (fallbackResults.isNotEmpty) {
+        setState(() {
+          _filteredCatering = _applyStatusFilterToCatering(fallbackResults);
+          _isDataLoaded = true;
+        });
+      }
+      _performApiSearch(query, ++_searchRequestId);
     } else {
+      _searchRequestId++;
       _isApiSearch = false;
+      if (_originalData.isNotEmpty) {
+        _cateringCache[_cacheKey] = _originalData;
+      }
       // For short queries, filter locally
       if (_isDataLoaded && _cateringCache.containsKey(_cacheKey)) {
         _applyAllFilters(_cacheKey);
@@ -250,7 +364,7 @@ class _CateringHomeState extends State<CateringHome> {
   }
 
   // New method to search via API
-  Future<void> _performApiSearch(String keyword) async {
+  Future<void> _performApiSearch(String keyword, int requestId) async {
     setState(() {
       _isDataLoaded = false;
       _isApiSearch = true;
@@ -271,19 +385,86 @@ class _CateringHomeState extends State<CateringHome> {
         lat: useLocation ? _userLat : null,
         lng: useLocation ? _userLng : null,
       );
+      final filteredResults = _filterApiSearchResults(results, keyword);
+      final fallbackResults = _fallbackSearchResults(keyword);
+      final effectiveResults = _mergeSearchResults(
+        filteredResults,
+        fallbackResults,
+      );
+
+      if (!mounted ||
+          requestId != _searchRequestId ||
+          _searchController.text.trim() != keyword) {
+        return;
+      }
 
       setState(() {
-        _cateringCache[_cacheKey] = results;
         _isDataLoaded = true;
-        _cateringFuture = Future.value(results);
+        _cateringFuture = Future.value(effectiveResults);
+        _filteredCatering = _applyStatusFilterToCatering(effectiveResults);
+      });
+
+      if (effectiveResults.isNotEmpty) {
+        _lastSuccessfulApiSearchResults = effectiveResults;
+        _lastSuccessfulApiSearchKeyword = keyword;
+      }
+    } catch (e) {
+      debugPrint('❌ Search error: $e');
+      if (!mounted || requestId != _searchRequestId) {
+        return;
+      }
+      setState(() {
+        _isDataLoaded = true;
+      });
+    }
+  }
+
+  Future<void> _refreshImagesForCurrentView() async {
+    final signature =
+        '$_cacheKey|$_selectedCity|${_searchController.text.trim()}|$_isApiSearch|$_userSelectedCity|$_userLat|$_userLng';
+
+    if (_isRefreshingImageData || _lastImageRefreshSignature == signature) {
+      return;
+    }
+
+    _isRefreshingImageData = true;
+    _lastImageRefreshSignature = signature;
+
+    try {
+      final query = _searchController.text.trim();
+      final useLocation =
+          !_userSelectedCity && _userLat != null && _userLng != null;
+
+      final freshData = _isApiSearch && query.length >= 3
+          ? await _cateringService.searchCatering(
+              keyword: query,
+              city: useLocation ? null : _selectedCity,
+              lat: useLocation ? _userLat : null,
+              lng: useLocation ? _userLng : null,
+              forceRefresh: true,
+            )
+          : await _cateringService.fetchCaterings(
+              city: useLocation ? null : _selectedCity,
+              lat: useLocation ? _userLat : null,
+              lng: useLocation ? _userLng : null,
+              forceRefresh: true,
+            );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cateringCache[_cacheKey] = freshData;
+        _cateringFuture = Future.value(freshData);
+        _isDataLoaded = true;
       });
 
       _applyAllFilters(_cacheKey);
     } catch (e) {
-      debugPrint('❌ Search error: $e');
-      setState(() {
-        _isDataLoaded = true;
-      });
+      debugPrint('❌ Failed to refresh catering images: $e');
+    } finally {
+      _isRefreshingImageData = false;
     }
   }
 
@@ -330,7 +511,7 @@ class _CateringHomeState extends State<CateringHome> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Filter title
               const Text(
                 'Filter Catering',
@@ -340,15 +521,15 @@ class _CateringHomeState extends State<CateringHome> {
                   color: Colors.black87,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Status filter buttons
               CateringStatusFilter(
                 selectedStatus: _selectedStatus,
                 onStatusChanged: _onStatusChanged,
               ),
-              
+
               const SizedBox(height: 32),
             ],
           ),
@@ -424,7 +605,7 @@ class _CateringHomeState extends State<CateringHome> {
               ],
             ),
           ),
-          
+
           // Catering list
           Expanded(
             child: FutureBuilder<List<Catering>>(
@@ -446,7 +627,11 @@ class _CateringHomeState extends State<CateringHome> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red,
+                        ),
                         const SizedBox(height: 16),
                         Text('Error: ${snapshot.error}'),
                         const SizedBox(height: 16),
@@ -466,7 +651,11 @@ class _CateringHomeState extends State<CateringHome> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                          const Icon(
+                            Icons.search_off,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             _searchController.text.isNotEmpty
@@ -512,13 +701,13 @@ class _CateringHomeState extends State<CateringHome> {
         itemBuilder: (context, index) {
           final c = cateringList[index];
           return GlobalStoreFront(
-            imageUrl: c.photoReferences.isNotEmpty
-                ? c.photoReferences.first
-                : '',
+            imageUrls: c.imageUrls,
+            placeholderAsset: Images.cateringPlaceholderAsset,
             storeName: c.name,
             category: "Catering",
             location: c.address,
             rating: c.rating,
+            onImageUnavailable: _refreshImagesForCurrentView,
             onTap: () {
               Nav.push(GlobalStoreDetails(catering: c));
             },
@@ -554,14 +743,9 @@ class CateringStatusFilter extends StatelessWidget {
             onTap: () => onStatusChanged(status),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 6),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF37B6AF)
-                    : Colors.grey[100],
+                color: isSelected ? const Color(0xFF37B6AF) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(

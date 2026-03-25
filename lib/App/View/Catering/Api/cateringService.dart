@@ -11,7 +11,9 @@ class CateringService {
     String? city,
     double? lat,
     double? lng,
+    bool forceRefresh = false,
   }) async {
+    await CacheManager.invalidateDiscoveryImageCachesOnce();
     final params = <String, String>{};
 
     if (lat != null && lng != null) {
@@ -23,9 +25,9 @@ class CateringService {
       throw Exception('Either lat+lng coordinates or city must be provided');
     }
 
-    final endpoint = Uri.parse('${Baseurl.Url}catering')
-        .replace(queryParameters: params)
-        .toString();
+    final endpoint = Uri.parse(
+      '${Baseurl.Url}catering',
+    ).replace(queryParameters: params).toString();
 
     // Check cache first
     final cacheKey = CacheManager.getFetchCacheKeyWithLocation(
@@ -34,19 +36,21 @@ class CateringService {
       lat: lat,
       lng: lng,
     );
-    final cachedData = await CacheManager.getFromCache(cacheKey);
+    final cachedData = forceRefresh
+        ? null
+        : await CacheManager.getFromCache(cacheKey);
 
-    if (cachedData != null) {
+    if (!forceRefresh && cachedData != null) {
       print('🎯 Using cached catering data');
       try {
         final List caterings = cachedData is List
             ? cachedData
             : (cachedData is Map<String, dynamic>
-                ? (cachedData['catering'] ??
-                    cachedData['caterings'] ??
-                    cachedData['restaurants'] ??
-                    [])
-                : []);
+                  ? (cachedData['catering'] ??
+                        cachedData['caterings'] ??
+                        cachedData['restaurants'] ??
+                        [])
+                  : []);
         return caterings.map((e) => Catering.fromJson(e)).toList();
       } catch (e) {
         print('⚠️ Failed to parse cached data, fetching fresh: $e');
@@ -66,11 +70,11 @@ class CateringService {
         final List caterings = data is List
             ? data
             : (data is Map<String, dynamic>
-                ? (data['catering'] ??
-                    data['caterings'] ??
-                    data['restaurants'] ??
-                    [])
-                : []);
+                  ? (data['catering'] ??
+                        data['caterings'] ??
+                        data['restaurants'] ??
+                        [])
+                  : []);
         if (caterings is! List) {
           throw Exception('Invalid data format: ${response.data}');
         }
@@ -94,14 +98,14 @@ class CateringService {
     String? city,
     double? lat,
     double? lng,
+    bool forceRefresh = false,
   }) async {
+    await CacheManager.invalidateDiscoveryImageCachesOnce();
     if (keyword.trim().isEmpty) {
       throw Exception('Keyword is required for search');
     }
 
-    final params = <String, String>{
-      'keyword': keyword,
-    };
+    final params = <String, String>{'keyword': keyword};
 
     if (lat != null && lng != null) {
       params['lat'] = lat.toString();
@@ -112,9 +116,9 @@ class CateringService {
       throw Exception('Either lat+lng coordinates or city must be provided');
     }
 
-    final endpoint = Uri.parse('${Baseurl.Url}search-catering')
-        .replace(queryParameters: params)
-        .toString();
+    final endpoint = Uri.parse(
+      '${Baseurl.Url}search-catering',
+    ).replace(queryParameters: params).toString();
 
     // Check cache first
     final cacheKey = CacheManager.getSearchCacheKeyWithLocation(
@@ -124,19 +128,21 @@ class CateringService {
       lat: lat,
       lng: lng,
     );
-    final cachedData = await CacheManager.getFromCache(cacheKey);
+    final cachedData = forceRefresh
+        ? null
+        : await CacheManager.getFromCache(cacheKey);
 
-    if (cachedData != null) {
+    if (!forceRefresh && cachedData != null) {
       print('🎯 Using cached search results for: $keyword in $city');
       try {
         final List caterings = cachedData is List
             ? cachedData
             : (cachedData is Map<String, dynamic>
-                ? (cachedData['catering'] ??
-                    cachedData['caterings'] ??
-                    cachedData['restaurants'] ??
-                    [])
-                : []);
+                  ? (cachedData['catering'] ??
+                        cachedData['caterings'] ??
+                        cachedData['restaurants'] ??
+                        [])
+                  : []);
         return caterings.map((e) => Catering.fromJson(e)).toList();
       } catch (e) {
         print('⚠️ Failed to parse cached search data, fetching fresh: $e');
@@ -156,11 +162,11 @@ class CateringService {
         final List caterings = data is List
             ? data
             : (data is Map<String, dynamic>
-                ? (data['catering'] ??
-                    data['caterings'] ??
-                    data['restaurants'] ??
-                    [])
-                : []);
+                  ? (data['catering'] ??
+                        data['caterings'] ??
+                        data['restaurants'] ??
+                        [])
+                  : []);
         if (caterings is! List) {
           throw Exception('Invalid data format: ${response.data}');
         }

@@ -1,16 +1,15 @@
+import 'package:dspora/App/View/Interests/Api/placeService.dart';
 import 'package:dspora/App/View/Interests/Model/historymodel.dart';
 import 'package:dspora/App/View/Interests/Model/placemodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
+import 'package:dspora/App/View/Restaurants/Model/ReviewModel.dart';
 import 'package:dspora/App/View/Restaurants/Widgets/storeDetail.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-
-
 
 class RestaurantDetailScreen extends StatefulWidget {
   final Restaurant restaurant;
@@ -23,21 +22,163 @@ class RestaurantDetailScreen extends StatefulWidget {
 
 class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   bool _isSaved = false;
+  late Restaurant _restaurant;
+  bool _isLoadingDetails = false;
+
+  List<String> _mergeUrls(List<String> primary, List<String> secondary) {
+    final seen = <String>{};
+    final merged = <String>[];
+
+    for (final url in [...primary, ...secondary]) {
+      if (seen.add(url)) {
+        merged.add(url);
+      }
+    }
+
+    return merged;
+  }
+
+  List<Review> _mergeReviews(List<Review> primary, List<Review> secondary) {
+    final seen = <String>{};
+    final merged = <Review>[];
+
+    for (final review in [...primary, ...secondary]) {
+      final signature =
+          '${review.authorName}|${review.relativeTime}|${review.text}';
+      if (seen.add(signature)) {
+        merged.add(review);
+      }
+    }
+
+    return merged;
+  }
+
+  Restaurant _mergeRestaurant(Restaurant current, Restaurant detailed) {
+    return Restaurant(
+      id: detailed.id.isNotEmpty ? detailed.id : current.id,
+      name: detailed.name.isNotEmpty ? detailed.name : current.name,
+      vicinity: detailed.vicinity.isNotEmpty
+          ? detailed.vicinity
+          : current.vicinity,
+      rating: detailed.rating > 0 ? detailed.rating : current.rating,
+      openNow: detailed.openNow,
+      photoUrl: detailed.photoUrl ?? current.photoUrl,
+      thumbnailUrl: detailed.thumbnailUrl ?? current.thumbnailUrl,
+      iconUrl: detailed.iconUrl ?? current.iconUrl,
+      hasPhoto: detailed.hasPhoto ?? current.hasPhoto,
+      userRatingsTotal: detailed.userRatingsTotal ?? current.userRatingsTotal,
+      photoReferences: _mergeUrls(
+        detailed.photoReferences,
+        current.photoReferences,
+      ),
+      reviews: _mergeReviews(detailed.reviews, current.reviews),
+      distanceKm: detailed.distanceKm ?? current.distanceKm,
+      distanceMinutes: detailed.distanceMinutes ?? current.distanceMinutes,
+    );
+  }
+
+  List<String> get _detailImageUrls {
+    final gallery = _restaurant.galleryImageUrls;
+    if (gallery.length <= 2 && gallery.isNotEmpty) {
+      return [gallery.first];
+    }
+    if (gallery.isNotEmpty) {
+      return gallery;
+    }
+    final fallback = _restaurant.imageUrls;
+    return fallback.length <= 2 && fallback.isNotEmpty
+        ? [fallback.first]
+        : fallback;
+  }
+
+  List<Review> get _visibleReviews {
+    return _mergeReviews(_restaurant.reviews, widget.restaurant.reviews);
+  }
 
   @override
   void initState() {
     super.initState();
+    _restaurant = widget.restaurant;
     _trackHistory();
     _loadSavedState();
+    _hydrateFromCachedDiscovery();
+    _fetchRestaurantDiscoverySnapshot();
+    _fetchRestaurantDetails();
   }
 
+  Future<void> _hydrateFromCachedDiscovery() async {
+    final cached = await PlaceFetchService.findCachedRestaurant(
+      placeId: _restaurant.id,
+      name: _restaurant.name,
+      address: _restaurant.vicinity,
+    );
 
+    if (!mounted || cached == null) {
+      return;
+    }
 
+    setState(() {
+      _restaurant = _mergeRestaurant(_restaurant, cached);
+    });
+  }
+
+  Future<void> _fetchRestaurantDetails() async {
+    if (_restaurant.id.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingDetails = true;
+    });
+
+    try {
+      final detailed = await PlaceFetchService.fetchRestaurantById(
+        _restaurant.id,
+      );
+
+      if (!mounted || detailed == null) {
+        return;
+      }
+
+      setState(() {
+        _restaurant = _mergeRestaurant(_restaurant, detailed);
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDetails = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchRestaurantDiscoverySnapshot() async {
+    final shouldFetch =
+        _restaurant.reviews.isEmpty || _restaurant.galleryImageUrls.length <= 1;
+
+    if (!shouldFetch) {
+      return;
+    }
+
+    final discovery = await PlaceFetchService.fetchRestaurantDiscoverySnapshot(
+      placeId: _restaurant.id,
+      name: _restaurant.name,
+      address: _restaurant.vicinity,
+    );
+
+    if (!mounted || discovery == null) {
+      return;
+    }
+
+    setState(() {
+      _restaurant = _mergeRestaurant(_restaurant, discovery);
+    });
+  }
 
   Future<void> _loadSavedState() async {
     final saved = await PlacePreferencesService.isPlaceSaved(
-      widget.restaurant.name,
-      widget.restaurant.vicinity,
+      _restaurant.name,
+      _restaurant.vicinity,
     );
     if (mounted) {
       setState(() {
@@ -109,42 +250,40 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     return result ?? false;
   }
 
-Future<void> _saveRestaurantPlace(BuildContext context) async {
-  final imageUrl = widget.restaurant.photoReferences.isNotEmpty
-      ? widget.restaurant.photoReferences[0]
-      : Images.Store;
+  Future<void> _saveRestaurantPlace(BuildContext context) async {
+    final imageUrl = _restaurant.primaryImageUrl;
 
-  final place = Place(
-    name: widget.restaurant.name,
-    address: widget.restaurant.vicinity,
-    imageUrl: imageUrl,
-    rating: widget.restaurant.rating,
-    type: 'Restaurant', // ✅ Add type
-    openNow: widget.restaurant.openNow,
-    id: widget.restaurant.id, // ✅ Add id
-  );
-
-  final success = await PlacePreferencesService.savePlace(place);
-
-  if (success && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${widget.restaurant.name} saved to your interests!'),
-        backgroundColor: Colors.green,
-      ),
+    final place = Place(
+      name: _restaurant.name,
+      address: _restaurant.vicinity,
+      imageUrl: imageUrl ?? '',
+      rating: _restaurant.rating,
+      type: 'Restaurant', // ✅ Add type
+      openNow: _restaurant.openNow,
+      id: _restaurant.id, // ✅ Add id
     );
-    setState(() {
-      _isSaved = true;
-    });
-  } else if (context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Restaurant already saved or error occurred'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+
+    final success = await PlacePreferencesService.savePlace(place);
+
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${_restaurant.name} saved to your interests!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      setState(() {
+        _isSaved = true;
+      });
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Restaurant already saved or error occurred'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
-}
 
   Future<void> _removeRestaurantPlace(BuildContext context) async {
     final confirmed = await _confirmUnsave();
@@ -152,13 +291,13 @@ Future<void> _saveRestaurantPlace(BuildContext context) async {
       return;
     }
     final success = await PlacePreferencesService.removePlace(
-      widget.restaurant.name,
-      widget.restaurant.vicinity,
+      _restaurant.name,
+      _restaurant.vicinity,
     );
     if (success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${widget.restaurant.name} removed'),
+          content: Text('${_restaurant.name} removed'),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -168,13 +307,11 @@ Future<void> _saveRestaurantPlace(BuildContext context) async {
     }
   }
 
-
-
   // ✅ Track history when user opens this restaurant
   Future<void> _trackHistory() async {
     final historyItem = HistoryItem(
-      title: widget.restaurant.name,
-      subtitle: widget.restaurant.vicinity,
+      title: _restaurant.name,
+      subtitle: _restaurant.vicinity,
       type: 'Restaurant',
       timestamp: DateTime.now(),
     );
@@ -185,10 +322,10 @@ Future<void> _saveRestaurantPlace(BuildContext context) async {
   Future<void> _openReviewInMaps() async {
     try {
       final encodedName = Uri.encodeComponent(widget.restaurant.name);
-      final encodedAddress = Uri.encodeComponent(widget.restaurant.vicinity);
-      
+      final encodedAddress = Uri.encodeComponent(_restaurant.vicinity);
+
       final mapsUrl = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress'
+        'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress',
       );
 
       if (await canLaunchUrl(mapsUrl)) {
@@ -218,17 +355,18 @@ Future<void> _saveRestaurantPlace(BuildContext context) async {
   // ✅ Share restaurant
   Future<void> _shareRestaurant() async {
     try {
-      final ratingText = '⭐ Rating: ${widget.restaurant.rating}/5\n';
-      final message = '''
-Check out ${widget.restaurant.name}!
+      final ratingText = '⭐ Rating: ${_restaurant.rating}/5\n';
+      final message =
+          '''
+Check out ${_restaurant.name}!
 
-$ratingText📍 Location: ${widget.restaurant.vicinity}
+$ratingText📍 Location: ${_restaurant.vicinity}
 
 Find it on Google Maps:
-https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.restaurant.name} ${widget.restaurant.vicinity}')}
+https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${_restaurant.name} ${_restaurant.vicinity}')}
 ''';
 
-      await Share.share(message, subject: 'Check out ${widget.restaurant.name}');
+      await Share.share(message, subject: 'Check out ${_restaurant.name}');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -243,15 +381,19 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
 
   @override
   Widget build(BuildContext context) {
-    final List<String> imageUrls = (widget.restaurant.photoReferences.isNotEmpty)
-        ? widget.restaurant.photoReferences
-        : [Images.Store];
+    final imageUrls = _detailImageUrls;
+    final visibleReviews = _visibleReviews;
+    final ratingsCount =
+        (_restaurant.userRatingsTotal != null &&
+            _restaurant.userRatingsTotal! > 0)
+        ? _restaurant.userRatingsTotal!.toString()
+        : visibleReviews.length.toString();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: CustomText(text: widget.restaurant.name),
+        title: CustomText(text: _restaurant.name),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -259,24 +401,26 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
           children: [
             // 🍽 Restaurant Details
             RestaurantDetailWidget(
-              storeName: widget.restaurant.name,
-              rating: widget.restaurant.rating.toString(),
-              ratingsCount: "${widget.restaurant.reviews.length}",
-              location: widget.restaurant.vicinity,
-              status: widget.restaurant.openNow ? "Open now" : "Closed",
+              storeName: _restaurant.name,
+              rating: _restaurant.rating.toString(),
+              ratingsCount: ratingsCount,
+              location: _restaurant.vicinity,
+              status: _restaurant.openNow ? "Open now" : "Closed",
               description:
-                  "Discover ${widget.restaurant.name} located at ${widget.restaurant.vicinity}.",
+                  "Discover ${_restaurant.name} located at ${_restaurant.vicinity}.",
               imageUrls: imageUrls,
               onReviewPressed: _openReviewInMaps,
               onSavePressed: () {
-               if (_isSaved) {
-                 _removeRestaurantPlace(context);
-               } else {
-                 _saveRestaurantPlace(context);
-               }
+                if (_isSaved) {
+                  _removeRestaurantPlace(context);
+                } else {
+                  _saveRestaurantPlace(context);
+                }
               },
               saveLabel: _isSaved ? 'Unsave' : 'Save',
-              saveIcon: _isSaved ? Icons.bookmark_remove : Icons.bookmark_border,
+              saveIcon: _isSaved
+                  ? Icons.bookmark_remove
+                  : Icons.bookmark_border,
               onSharePressed: _shareRestaurant,
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},
@@ -286,17 +430,27 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
 
             const SizedBox(height: 16),
 
+            if (_isLoadingDetails)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: LinearProgressIndicator(),
+              ),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: CustomText(
-                text: "Reviews",
-                title: true,
-                fontSize: 18,
-              ),
+              child: CustomText(text: "Reviews", title: true, fontSize: 18),
             ),
             const SizedBox(height: 8),
 
-            if (widget.restaurant.reviews.isEmpty)
+            if (_isLoadingDetails && visibleReviews.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  "Loading reviews...",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+            else if (visibleReviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
@@ -305,12 +459,13 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
                 ),
               )
             else
-              ...widget.restaurant.reviews.map(
+              ...visibleReviews.map(
                 (review) => ListTile(
                   leading: CircleAvatar(
                     backgroundImage: review.profilePhotoUrl.isNotEmpty
                         ? NetworkImage(review.profilePhotoUrl)
-                        : const NetworkImage(Images.Store),
+                        : const AssetImage(Images.restaurantPlaceholderAsset)
+                              as ImageProvider,
                   ),
                   title: Text(
                     review.authorName,

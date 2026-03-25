@@ -3,6 +3,7 @@ import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
 
+
 class Place {
   final String id;
   final String name;

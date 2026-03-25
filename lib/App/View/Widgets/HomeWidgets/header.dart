@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dspora/App/View/Utils/GooglePlaces.dart';
 
-
 class HomeHeader extends StatelessWidget {
   final String name;
   final String location;
@@ -93,12 +92,15 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final isSmall = w < 360;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 17.5),
+      padding: EdgeInsets.symmetric(horizontal: isSmall ? 0 : 17.5),
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 👤 User Name (Left)
@@ -108,36 +110,46 @@ class HomeHeader extends StatelessWidget {
                   content: false,
                   title: true,
                   fontSize: 20,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
 
+              const SizedBox(width: 12),
+
               // 📍 Location Row (Right)
-              GestureDetector(
-                onTap: () => _showLocationPicker(context),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.wb_sunny_outlined,
-                      size: 16,
-                      color: Colors.orange,
-                    ),
-                    const SizedBox(width: 6),
-                    CustomText(
-                      text: location,
-                      content: true,
-                    ),
-                    const SizedBox(width: 6),
-                    Transform.rotate(
-                      angle: 1.57,
-                      child: const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 12,
-                        color: Colors.grey,
+              Flexible(
+                child: GestureDetector(
+                  onTap: () => _showLocationPicker(context),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.wb_sunny_outlined,
+                        size: 16,
+                        color: Colors.orange,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: CustomText(
+                          text: location,
+                          content: true,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Transform.rotate(
+                        angle: 1.57,
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -147,4 +159,3 @@ class HomeHeader extends StatelessWidget {
     );
   }
 }
-

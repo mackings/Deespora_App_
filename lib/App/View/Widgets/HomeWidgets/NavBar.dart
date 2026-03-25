@@ -2,7 +2,6 @@ import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-
 class BottomNavItem {
   final String label;
   final String iconAsset; // path to SVG icon
@@ -31,17 +30,23 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final isSmall = w < 360;
+    final labelFontSize = isSmall ? 10.0 : 12.0;
+
     // Get the bottom padding (safe area inset for home indicator)
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     return Container(
       color: Colors.white, // White background extending to the very bottom
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            height: 84,
-            margin: const EdgeInsets.symmetric(horizontal: 12), // Add side margins if needed
+            height: isSmall ? 78 : 84,
+            margin: const EdgeInsets.symmetric(
+              horizontal: 12,
+            ), // Add side margins if needed
             decoration: ShapeDecoration(
               color: Colors.white,
               shape: RoundedRectangleBorder(
@@ -65,7 +70,10 @@ class CustomBottomNavBar extends StatelessWidget {
                   child: GestureDetector(
                     onTap: item.onTap,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 9.0, horizontal: 5.0),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 9.0,
+                        horizontal: 5.0,
+                      ),
                       child: Container(
                         decoration: BoxDecoration(
                           color: isActive ? activeColor : Colors.transparent,
@@ -89,7 +97,10 @@ class CustomBottomNavBar extends StatelessWidget {
                               text: item.label,
                               content: true,
                               color: isActive ? Colors.white : inactiveColor,
-                              fontSize: 12,
+                              fontSize: labelFontSize,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),

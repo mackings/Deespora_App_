@@ -1,12 +1,11 @@
 import 'package:dspora/App/View/RealEstate/Api/realestateService.dart';
 import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
 import 'package:dspora/App/View/RealEstate/Widget/realEstate.dart';
-import 'package:dspora/App/View/RealEstate/Widget/statusFilter.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
-import 'package:dspora/App/View/Widgets/GLOBAL/FrontDetails.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/SFront.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureHeader.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/FeatureSearch.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +29,8 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   final Map<String, List<WorshipModel>> _worshipCache = {};
   List<WorshipModel> _filteredWorship = [];
   List<WorshipModel> _originalData = []; // Store original full data
+  List<WorshipModel> _lastSuccessfulApiSearchResults = [];
+  String _lastSuccessfulApiSearchKeyword = '';
 
   late Future<List<WorshipModel>> _worshipFuture;
 
@@ -39,10 +40,80 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   bool _isApiSearchActive = false; // Track if we're showing API search results
   bool _isLocationSearch = false;
   bool _userSelectedCity = false;
+  bool _isRefreshingImageData = false;
+  String? _lastImageRefreshSignature;
   double? _userLat;
   double? _userLng;
+  int _searchRequestId = 0;
 
   final List<String> usCities = USCities.list;
+
+  bool get _hasActiveApiSearch =>
+      _isApiSearchActive && _searchController.text.trim().length >= 3;
+
+  List<WorshipModel> _filterApiSearchResults(
+    List<WorshipModel> items,
+    String keyword,
+  ) {
+    final normalizedQuery = keyword.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return items;
+    }
+
+    final queryTokens = normalizedQuery
+        .split(RegExp(r'\s+'))
+        .where((token) => token.isNotEmpty)
+        .toList();
+
+    bool matches(WorshipModel worship) {
+      final haystack = '${worship.name} ${worship.address}'
+          .toLowerCase()
+          .trim();
+      if (haystack.contains(normalizedQuery)) {
+        return true;
+      }
+      return queryTokens.every(haystack.contains);
+    }
+
+    return items.where(matches).toList();
+  }
+
+  List<WorshipModel> _fallbackSearchResults(String keyword) {
+    if (_lastSuccessfulApiSearchResults.isEmpty ||
+        _lastSuccessfulApiSearchKeyword.isEmpty) {
+      return const [];
+    }
+
+    final normalizedKeyword = keyword.trim().toLowerCase();
+    final normalizedLastKeyword = _lastSuccessfulApiSearchKeyword
+        .trim()
+        .toLowerCase();
+
+    if (!normalizedKeyword.startsWith(normalizedLastKeyword) &&
+        !normalizedLastKeyword.startsWith(normalizedKeyword)) {
+      return const [];
+    }
+
+    return _filterApiSearchResults(_lastSuccessfulApiSearchResults, keyword);
+  }
+
+  List<WorshipModel> _mergeSearchResults(
+    List<WorshipModel> primary,
+    List<WorshipModel> secondary,
+  ) {
+    final seen = <String>{};
+    final merged = <WorshipModel>[];
+
+    for (final worship in [...primary, ...secondary]) {
+      final key =
+          '${worship.id}|${worship.name.toLowerCase()}|${worship.address.toLowerCase()}';
+      if (seen.add(key)) {
+        merged.add(worship);
+      }
+    }
+
+    return merged;
+  }
 
   @override
   void initState() {
@@ -81,7 +152,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
       if (placemarks.isNotEmpty) {
         final detectedCity = placemarks.first.locality ?? 'US';
         debugPrint("📍 User city detected: $detectedCity");
-        if (_userSelectedCity) {
+        if (_userSelectedCity || _searchController.text.trim().isNotEmpty) {
           return;
         }
         setState(() {
@@ -102,7 +173,9 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   Future<List<WorshipModel>> _fetchAndCacheWorship(String city) async {
     final useLocation =
         !_userSelectedCity && _userLat != null && _userLng != null;
-    final cacheKey = useLocation ? _locationCacheKey(_userLat!, _userLng!) : city;
+    final cacheKey = useLocation
+        ? _locationCacheKey(_userLat!, _userLng!)
+        : city;
 
     if (_worshipCache.containsKey(cacheKey)) {
       setState(() {
@@ -116,13 +189,15 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
     // Use API method - backend handles caching
     final result = useLocation
-        ? await _worshipService.fetchWorship(
-            lat: _userLat,
-            lng: _userLng,
-          )
+        ? await _worshipService.fetchWorship(lat: _userLat, lng: _userLng)
         : await _worshipService.fetchWorship(city: city);
     _worshipCache[cacheKey] = result;
     _originalData = result; // Store original full data
+
+    if (_hasActiveApiSearch) {
+      return result;
+    }
+
     setState(() {
       _isDataLoaded = true;
       _cacheKey = cacheKey;
@@ -220,13 +295,11 @@ class _RealEstateHomeState extends State<RealEstateHome> {
     final useLocation =
         !_userSelectedCity && _userLat != null && _userLng != null;
     final freshData = useLocation
-        ? await _worshipService.fetchWorship(
-            lat: _userLat,
-            lng: _userLng,
-          )
+        ? await _worshipService.fetchWorship(lat: _userLat, lng: _userLng)
         : await _worshipService.fetchWorship(city: _selectedCity);
-    final nextCacheKey =
-        useLocation ? _locationCacheKey(_userLat!, _userLng!) : _cacheKey;
+    final nextCacheKey = useLocation
+        ? _locationCacheKey(_userLat!, _userLng!)
+        : _cacheKey;
     setState(() {
       _worshipCache[nextCacheKey] = freshData;
       _isDataLoaded = true;
@@ -242,6 +315,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
     // If search is empty, restore original data
     if (query.isEmpty) {
+      _searchRequestId++;
       setState(() {
         _isApiSearchActive = false;
         _isLocationSearch = false;
@@ -259,8 +333,17 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
     // If search has 3+ characters, use API search
     if (query.length >= 3) {
-      _performApiSearch(query);
+      final fallbackResults = _fallbackSearchResults(query);
+      if (fallbackResults.isNotEmpty) {
+        setState(() {
+          _worshipCache[_cacheKey] = fallbackResults;
+          _filteredWorship = fallbackResults;
+          _isDataLoaded = true;
+        });
+      }
+      _performApiSearch(query, ++_searchRequestId);
     } else {
+      _searchRequestId++;
       // For short queries, filter locally on original data
       setState(() {
         _isApiSearchActive = false;
@@ -277,7 +360,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   }
 
   // New method to search via API
-  Future<void> _performApiSearch(String keyword) async {
+  Future<void> _performApiSearch(String keyword, int requestId) async {
     setState(() {
       _isDataLoaded = false;
       _isApiSearchActive = true; // Mark as API search mode
@@ -298,22 +381,96 @@ class _RealEstateHomeState extends State<RealEstateHome> {
         lat: useLocation ? _userLat : null,
         lng: useLocation ? _userLng : null,
       );
+      final filteredResults = _filterApiSearchResults(results, keyword);
+      final fallbackResults = _fallbackSearchResults(keyword);
+      final effectiveResults = _mergeSearchResults(
+        filteredResults,
+        fallbackResults,
+      );
+
+      if (!mounted ||
+          requestId != _searchRequestId ||
+          _searchController.text.trim() != keyword) {
+        return;
+      }
 
       setState(() {
-        _worshipCache[_cacheKey] = results;
+        _worshipCache[_cacheKey] = effectiveResults;
         _isDataLoaded = true;
-        _worshipFuture = Future.value(results);
+        _worshipFuture = Future.value(effectiveResults);
       });
 
       // Don't apply local filters - API already filtered
       // Just apply status filter only
       _applyStatusFilterOnly();
+
+      if (effectiveResults.isNotEmpty) {
+        _lastSuccessfulApiSearchResults = effectiveResults;
+        _lastSuccessfulApiSearchKeyword = keyword;
+      }
     } catch (e) {
       debugPrint('❌ Search error: $e');
+      if (!mounted || requestId != _searchRequestId) {
+        return;
+      }
       setState(() {
         _isDataLoaded = true;
         _isApiSearchActive = false;
       });
+    }
+  }
+
+  Future<void> _refreshImagesForCurrentView() async {
+    final signature =
+        '$_cacheKey|$_selectedCity|${_searchController.text.trim()}|$_isApiSearchActive|$_userSelectedCity|$_userLat|$_userLng';
+
+    if (_isRefreshingImageData || _lastImageRefreshSignature == signature) {
+      return;
+    }
+
+    _isRefreshingImageData = true;
+    _lastImageRefreshSignature = signature;
+
+    try {
+      final query = _searchController.text.trim();
+      final useLocation =
+          !_userSelectedCity && _userLat != null && _userLng != null;
+
+      final freshData = _isApiSearchActive && query.length >= 3
+          ? await _worshipService.searchWorship(
+              keyword: query,
+              city: useLocation ? null : _selectedCity,
+              lat: useLocation ? _userLat : null,
+              lng: useLocation ? _userLng : null,
+              forceRefresh: true,
+            )
+          : await _worshipService.fetchWorship(
+              city: useLocation ? null : _selectedCity,
+              lat: useLocation ? _userLat : null,
+              lng: useLocation ? _userLng : null,
+              forceRefresh: true,
+            );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _worshipCache[_cacheKey] = freshData;
+        _originalData = freshData;
+        _worshipFuture = Future.value(freshData);
+        _isDataLoaded = true;
+      });
+
+      if (_isApiSearchActive) {
+        _applyStatusFilterOnly();
+      } else {
+        _applyAllFilters(_cacheKey);
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to refresh worship images: $e');
+    } finally {
+      _isRefreshingImageData = false;
     }
   }
 
@@ -499,7 +656,9 @@ class _RealEstateHomeState extends State<RealEstateHome> {
                     // Show cached data while refreshing
                     return _buildListView(_filteredWorship);
                   }
-                  return Center(child: CircularProgressIndicator(color: Colors.teal));
+                  return Center(
+                    child: CircularProgressIndicator(color: Colors.teal),
+                  );
                   //return _buildSkeletonLoader();
                 }
 
@@ -640,13 +799,13 @@ class _RealEstateHomeState extends State<RealEstateHome> {
         itemBuilder: (context, index) {
           final w = worshipList[index];
           return GlobalStoreFront(
-            imageUrl: w.photoReferences.isNotEmpty
-                ? w.photoReferences.first
-                : '',
+            imageUrls: w.imageUrls,
+            placeholderAsset: Images.worshipPlaceholderAsset,
             storeName: w.name,
             category: "Worship",
             location: w.address,
             rating: w.rating,
+            onImageUnavailable: _refreshImagesForCurrentView,
             onTap: () {
               Nav.push(RealestateStoreDetails(realestate: w));
             },

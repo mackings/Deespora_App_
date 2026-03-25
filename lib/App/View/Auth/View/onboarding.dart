@@ -19,62 +19,84 @@ class _OnboardingState extends ConsumerState<Onboarding> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              top: 40,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width,
-                height: 430,
-                child: SvgPicture.asset(
-                  'assets/svg/eclipse.svg',
-                  fit: BoxFit.fill,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final size = MediaQuery.sizeOf(context);
+            final isSmall = size.width < 360 || constraints.maxHeight < 700;
+
+            final artHeight = (constraints.maxHeight * 0.52).clamp(
+              260.0,
+              430.0,
+            );
+            final flagWidth = (size.width * 0.92).clamp(240.0, 350.0);
+
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: artHeight,
+                        width: double.infinity,
+                        child: Stack(
+                          alignment: Alignment.topCenter,
+                          children: [
+                            Positioned.fill(
+                              child: SvgPicture.asset(
+                                'assets/svg/eclipse.svg',
+                                fit: BoxFit.fill,
+                              ),
+                            ),
+                            Positioned(
+                              top: 10,
+                              child: Image.asset(
+                                'assets/img/flag.png',
+                                width: flagWidth,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      CustomText(
+                        text:
+                            "Welcome To Your Best Guide in Diaspora, Deespora",
+                        title: true,
+                        fontSize: isSmall ? 26 : null,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      CustomText(
+                        text:
+                            "Discover and connect with African-owned businesses, vibrant events, and cultural spaces wherever you are in the U.S.",
+                        content: true,
+                        fontSize: isSmall ? 13 : null,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: CustomBtn(
+                          text: "Get Started",
+                          onPressed: () {
+                            Nav.push(Second_Onboarding());
+                          },
+                        ),
+                      ),
+                      SizedBox(
+                        height: MediaQuery.of(context).padding.bottom > 0
+                            ? MediaQuery.of(context).padding.bottom
+                            : 12,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-
-            Positioned(
-              top: 50,
-              child: Image.asset(
-                'assets/img/flag.png',
-                width: 350,
-                fit: BoxFit.contain,
-              ),
-            ),
-
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 450),
-                    CustomText(
-                      text:
-                          "Welcome To Your Best Guide in Diaspora, Deespora",
-                      title: true,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomText(
-                      text:
-                          "Discover and connect with African-owned businesses, vibrant events, and cultural spaces wherever you are in the U.S.",
-                      content: true,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 30),
-                    CustomBtn(
-                      text: "Get Started",
-                      onPressed: () {
-                        Nav.push(Second_Onboarding());
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

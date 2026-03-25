@@ -10,4 +10,8 @@ class Images {
 
   static const Store =
       "https://cdn.shopify.com/s/files/1/1246/6441/articles/Storefront_Design.png?v=1727354588";
+
+  static const restaurantPlaceholderAsset = 'assets/img/restaurant.png';
+  static const cateringPlaceholderAsset = 'assets/img/catering.png';
+  static const worshipPlaceholderAsset = 'assets/img/realestate.png';
 }

@@ -2,10 +2,10 @@ import 'package:dspora/App/View/Interests/Model/historymodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
 import 'package:dspora/App/View/Restaurants/Model/saveRes.dart';
 import 'package:dspora/App/View/Restaurants/Providers/resPrefPro.dart';
+import 'package:dspora/App/View/Widgets/GLOBAL/fallback_network_image.dart';
+import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
-
-
 
 class RestaurantGalleryHeader extends StatefulWidget {
   final String storeName;
@@ -37,10 +37,24 @@ class RestaurantGalleryHeader extends StatefulWidget {
 }
 
 class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
+  List<String> _candidatesForSlot(int startIndex) {
+    if (widget.imageUrls.isEmpty) {
+      return const [];
+    }
+
+    final candidates = <String>[];
+    for (int index = 0; index < widget.imageUrls.length; index++) {
+      candidates.add(
+        widget.imageUrls[(startIndex + index) % widget.imageUrls.length],
+      );
+    }
+    return candidates;
+  }
+
   @override
   void initState() {
     super.initState();
-   // _trackHistory();
+    // _trackHistory();
   }
 
   Future<void> _trackHistory() async {
@@ -89,34 +103,110 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.imageUrls.isEmpty) {
+      return Column(
+        children: [
+          Container(
+            width: double.infinity,
+            height: 306,
+            padding: const EdgeInsets.all(10),
+            child: _buildSafeImage(
+              const [],
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
+          CustomText(text: widget.storeName, title: true, fontSize: 24),
+          CustomText(
+            text: '${widget.rating} • ${widget.ratingsCount} ratings',
+            fontSize: 14,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildActionButton(
+                  Icons.reviews,
+                  'Review',
+                  widget.onReviewPressed,
+                ),
+                _buildActionButton(
+                  widget.saveIcon ?? Icons.bookmark_border,
+                  widget.saveLabel ?? 'Save',
+                  widget.onSavePressed,
+                ),
+                _buildActionButton(Icons.share, 'Share', widget.onSharePressed),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (widget.imageUrls.length <= 2) {
+      return Column(
+        children: [
+          Container(
+            width: double.infinity,
+            height: 420,
+            padding: const EdgeInsets.only(top: 6),
+            child: _buildSafeImage(
+              _candidatesForSlot(0),
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
+          const SizedBox(height: 14),
+          CustomText(text: widget.storeName, title: true, fontSize: 24),
+          CustomText(
+            text: '${widget.rating} • ${widget.ratingsCount} ratings',
+            fontSize: 14,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildActionButton(
+                  Icons.reviews,
+                  'Review',
+                  widget.onReviewPressed,
+                ),
+                _buildActionButton(
+                  widget.saveIcon ?? Icons.bookmark_border,
+                  widget.saveLabel ?? 'Save',
+                  widget.onSavePressed,
+                ),
+                _buildActionButton(Icons.share, 'Share', widget.onSharePressed),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     // ✅ Adjust the image list
-    final displayImages = widget.imageUrls.isEmpty
-        ? [
-            "https://placehold.co/233x93",
-            "https://placehold.co/122x151",
-            "https://placehold.co/175x93",
-            "https://placehold.co/175x93",
-          ]
-        : (widget.imageUrls.length == 1
-              ? [widget.imageUrls[0], widget.imageUrls[0], widget.imageUrls[0]]
-              : widget.imageUrls);
+    final displayImages = widget.imageUrls.length == 1
+        ? [widget.imageUrls[0], widget.imageUrls[0], widget.imageUrls[0]]
+        : widget.imageUrls;
 
     return Column(
       children: [
         // 🖼 IMAGE GALLERY
         Container(
           width: double.infinity,
-          height: 306,
+          height: 340,
           padding: const EdgeInsets.all(10),
           child: Column(
             children: [
               Expanded(
                 child: Row(
                   children: [
-                    Expanded(child: _buildSafeImage(displayImages[0])),
+                    Expanded(child: _buildSafeImage(_candidatesForSlot(0))),
                     if (displayImages.length > 1)
                       _buildSafeImage(
-                        displayImages[1],
+                        _candidatesForSlot(1),
                         width: 122.33,
                         height: 151,
                       ),
@@ -127,9 +217,9 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
                 child: Row(
                   children: [
                     if (displayImages.length > 2)
-                      Expanded(child: _buildSafeImage(displayImages[2])),
+                      Expanded(child: _buildSafeImage(_candidatesForSlot(2))),
                     if (displayImages.length > 3)
-                      Expanded(child: _buildSafeImage(displayImages[3])),
+                      Expanded(child: _buildSafeImage(_candidatesForSlot(3))),
                   ],
                 ),
               ),
@@ -158,7 +248,7 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
               _buildActionButton(
                 widget.saveIcon ?? Icons.bookmark_border,
                 widget.saveLabel ?? 'Save',
-                widget.onSavePressed
+                widget.onSavePressed,
               ),
               _buildActionButton(Icons.share, 'Share', widget.onSharePressed),
             ],
@@ -169,32 +259,23 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
   }
 
   // ✅ Safe Image Loader (handles 404s, broken URLs, etc.)
-  Widget _buildSafeImage(String url, {double? width, double? height}) {
-    return Image.network(
-      url,
+  Widget _buildSafeImage(
+    List<String> imageUrls, {
+    double? width,
+    double? height,
+  }) {
+    return FallbackNetworkImage(
+      imageUrls: imageUrls,
+      assetPath: Images.restaurantPlaceholderAsset,
       width: width,
       height: height,
       fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: SizedBox(
-            width: 30,
-            height: 30,
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                        (loadingProgress.expectedTotalBytes ?? 1)
-                  : null,
-            ),
-          ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) => Container(
-        width: width,
-        height: height,
-        color: Colors.grey[200],
-        child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
+      placeholderBuilder: (context) => Center(
+        child: SizedBox(
+          width: 30,
+          height: 30,
+          child: const CircularProgressIndicator(),
+        ),
       ),
     );
   }

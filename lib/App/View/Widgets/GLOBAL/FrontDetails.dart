@@ -1,16 +1,15 @@
+import 'package:dspora/App/View/Interests/Api/placeService.dart';
 import 'package:dspora/App/View/Catering/Model/cateringModel.dart';
 import 'package:dspora/App/View/Interests/Model/historymodel.dart';
 import 'package:dspora/App/View/Interests/Model/placemodel.dart';
 import 'package:dspora/App/View/Interests/Widgets/artistCard.dart';
-import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
 import 'package:dspora/App/View/Widgets/GLOBAL/FDetailwidget.dart';
+import 'package:dspora/App/View/Widgets/GLOBAL/GlobalModel.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:flutter/material.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-
 
 class GlobalStoreDetails extends StatefulWidget {
   final Catering catering;
@@ -23,19 +22,161 @@ class GlobalStoreDetails extends StatefulWidget {
 
 class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
   bool _isSaved = false;
+  late Catering _catering;
+  bool _isLoadingDetails = false;
+
+  List<String> _mergeUrls(List<String> primary, List<String> secondary) {
+    final seen = <String>{};
+    final merged = <String>[];
+
+    for (final url in [...primary, ...secondary]) {
+      if (seen.add(url)) {
+        merged.add(url);
+      }
+    }
+
+    return merged;
+  }
+
+  List<GlobalReview> _mergeReviews(
+    List<GlobalReview> primary,
+    List<GlobalReview> secondary,
+  ) {
+    final seen = <String>{};
+    final merged = <GlobalReview>[];
+
+    for (final review in [...primary, ...secondary]) {
+      final signature =
+          '${review.authorName}|${review.relativeTime}|${review.text}';
+      if (seen.add(signature)) {
+        merged.add(review);
+      }
+    }
+
+    return merged;
+  }
+
+  Catering _mergeCatering(Catering current, Catering detailed) {
+    return Catering(
+      id: detailed.id.isNotEmpty ? detailed.id : current.id,
+      name: detailed.name.isNotEmpty ? detailed.name : current.name,
+      address: detailed.address.isNotEmpty ? detailed.address : current.address,
+      rating: detailed.rating > 0 ? detailed.rating : current.rating,
+      openNow: detailed.openNow,
+      photoUrl: detailed.photoUrl ?? current.photoUrl,
+      thumbnailUrl: detailed.thumbnailUrl ?? current.thumbnailUrl,
+      iconUrl: detailed.iconUrl ?? current.iconUrl,
+      hasPhoto: detailed.hasPhoto ?? current.hasPhoto,
+      userRatingsTotal: detailed.userRatingsTotal ?? current.userRatingsTotal,
+      photoReferences: _mergeUrls(
+        detailed.photoReferences,
+        current.photoReferences,
+      ),
+      reviews: _mergeReviews(detailed.reviews, current.reviews),
+    );
+  }
+
+  List<String> get _detailImageUrls {
+    final gallery = _catering.galleryImageUrls;
+    if (gallery.length <= 2 && gallery.isNotEmpty) {
+      return [gallery.first];
+    }
+    if (gallery.isNotEmpty) {
+      return gallery;
+    }
+    final fallback = _catering.imageUrls;
+    return fallback.length <= 2 && fallback.isNotEmpty
+        ? [fallback.first]
+        : fallback;
+  }
+
+  List<GlobalReview> get _visibleReviews {
+    return _mergeReviews(_catering.reviews, widget.catering.reviews);
+  }
 
   @override
   void initState() {
     super.initState();
+    _catering = widget.catering;
     _trackHistory();
     _loadSavedState();
+    _hydrateFromCachedDiscovery();
+    _fetchCateringDiscoverySnapshot();
+    _fetchCateringDetails();
+  }
+
+  Future<void> _hydrateFromCachedDiscovery() async {
+    final cached = await PlaceFetchService.findCachedCatering(
+      placeId: _catering.id,
+      name: _catering.name,
+      address: _catering.address,
+    );
+
+    if (!mounted || cached == null) {
+      return;
+    }
+
+    setState(() {
+      _catering = _mergeCatering(_catering, cached);
+    });
+  }
+
+  Future<void> _fetchCateringDetails() async {
+    if (_catering.id.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingDetails = true;
+    });
+
+    try {
+      final detailed = await PlaceFetchService.fetchCateringById(_catering.id);
+
+      if (!mounted || detailed == null) {
+        return;
+      }
+
+      setState(() {
+        _catering = _mergeCatering(_catering, detailed);
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDetails = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchCateringDiscoverySnapshot() async {
+    final shouldFetch =
+        _catering.reviews.isEmpty || _catering.galleryImageUrls.length <= 1;
+
+    if (!shouldFetch) {
+      return;
+    }
+
+    final discovery = await PlaceFetchService.fetchCateringDiscoverySnapshot(
+      placeId: _catering.id,
+      name: _catering.name,
+      address: _catering.address,
+    );
+
+    if (!mounted || discovery == null) {
+      return;
+    }
+
+    setState(() {
+      _catering = _mergeCatering(_catering, discovery);
+    });
   }
 
   // ✅ Save Catering place to SharedPreferences
   Future<void> _loadSavedState() async {
     final saved = await PlacePreferencesService.isPlaceSaved(
-      widget.catering.name,
-      widget.catering.address,
+      _catering.name,
+      _catering.address,
     );
     if (mounted) {
       setState(() {
@@ -107,42 +248,40 @@ class _GlobalStoreDetailsState extends State<GlobalStoreDetails> {
     return result ?? false;
   }
 
-Future<void> _savePlaceFromCatering(BuildContext context) async {
-  final imageUrl = widget.catering.photoReferences.isNotEmpty
-      ? widget.catering.photoReferences[0]
-      : Images.Store;
+  Future<void> _savePlaceFromCatering(BuildContext context) async {
+    final imageUrl = _catering.primaryImageUrl;
 
-  final place = Place(
-    name: widget.catering.name,
-    address: widget.catering.address,
-    imageUrl: imageUrl,
-    rating: widget.catering.rating,
-    type: 'Catering', // ✅ Add type
-    openNow: widget.catering.openNow,
-    id: widget.catering.id, // ✅ Add id
-  );
-
-  final success = await PlacePreferencesService.savePlace(place);
-
-  if (success && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${widget.catering.name} saved to your interests!'),
-        backgroundColor: Colors.green,
-      ),
+    final place = Place(
+      name: _catering.name,
+      address: _catering.address,
+      imageUrl: imageUrl ?? '',
+      rating: _catering.rating,
+      type: 'Catering', // ✅ Add type
+      openNow: _catering.openNow,
+      id: _catering.id, // ✅ Add id
     );
-    setState(() {
-      _isSaved = true;
-    });
-  } else if (context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Place already saved or error occurred'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+
+    final success = await PlacePreferencesService.savePlace(place);
+
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${_catering.name} saved to your interests!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      setState(() {
+        _isSaved = true;
+      });
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Place already saved or error occurred'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
-}
 
   Future<void> _removePlaceFromCatering(BuildContext context) async {
     final confirmed = await _confirmUnsave();
@@ -150,13 +289,13 @@ Future<void> _savePlaceFromCatering(BuildContext context) async {
       return;
     }
     final success = await PlacePreferencesService.removePlace(
-      widget.catering.name,
-      widget.catering.address,
+      _catering.name,
+      _catering.address,
     );
     if (success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${widget.catering.name} removed'),
+          content: Text('${_catering.name} removed'),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -169,8 +308,8 @@ Future<void> _savePlaceFromCatering(BuildContext context) async {
   // ✅ Track when the user opens this store
   Future<void> _trackHistory() async {
     final historyItem = HistoryItem(
-      title: widget.catering.name,
-      subtitle: widget.catering.address,
+      title: _catering.name,
+      subtitle: _catering.address,
       type: 'Catering',
       timestamp: DateTime.now(),
     );
@@ -181,10 +320,10 @@ Future<void> _savePlaceFromCatering(BuildContext context) async {
   Future<void> _openReviewInMaps() async {
     try {
       final encodedName = Uri.encodeComponent(widget.catering.name);
-      final encodedAddress = Uri.encodeComponent(widget.catering.address);
-      
+      final encodedAddress = Uri.encodeComponent(_catering.address);
+
       final mapsUrl = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress'
+        'https://www.google.com/maps/search/?api=1&query=$encodedName+$encodedAddress',
       );
 
       if (await canLaunchUrl(mapsUrl)) {
@@ -214,17 +353,18 @@ Future<void> _savePlaceFromCatering(BuildContext context) async {
   // ✅ Share place
   Future<void> _sharePlace() async {
     try {
-      final ratingText = '⭐ Rating: ${widget.catering.rating}/5\n';
-      final message = '''
-Check out ${widget.catering.name}!
+      final ratingText = '⭐ Rating: ${_catering.rating}/5\n';
+      final message =
+          '''
+Check out ${_catering.name}!
 
-$ratingText📍 Location: ${widget.catering.address}
+$ratingText📍 Location: ${_catering.address}
 
 Find it on Google Maps:
-https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.catering.name} ${widget.catering.address}')}
+https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${_catering.name} ${_catering.address}')}
 ''';
 
-      await Share.share(message, subject: 'Check out ${widget.catering.name}');
+      await Share.share(message, subject: 'Check out ${_catering.name}');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -239,15 +379,18 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
 
   @override
   Widget build(BuildContext context) {
-    final List<String> imageUrls = (widget.catering.photoReferences.isNotEmpty)
-        ? widget.catering.photoReferences
-        : [Images.Store];
+    final imageUrls = _detailImageUrls;
+    final visibleReviews = _visibleReviews;
+    final ratingsCount =
+        (_catering.userRatingsTotal != null && _catering.userRatingsTotal! > 0)
+        ? _catering.userRatingsTotal!.toString()
+        : visibleReviews.length.toString();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: CustomText(text: widget.catering.name),
+        title: CustomText(text: _catering.name),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -255,13 +398,13 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
           children: [
             // 🏪 Store Details
             GlobalDetailWidget(
-              storeName: widget.catering.name,
-              rating: widget.catering.rating.toString(),
-              ratingsCount: "${widget.catering.reviews.length}",
-              location: widget.catering.address,
-              status: widget.catering.openNow ? "Open now" : "Closed",
+              storeName: _catering.name,
+              rating: _catering.rating.toString(),
+              ratingsCount: ratingsCount,
+              location: _catering.address,
+              status: _catering.openNow ? "Open now" : "Closed",
               description:
-                  "Discover ${widget.catering.name} located at ${widget.catering.address}.",
+                  "Discover ${_catering.name} located at ${_catering.address}.",
               imageUrls: imageUrls,
               onReviewPressed: _openReviewInMaps,
               onSavePressed: () {
@@ -272,7 +415,9 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
                 }
               },
               saveLabel: _isSaved ? 'Unsave' : 'Save',
-              saveIcon: _isSaved ? Icons.bookmark_remove : Icons.bookmark_border,
+              saveIcon: _isSaved
+                  ? Icons.bookmark_remove
+                  : Icons.bookmark_border,
               onSharePressed: _sharePlace,
               onUberEatsPressed: () {},
               onGrubhubPressed: () {},
@@ -281,17 +426,26 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
             ),
 
             const SizedBox(height: 16),
+            if (_isLoadingDetails)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: LinearProgressIndicator(),
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: CustomText(
-                text: "Reviews",
-                title: true,
-                fontSize: 18,
-              ),
+              child: CustomText(text: "Reviews", title: true, fontSize: 18),
             ),
             const SizedBox(height: 8),
 
-            if (widget.catering.reviews.isEmpty)
+            if (_isLoadingDetails && visibleReviews.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  "Loading reviews...",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+            else if (visibleReviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
@@ -300,12 +454,13 @@ https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.
                 ),
               )
             else
-              ...widget.catering.reviews.map(
+              ...visibleReviews.map(
                 (review) => ListTile(
                   leading: CircleAvatar(
                     backgroundImage: review.profilePhotoUrl.isNotEmpty
                         ? NetworkImage(review.profilePhotoUrl)
-                        : const NetworkImage(Images.Store),
+                        : const AssetImage(Images.cateringPlaceholderAsset)
+                              as ImageProvider,
                   ),
                   title: Text(
                     review.authorName,

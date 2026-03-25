@@ -1,13 +1,11 @@
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-
 
 class CategoryItem {
   final String title;
-  final String svgAsset;       
+  final String svgAsset;
   final Color backgroundColor;
-  final VoidCallback onTap;    
+  final VoidCallback onTap;
 
   CategoryItem({
     required this.title,
@@ -24,15 +22,19 @@ class CategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final isSmall = w < 360;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,       
-        childAspectRatio: 2.5,  // Adjusted for horizontal card
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+      padding: EdgeInsets.all(isSmall ? 8 : 12),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        // Give a little more usable width on small screens (less padding/spacing)
+        childAspectRatio: isSmall ? 2.8 : 2.5,
+        crossAxisSpacing: isSmall ? 10 : 16,
+        mainAxisSpacing: isSmall ? 10 : 16,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -50,10 +52,16 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final isSmall = w < 360;
+
     return GestureDetector(
       onTap: item.onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmall ? 12 : 16,
+          vertical: isSmall ? 10 : 12,
+        ),
         decoration: BoxDecoration(
           color: item.backgroundColor,
           borderRadius: BorderRadius.circular(12),
@@ -62,12 +70,9 @@ class _CategoryCard extends StatelessWidget {
           children: [
             // Icon
             SizedBox(
-              height: 40,
-              width: 40,
-              child: Image.asset(
-                item.svgAsset,
-                fit: BoxFit.contain,
-              ),
+              height: isSmall ? 32 : 40,
+              width: isSmall ? 32 : 40,
+              child: Image.asset(item.svgAsset, fit: BoxFit.contain),
             ),
 
             const SizedBox(width: 12),
@@ -77,7 +82,9 @@ class _CategoryCard extends StatelessWidget {
               child: CustomText(
                 text: item.title,
                 title: true,
-                fontSize: 12,
+                fontSize: isSmall ? 11 : 12,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

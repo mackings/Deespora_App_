@@ -11,7 +11,9 @@ class ApiService {
     String? city,
     double? lat,
     double? lng,
+    bool forceRefresh = false,
   }) async {
+    await CacheManager.invalidateDiscoveryImageCachesOnce();
     final params = <String, String>{};
 
     if (lat != null && lng != null) {
@@ -23,9 +25,9 @@ class ApiService {
       throw Exception('Either lat+lng coordinates or city must be provided');
     }
 
-    final endpoint = Uri.parse('${Baseurl.Url}restaurants')
-        .replace(queryParameters: params)
-        .toString();
+    final endpoint = Uri.parse(
+      '${Baseurl.Url}restaurants',
+    ).replace(queryParameters: params).toString();
 
     // Check cache first
     final cacheKey = CacheManager.getFetchCacheKeyWithLocation(
@@ -34,14 +36,18 @@ class ApiService {
       lat: lat,
       lng: lng,
     );
-    final cachedData = await CacheManager.getFromCache(cacheKey);
+    final cachedData = forceRefresh
+        ? null
+        : await CacheManager.getFromCache(cacheKey);
 
-    if (cachedData != null) {
+    if (!forceRefresh && cachedData != null) {
       print('🎯 Using cached restaurants data');
       try {
         final List restaurants = cachedData is List
             ? cachedData
-            : (cachedData is Map<String, dynamic> ? (cachedData['restaurants'] ?? []) : []);
+            : (cachedData is Map<String, dynamic>
+                  ? (cachedData['restaurants'] ?? [])
+                  : []);
         return restaurants.map((e) => Restaurant.fromJson(e)).toList();
       } catch (e) {
         print('⚠️ Failed to parse cached data, fetching fresh: $e');
@@ -61,9 +67,6 @@ class ApiService {
         final List restaurants = data is List
             ? data
             : (data is Map<String, dynamic> ? (data['restaurants'] ?? []) : []);
-        if (restaurants is! List) {
-          throw Exception('Invalid data format: ${response.data}');
-        }
 
         // Save to cache
         await CacheManager.saveToCache(cacheKey, data);
@@ -84,14 +87,14 @@ class ApiService {
     String? city,
     double? lat,
     double? lng,
+    bool forceRefresh = false,
   }) async {
+    await CacheManager.invalidateDiscoveryImageCachesOnce();
     if (keyword.trim().isEmpty) {
       throw Exception('Keyword is required for search');
     }
 
-    final params = <String, String>{
-      'keyword': keyword,
-    };
+    final params = <String, String>{'keyword': keyword};
 
     if (lat != null && lng != null) {
       params['lat'] = lat.toString();
@@ -102,9 +105,9 @@ class ApiService {
       throw Exception('Either lat+lng coordinates or city must be provided');
     }
 
-    final endpoint = Uri.parse('${Baseurl.Url}search-restaurants')
-        .replace(queryParameters: params)
-        .toString();
+    final endpoint = Uri.parse(
+      '${Baseurl.Url}search-restaurants',
+    ).replace(queryParameters: params).toString();
 
     // Check cache first
     final cacheKey = CacheManager.getSearchCacheKeyWithLocation(
@@ -114,14 +117,18 @@ class ApiService {
       lat: lat,
       lng: lng,
     );
-    final cachedData = await CacheManager.getFromCache(cacheKey);
+    final cachedData = forceRefresh
+        ? null
+        : await CacheManager.getFromCache(cacheKey);
 
-    if (cachedData != null) {
+    if (!forceRefresh && cachedData != null) {
       print('🎯 Using cached search results for: $keyword in $city');
       try {
         final List restaurants = cachedData is List
             ? cachedData
-            : (cachedData is Map<String, dynamic> ? (cachedData['restaurants'] ?? []) : []);
+            : (cachedData is Map<String, dynamic>
+                  ? (cachedData['restaurants'] ?? [])
+                  : []);
         return restaurants.map((e) => Restaurant.fromJson(e)).toList();
       } catch (e) {
         print('⚠️ Failed to parse cached search data, fetching fresh: $e');
@@ -141,9 +148,6 @@ class ApiService {
         final List restaurants = data is List
             ? data
             : (data is Map<String, dynamic> ? (data['restaurants'] ?? []) : []);
-        if (restaurants is! List) {
-          throw Exception('Invalid data format: ${response.data}');
-        }
 
         // Save to cache
         await CacheManager.saveToCache(cacheKey, data);
@@ -164,28 +168,34 @@ class ApiService {
     double? lat,
     double? lng,
     String? city,
+    bool forceRefresh = false,
   }) async {
+    await CacheManager.invalidateDiscoveryImageCachesOnce();
     if ((lat == null || lng == null) && city == null) {
       throw Exception(
-          'Either lat+lng coordinates or city must be provided for nearby search');
+        'Either lat+lng coordinates or city must be provided for nearby search',
+      );
     }
 
     String endpoint = '${Baseurl.Url}restaurants/nearby?';
-    String cacheKeySuffix = '';
-
     if (lat != null && lng != null) {
       endpoint += 'lat=$lat&lng=$lng';
-      cacheKeySuffix = '${lat}_$lng';
     } else if (city != null) {
       endpoint += 'city=$city';
-      cacheKeySuffix = city;
     }
 
     // Check cache first
-    final cacheKey = 'cache_nearby_restaurants_$cacheKeySuffix';
-    final cachedData = await CacheManager.getFromCache(cacheKey);
+    final cacheKey = CacheManager.getFetchCacheKeyWithLocation(
+      'restaurants_nearby',
+      city: city,
+      lat: lat,
+      lng: lng,
+    );
+    final cachedData = forceRefresh
+        ? null
+        : await CacheManager.getFromCache(cacheKey);
 
-    if (cachedData != null) {
+    if (!forceRefresh && cachedData != null) {
       print('🎯 Using cached nearby restaurants data');
       try {
         final List restaurants = cachedData is List ? cachedData : [];

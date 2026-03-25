@@ -16,8 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
-
-
 class InterestHome extends StatefulWidget {
   const InterestHome({super.key});
 
@@ -30,7 +28,7 @@ class _InterestHomeState extends State<InterestHome> {
 
   String _selectedCity = 'US';
   int _selectedIndex = 0;
-  
+
   // Add these for saved functionality
   List<Artist> savedArtists = [];
   List<Place> savedPlaces = [];
@@ -138,19 +136,22 @@ class _InterestHomeState extends State<InterestHome> {
   Future<void> _removeArtist(String artistName) async {
     final success = await ArtistPreferencesService.removeArtist(artistName);
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$artistName removed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$artistName removed')));
       _loadSavedData();
     }
   }
 
   Future<void> _removePlace(String placeName, String placeAddress) async {
-    final success = await PlacePreferencesService.removePlace(placeName, placeAddress);
+    final success = await PlacePreferencesService.removePlace(
+      placeName,
+      placeAddress,
+    );
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$placeName removed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$placeName removed')));
       _loadSavedData();
     }
   }
@@ -186,9 +187,7 @@ class _InterestHomeState extends State<InterestHome> {
       final event = place.toEvent();
       await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => EventDetailScreen(event: event),
-        ),
+        MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)),
       );
     }
     _loadSavedData();
@@ -237,10 +236,7 @@ class _InterestHomeState extends State<InterestHome> {
               const SizedBox(height: 16),
               Text(
                 'No saved artists yet',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 8),
             ],
@@ -286,14 +282,15 @@ class _InterestHomeState extends State<InterestHome> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.bookmark_border, size: 64, color: Colors.grey.shade400),
+              Icon(
+                Icons.bookmark_border,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
               const SizedBox(height: 16),
               Text(
                 'No saved places yet',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 8),
             ],
@@ -309,12 +306,15 @@ class _InterestHomeState extends State<InterestHome> {
 
           // ✅ UPDATED: Show event date for events
           String category = '';
-          if (place.type == 'Event' && place.eventDate != null && place.eventDate!.isNotEmpty) {
+          if (place.type == 'Event' &&
+              place.eventDate != null &&
+              place.eventDate!.isNotEmpty) {
             category = '📅 ${place.eventDate}';
           }
 
           return GlobalStoreFront(
-            imageUrl: place.imageUrl ?? Images.Store,
+            imageUrls: place.imageUrl != null ? [place.imageUrl!] : const [],
+            placeholderAsset: Images.restaurantPlaceholderAsset,
             storeName: place.name,
             category: category,
             location: place.address,
@@ -325,7 +325,6 @@ class _InterestHomeState extends State<InterestHome> {
           );
         },
       );
-
     } else if (_selectedIndex == 2) {
       // History Tab
       if (isLoading) {
@@ -357,10 +356,7 @@ class _InterestHomeState extends State<InterestHome> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.1),
@@ -460,9 +456,7 @@ class _InterestHomeState extends State<InterestHome> {
             ),
             const SizedBox(height: 20),
 
-            Expanded(
-              child: _buildTabContent(),
-            ),
+            Expanded(child: _buildTabContent()),
           ],
         ),
       ),
