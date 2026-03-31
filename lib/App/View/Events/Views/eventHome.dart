@@ -1,3 +1,5 @@
+import 'package:dspora/App/Services/AppLocationService.dart';
+import 'package:dspora/App/Services/DiscoveryPreloader.dart';
 import 'package:dspora/App/View/Events/Api/eventsApi.dart';
 import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/Events/Views/eventDetails.dart';
@@ -8,11 +10,6 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
-
-
-
 
 class EventHome extends StatefulWidget {
   const EventHome({super.key});
@@ -36,37 +33,37 @@ class _EventHomeState extends State<EventHome> {
   late Future<void> _initialLoadFuture;
 
   final List<String> usCities = [
-  "New York",
-  "Los Angeles",
-  "Chicago",
-  "Houston",
-  "Miami",
-  "San Francisco",
-  "Boston",
-  "Washington",
-  "Seattle",
-  "Atlanta",
-  "Las Vegas",
-  "Orlando",
-  "Dallas",
-  "Denver",
-  "Philadelphia",
-  "Phoenix",
-  "San Diego",
-  "Austin",
-  "Nashville",
-  "Portland",
-  "Detroit",
-  "Minneapolis",
-  "Charlotte",
-  "Indianapolis",
-  "Columbus",
-  "San Antonio",
-  "Tampa",
-  "Baltimore",
-  "Cleveland",
-  "Kansas City",
-];
+    "New York",
+    "Los Angeles",
+    "Chicago",
+    "Houston",
+    "Miami",
+    "San Francisco",
+    "Boston",
+    "Washington",
+    "Seattle",
+    "Atlanta",
+    "Las Vegas",
+    "Orlando",
+    "Dallas",
+    "Denver",
+    "Philadelphia",
+    "Phoenix",
+    "San Diego",
+    "Austin",
+    "Nashville",
+    "Portland",
+    "Detroit",
+    "Minneapolis",
+    "Charlotte",
+    "Indianapolis",
+    "Columbus",
+    "San Antonio",
+    "Tampa",
+    "Baltimore",
+    "Cleveland",
+    "Kansas City",
+  ];
 
   @override
   void initState() {
@@ -83,8 +80,14 @@ class _EventHomeState extends State<EventHome> {
   /// ✅ Fetch all events only once
   Future<void> _fetchInitialEvents() async {
     try {
-      final events = await _apiService.fetchAllEvents(); // Single API call
+      final location = await AppLocationService.getActiveLocation();
+      final events =
+          await DiscoveryPreloader.getEvents(); // Reuse warm home data
+      if (!mounted) {
+        return;
+      }
       setState(() {
+        _selectedCity = location.city;
         _allEvents = events;
       });
       _applyCityFilter(_selectedCity);
@@ -99,7 +102,9 @@ class _EventHomeState extends State<EventHome> {
 
     setState(() {
       _filteredEvents = _allEvents.where((e) {
-        final venueMatch = e.venues.any((v) => v.name.toLowerCase().contains(lowerCity));
+        final venueMatch = e.venues.any(
+          (v) => v.name.toLowerCase().contains(lowerCity),
+        );
         final nameMatch = e.name.toLowerCase().contains(lowerCity);
         return venueMatch || nameMatch || city == 'US';
       }).toList();
@@ -108,6 +113,7 @@ class _EventHomeState extends State<EventHome> {
 
   /// ✅ Change city without API call
   void _loadEvents(String city) {
+    AppLocationService.saveUserSelectedCity(city);
     setState(() {
       _selectedCity = city;
     });
@@ -139,8 +145,12 @@ class _EventHomeState extends State<EventHome> {
       final queryLower = query.toLowerCase();
       setState(() {
         final cityFiltered = _allEvents.where((e) {
-          final venueMatch = e.venues.any((v) => v.name.toLowerCase().contains(_selectedCity.toLowerCase()));
-          final nameMatch = e.name.toLowerCase().contains(_selectedCity.toLowerCase());
+          final venueMatch = e.venues.any(
+            (v) => v.name.toLowerCase().contains(_selectedCity.toLowerCase()),
+          );
+          final nameMatch = e.name.toLowerCase().contains(
+            _selectedCity.toLowerCase(),
+          );
           return venueMatch || nameMatch || _selectedCity == 'US';
         }).toList();
 
@@ -197,9 +207,9 @@ class _EventHomeState extends State<EventHome> {
                   onCitySelected: (city) {
                     Navigator.pop(context);
                     _loadEvents(city);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Selected $city')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Selected $city')));
                   },
                 ),
               );
@@ -229,8 +239,10 @@ class _EventHomeState extends State<EventHome> {
                 }
 
                 if (snapshot.hasError) {
-                   return Center(child: CustomText(text: "Network Error, Please retry"));
-                 // return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: CustomText(text: "Network Error, Please retry"),
+                  );
+                  // return Center(child: Text('Error: ${snapshot.error}'));
                 }
 
                 if (_filteredEvents.isNotEmpty) {
@@ -266,9 +278,7 @@ class _EventHomeState extends State<EventHome> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => EventDetailScreen(event: e),
-                ),
+                MaterialPageRoute(builder: (_) => EventDetailScreen(event: e)),
               );
             },
           );

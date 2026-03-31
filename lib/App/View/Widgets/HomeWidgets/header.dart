@@ -100,7 +100,7 @@ class HomeHeader extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 👤 User Name (Left)
@@ -117,38 +117,44 @@ class HomeHeader extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              // 📍 Location Row (Right)
-              Flexible(
-                child: GestureDetector(
-                  onTap: () => _showLocationPicker(context),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.wb_sunny_outlined,
-                        size: 16,
-                        color: Colors.orange,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: CustomText(
-                          text: location,
-                          content: true,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: () => _showLocationPicker(context),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.wb_sunny_outlined,
+                          size: 16,
+                          color: Colors.orange,
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Transform.rotate(
-                        angle: 1.57,
-                        child: const Icon(
-                          Icons.arrow_forward_ios,
-                          size: 12,
-                          color: Colors.grey,
+                        const SizedBox(width: 6),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: isSmall ? 110 : 150,
+                          ),
+                          child: CustomText(
+                            text: location,
+                            content: true,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Transform.rotate(
+                          angle: 1.57,
+                          child: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

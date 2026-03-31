@@ -1,8 +1,8 @@
+import 'package:dspora/App/Services/AppLocationService.dart';
 import 'package:dspora/App/View/Auth/View/Signin.dart';
+import 'package:dspora/App/Services/DiscoveryPreloader.dart';
 import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Catering/View/cateringHome.dart';
-import 'package:dspora/App/View/Events/Api/AdsService.dart';
-import 'package:dspora/App/View/Events/Api/eventsApi.dart';
 import 'package:dspora/App/View/Events/Model/AdsModel.dart';
 import 'package:dspora/App/View/Events/Model/eventModel.dart';
 import 'package:dspora/App/View/Events/Views/eventDetails.dart';
@@ -18,13 +18,8 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/header.dart';
 import 'package:dspora/App/View/Widgets/customtext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-
-
 
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
@@ -34,15 +29,11 @@ class Dashboard extends ConsumerStatefulWidget {
 }
 
 class _DashboardState extends ConsumerState<Dashboard> {
-  final EventApiService _eventService = EventApiService();
-  final AdvertApiService _advertService = AdvertApiService();
-
   bool _loading = false;
   bool _advertsLoading = false;
   String? _userName;
   String _selectedCity = "";
   List<Event> _events = [];
-  List<Advert> _adverts = [];
   List<Advert> _promotedAdverts = [];
   bool _isGuest = false;
 
@@ -57,37 +48,40 @@ class _DashboardState extends ConsumerState<Dashboard> {
     _initDashboard();
   }
 
-void _initCategories() {
-  categories = [
-    CategoryItem(
-      title: 'Restaurants',
-      svgAsset: 'assets/img/restaurant.png',
-      backgroundColor: Color(0xFFF8F8F8),
- // Soft yellow
-      onTap: () => Nav.push(const RestaurantHome()), // Accessible to guests
-    ),
-    CategoryItem(
-      title: 'Catering',
-      svgAsset: 'assets/img/catering.png',
-      backgroundColor: Color(0xFFF8F8F8),
- // Sage green
-      onTap: () => _handleCategoryTap('Catering', () => Nav.push(CateringHome())),
-    ),
-    CategoryItem(
-      title: 'Events',
-      svgAsset: 'assets/img/event.png',
-      backgroundColor: const Color(0xFFF8F8F8),
- // Peachy beige
-      onTap: () => _handleCategoryTap('Events', () => Nav.push(const EventHome())),
-    ),
-    CategoryItem(
-      title: 'Worship',
-      svgAsset: 'assets/img/realestate.png',
-      backgroundColor: const Color(0xFFF8F8F8),
-      onTap: () => _handleCategoryTap('Worship', () => Nav.push(RealEstateHome())),
-    ),
-  ];
-}
+  void _initCategories() {
+    categories = [
+      CategoryItem(
+        title: 'Restaurants',
+        svgAsset: 'assets/img/restaurant.png',
+        backgroundColor: Color(0xFFF8F8F8),
+        // Soft yellow
+        onTap: () => Nav.push(const RestaurantHome()), // Accessible to guests
+      ),
+      CategoryItem(
+        title: 'Catering',
+        svgAsset: 'assets/img/catering.png',
+        backgroundColor: Color(0xFFF8F8F8),
+        // Sage green
+        onTap: () =>
+            _handleCategoryTap('Catering', () => Nav.push(CateringHome())),
+      ),
+      CategoryItem(
+        title: 'Events',
+        svgAsset: 'assets/img/event.png',
+        backgroundColor: const Color(0xFFF8F8F8),
+        // Peachy beige
+        onTap: () =>
+            _handleCategoryTap('Events', () => Nav.push(const EventHome())),
+      ),
+      CategoryItem(
+        title: 'Worship',
+        svgAsset: 'assets/img/realestate.png',
+        backgroundColor: const Color(0xFFF8F8F8),
+        onTap: () =>
+            _handleCategoryTap('Worship', () => Nav.push(RealEstateHome())),
+      ),
+    ];
+  }
 
   Future<void> _initDashboard() async {
     debugPrint('🔵 Init dashboard start');
@@ -103,11 +97,8 @@ void _initCategories() {
     debugPrint('✅ Location loaded: $_selectedCity');
 
     // Fetch both events and adverts in parallel
-    await Future.wait([
-      _fetchEvents(),
-      _fetchAdverts(),
-    ]);
-    
+    await Future.wait([_fetchEvents(), _fetchAdverts()]);
+
     debugPrint('✅ Events and Adverts fetched');
   }
 
@@ -121,9 +112,10 @@ void _initCategories() {
   Future<void> _checkGuestStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final userName = prefs.getString('userName');
-    
-    final isGuestUser = userName == null || userName.isEmpty || userName == 'Guest';
-    
+
+    final isGuestUser =
+        userName == null || userName.isEmpty || userName == 'Guest';
+
     if (isGuestUser) {
       await _clearAuthData();
       setState(() {
@@ -180,31 +172,10 @@ void _initCategories() {
 
   Future<void> _loadUserLocation() async {
     try {
-      LocationPermission permission = await Geolocator.requestPermission();
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        debugPrint('⚠️ Location permission denied');
-        setState(() => _selectedCity = "London");
-        return;
-      }
-
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      ).timeout(const Duration(seconds: 10));
-
-      final placemarks = await placemarkFromCoordinates(
-        pos.latitude,
-        pos.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        setState(() {
-          _selectedCity = placemarks.first.locality ?? "New York";
-        });
-      } else {
-        setState(() => _selectedCity = "New York");
-      }
+      final location = await AppLocationService.getActiveLocation();
+      setState(() {
+        _selectedCity = location.city;
+      });
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
       setState(() => _selectedCity = "New York");
@@ -214,7 +185,7 @@ void _initCategories() {
   Future<void> _fetchEvents() async {
     debugPrint('🔵 Fetching events for city: $_selectedCity');
     try {
-      final events = await _eventService.fetchAllEvents();
+      final events = await DiscoveryPreloader.getEvents();
 
       debugPrint('✅ Got ${events.length} events');
       setState(() {
@@ -233,21 +204,21 @@ void _initCategories() {
   Future<void> _fetchAdverts() async {
     debugPrint('🔵 Fetching adverts');
     setState(() => _advertsLoading = true);
-    
+
     try {
-      final adverts = await _advertService.fetchAllAdverts(limit: 50);
+      final adverts = await DiscoveryPreloader.getAdverts(limit: 50);
       final promoted = adverts.where((ad) => ad.promoted).toList();
 
-      debugPrint('✅ Got ${adverts.length} adverts (${promoted.length} promoted)');
+      debugPrint(
+        '✅ Got ${adverts.length} adverts (${promoted.length} promoted)',
+      );
       setState(() {
-        _adverts = adverts;
         _promotedAdverts = promoted;
         _advertsLoading = false;
       });
     } catch (e) {
       debugPrint('❌ Error fetching adverts: $e');
       setState(() {
-        _adverts = [];
         _promotedAdverts = [];
         _advertsLoading = false;
       });
@@ -284,12 +255,7 @@ void _initCategories() {
               _showGuestSignupDialog();
             } else {
               final event = advert.toEvent();
-              Nav.push(
-                EventDetailScreen(
-                  event: event,
-                  isFromAdvert: true,
-                ),
-              );
+              Nav.push(EventDetailScreen(event: event, isFromAdvert: true));
             }
           },
         ),
@@ -309,12 +275,7 @@ void _initCategories() {
             if (_isGuest) {
               _showGuestSignupDialog();
             } else {
-              Nav.push(
-                EventDetailScreen(
-                  event: event,
-                  isFromAdvert: false,
-                ),
-              );
+              Nav.push(EventDetailScreen(event: event, isFromAdvert: false));
             }
           },
         ),
@@ -336,117 +297,129 @@ void _initCategories() {
             child: Container(
               color: const Color(0xFFFFFFFF),
               child: SingleChildScrollView(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
-                  child: Column(
-                    children: [
-                      
-                      HomeHeader(
-                        name: _userName ?? '',
-                        location: _selectedCity,
-                        onLocationSelected: (city) {
-                          setState(() {
-                            _selectedCity = city;
-                            _loading = true;
-                          });
-                          _fetchEvents();
-                          _fetchAdverts();
-                        },
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      const SizedBox(height: 20),
-
-                      /// ---------- Top Carousel (Mixed Events & Promoted Adverts) ------------
-                      Skeletonizer(
-                        enabled: _loading || _advertsLoading,
-                        child: HomeCarousel(
-                          items: (_loading || _advertsLoading)
-                              ? _buildSkeletonCarouselItems()
-                              : _buildMixedCarouselItems().isNotEmpty
-                                  ? _buildMixedCarouselItems()
-                                  : [
-                                      CarouselItem(
-                                        imageUrl: 'https://via.placeholder.com/400x200',
-                                        title: 'No events available',
-                                        date: '',
-                                        onTap: () {},
-                                      ),
-                                    ],
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 30,
+                    ),
+                    child: Column(
+                      children: [
+                        HomeHeader(
+                          name: _userName ?? '',
+                          location: _selectedCity,
+                          onLocationSelected: (city) {
+                            AppLocationService.saveUserSelectedCity(city);
+                            setState(() {
+                              _selectedCity = city;
+                              _loading = true;
+                            });
+                            _fetchEvents();
+                            _fetchAdverts();
+                          },
                         ),
-                      ),
 
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 10),
 
-                      /// ---------- Categories ------------
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: CustomText(
-                          text: "Categories",
-                          title: true,
-                          fontSize: 18,
+                        const SizedBox(height: 20),
+
+                        /// ---------- Top Carousel (Mixed Events & Promoted Adverts) ------------
+                        Skeletonizer(
+                          enabled: _loading || _advertsLoading,
+                          child: HomeCarousel(
+                            items: (_loading || _advertsLoading)
+                                ? _buildSkeletonCarouselItems()
+                                : _buildMixedCarouselItems().isNotEmpty
+                                ? _buildMixedCarouselItems()
+                                : [
+                                    CarouselItem(
+                                      imageUrl:
+                                          'https://via.placeholder.com/400x200',
+                                      title: 'No events available',
+                                      date: '',
+                                      onTap: () {},
+                                    ),
+                                  ],
+                          ),
                         ),
-                      ),
 
-                       const SizedBox(height: 15),
+                        const SizedBox(height: 20),
 
-                      CategoryGrid(items: categories),
-
-                       const SizedBox(height: 20),
-
-                      /// ---------- Events Near You ------------
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: CustomText(
-                          text: "Events Near You",
-                          title: true,
-                          fontSize: 18,
+                        /// ---------- Categories ------------
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: CustomText(
+                            text: "Categories",
+                            title: true,
+                            fontSize: 18,
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 15),
 
-                      // ✅ UPDATED: Events Near You carousel now properly identifies events
-Skeletonizer(
-  enabled: _loading,
-  child: EventCarousel(
-    imageUrls: _loading
-        ? List.generate(8, (index) => '')
-        : _events.length > 1
-            ? _events
-                .skip(1)
-                .take(8)
-                .map(
-                  (e) => e.images.isNotEmpty
-                      ? e.images.first.url
-                      : 'https://via.placeholder.com/400x200',
-                )
-                .toList()
-            : ['https://via.placeholder.com/400x200'],
-    events: _loading ? null : _events.skip(1).take(8).toList(), // Pass events
-    height: 100,
-    autoPlay: !_loading,
-    onTap: _loading
-        ? (index) {}
-        : (index) {
-            if (_isGuest) {
-              _showGuestSignupDialog();
-            } else if (_events.length > index + 1) {
-              final event = _events.skip(1).toList()[index];
-              Nav.push(
-                EventDetailScreen(
-                  event: event,
-                  isFromAdvert: false,
-                ),
-              );
-            }
-          },
-    loading: _loading,
-  ),
-),
-                    ],
+                        CategoryGrid(items: categories),
+
+                        const SizedBox(height: 20),
+
+                        /// ---------- Events Near You ------------
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: CustomText(
+                            text: "Events Near You",
+                            title: true,
+                            fontSize: 18,
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ✅ UPDATED: Events Near You carousel now properly identifies events
+                        Skeletonizer(
+                          enabled: _loading,
+                          child: EventCarousel(
+                            imageUrls: _loading
+                                ? List.generate(8, (index) => '')
+                                : _events.length > 1
+                                ? _events
+                                      .skip(1)
+                                      .take(8)
+                                      .map(
+                                        (e) => e.images.isNotEmpty
+                                            ? e.images.first.url
+                                            : 'https://via.placeholder.com/400x200',
+                                      )
+                                      .toList()
+                                : ['https://via.placeholder.com/400x200'],
+                            events: _loading
+                                ? null
+                                : _events
+                                      .skip(1)
+                                      .take(8)
+                                      .toList(), // Pass events
+                            height: 100,
+                            autoPlay: !_loading,
+                            onTap: _loading
+                                ? (index) {}
+                                : (index) {
+                                    if (_isGuest) {
+                                      _showGuestSignupDialog();
+                                    } else if (_events.length > index + 1) {
+                                      final event = _events
+                                          .skip(1)
+                                          .toList()[index];
+                                      Nav.push(
+                                        EventDetailScreen(
+                                          event: event,
+                                          isFromAdvert: false,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            loading: _loading,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -454,6 +427,6 @@ Skeletonizer(
           ),
         ),
       ),
-    ));
+    );
   }
 }

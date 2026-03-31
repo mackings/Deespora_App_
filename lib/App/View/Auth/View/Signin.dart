@@ -1,7 +1,6 @@
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
+import 'package:dspora/App/Services/DiscoveryPreloader.dart';
 import 'package:dspora/App/View/Auth/View/resetPassword.dart';
-import 'package:dspora/App/View/Auth/View/signup.dart';
-import 'package:dspora/App/View/Utils/navigator.dart';
 import 'package:dspora/App/View/Utils/tabBar.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';
 import 'package:dspora/App/View/Widgets/Textfield.dart';
@@ -89,6 +88,8 @@ class _SignInState extends ConsumerState<SignIn> {
       if (mounted) setState(() => _isLoading = false);
 
       if (result['success']) {
+        DiscoveryPreloader.warmUp();
+
         // Navigate to home page
         if (mounted) {
           Navigator.pushAndRemoveUntil(
@@ -128,9 +129,7 @@ class _SignInState extends ConsumerState<SignIn> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(backgroundColor: Colors.white),
       body: LoadingOverlay(
         isLoading: _isLoading,
         text: "Logging in...",

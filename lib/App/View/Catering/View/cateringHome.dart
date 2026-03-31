@@ -1,3 +1,4 @@
+import 'package:dspora/App/Services/AppLocationService.dart';
 import 'package:dspora/App/View/Catering/Api/cateringService.dart';
 import 'package:dspora/App/View/Catering/Model/cateringModel.dart';
 import 'package:dspora/App/View/Utils/navigator.dart';
@@ -9,8 +10,6 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 
 class CateringHome extends StatefulWidget {
   const CateringHome({super.key});
@@ -125,7 +124,7 @@ class _CateringHomeState extends State<CateringHome> {
   @override
   void initState() {
     super.initState();
-    _cateringFuture = _fetchAndCacheCatering('US');
+    _cateringFuture = Future<List<Catering>>.value(const []);
     _loadUserLocation();
   }
 
@@ -137,39 +136,33 @@ class _CateringHomeState extends State<CateringHome> {
 
   Future<void> _loadUserLocation() async {
     try {
-      LocationPermission permission = await Geolocator.requestPermission();
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        debugPrint('⚠️ Location permission denied');
+      final location = await AppLocationService.getActiveLocation();
+      if (!mounted) {
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      ).timeout(const Duration(seconds: 10));
-      _userLat = pos.latitude;
-      _userLng = pos.longitude;
+      debugPrint("📍 Using app location for catering: ${location.city}");
+      _userSelectedCity = location.isUserSelected;
+      _userLat = location.isUserSelected ? null : location.lat;
+      _userLng = location.isUserSelected ? null : location.lng;
+      final future = _fetchAndCacheCatering(location.city);
 
-      final placemarks = await placemarkFromCoordinates(
-        pos.latitude,
-        pos.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        final detectedCity = placemarks.first.locality ?? 'US';
-        debugPrint("📍 User city detected: $detectedCity");
-        if (_userSelectedCity || _searchController.text.trim().isNotEmpty) {
-          return;
-        }
-        setState(() {
-          _selectedCity = detectedCity;
-          _isDataLoaded = false;
-          _cateringFuture = _fetchAndCacheCatering(detectedCity);
-        });
-      }
+      setState(() {
+        _selectedCity = location.city;
+        _isDataLoaded = false;
+        _isLocationSearch = !location.isUserSelected && location.hasCoordinates;
+        _cateringFuture = future;
+      });
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _selectedCity = 'US';
+        _userSelectedCity = false;
+        _cateringFuture = _fetchAndCacheCatering('US');
+      });
     }
   }
 
@@ -289,6 +282,7 @@ class _CateringHomeState extends State<CateringHome> {
   }
 
   void _loadCatering(String city) {
+    AppLocationService.saveUserSelectedCity(city);
     setState(() {
       _selectedCity = city;
       _cacheKey = city;

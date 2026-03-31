@@ -1,3 +1,4 @@
+import 'package:dspora/App/Services/AppLocationService.dart';
 import 'package:dspora/App/View/Restaurants/Api/ResService.dart';
 import 'package:dspora/App/View/Restaurants/Model/ResModel.dart';
 import 'package:dspora/App/View/Restaurants/View/Details.dart';
@@ -8,8 +9,6 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 
 class RestaurantHome extends StatefulWidget {
   const RestaurantHome({super.key});
@@ -37,7 +36,6 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   String _selectedStatus = 'All';
   bool _isDataLoaded = false;
   bool _isApiSearch = false;
-  bool _isLocationSearch = false;
   bool _useLocationResults = false;
   bool _userSelectedCity = false;
   bool _isRefreshingImageData = false;
@@ -128,7 +126,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   @override
   void initState() {
     super.initState();
-    _restaurantsFuture = _fetchAndCacheRestaurants('US');
+    _restaurantsFuture = Future<List<Restaurant>>.value(const []);
     _loadUserLocation();
   }
 
@@ -140,82 +138,39 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
   Future<void> _loadUserLocation() async {
     try {
-      LocationPermission permission = await Geolocator.requestPermission();
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        debugPrint('⚠️ Location permission denied');
+      final location = await AppLocationService.getActiveLocation();
+      if (!mounted) {
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      ).timeout(const Duration(seconds: 10));
-      _userLat = pos.latitude;
-      _userLng = pos.longitude;
+      debugPrint("📍 Using app location for restaurants: ${location.city}");
+      _userSelectedCity = location.isUserSelected;
+      _userLat = location.isUserSelected ? null : location.lat;
+      _userLng = location.isUserSelected ? null : location.lng;
+      final future = _fetchAndCacheRestaurants(location.city);
 
-      final placemarks = await placemarkFromCoordinates(
-        pos.latitude,
-        pos.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        final detectedCity = placemarks.first.locality ?? 'US';
-        debugPrint("📍 User city detected: $detectedCity");
-        if (_userSelectedCity || _searchController.text.trim().isNotEmpty) {
-          return;
-        }
-
-        setState(() {
-          _selectedCity = detectedCity;
-        });
-
-        if (_userLat != null && _userLng != null && !_userSelectedCity) {
-          await _loadNearbyRestaurants(_userLat!, _userLng!);
-        } else if (_restaurantsCache.containsKey(_cacheKey)) {
-          _applyAllFilters(_cacheKey);
-        }
-      }
+      setState(() {
+        _selectedCity = location.city;
+        _isDataLoaded = false;
+        _useLocationResults =
+            !location.isUserSelected && location.hasCoordinates;
+        _restaurantsFuture = future;
+      });
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _selectedCity = 'US';
+        _userSelectedCity = false;
+        _restaurantsFuture = _fetchAndCacheRestaurants('US');
+      });
     }
   }
 
   String _locationCacheKey(double lat, double lng) {
     return 'nearby_${lat.toStringAsFixed(5)}_${lng.toStringAsFixed(5)}';
-  }
-
-  Future<void> _loadNearbyRestaurants(double lat, double lng) async {
-    setState(() {
-      _isDataLoaded = false;
-      _useLocationResults = true;
-      _cacheKey = _locationCacheKey(lat, lng);
-    });
-
-    try {
-      var results = await _apiService.fetchRestaurants(lat: lat, lng: lng);
-      if (results.isEmpty) {
-        results = await _apiService.fetchNearbyRestaurants(lat: lat, lng: lng);
-      }
-      _restaurantsCache[_cacheKey] = results;
-      _originalData = results;
-
-      if (_hasActiveApiSearch) {
-        return;
-      }
-
-      setState(() {
-        _isDataLoaded = true;
-        _restaurantsFuture = Future.value(results);
-      });
-      _applyAllFilters(_cacheKey);
-    } catch (e) {
-      debugPrint('❌ Location fetch error: $e');
-      setState(() {
-        _isDataLoaded = true;
-        _useLocationResults = false;
-      });
-    }
   }
 
   Future<List<Restaurant>> _fetchAndCacheRestaurants(String city) async {
@@ -322,11 +277,11 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   }
 
   void _loadRestaurants(String city) {
+    AppLocationService.saveUserSelectedCity(city);
     setState(() {
       _selectedCity = city;
       _isDataLoaded = false;
       _isApiSearch = false;
-      _isLocationSearch = false;
       _useLocationResults = false;
       _userSelectedCity = true;
       _filteredRestaurants = []; // 🔥 Clear filtered list
@@ -366,7 +321,6 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     if (query.isEmpty) {
       _searchRequestId++;
       _isApiSearch = false;
-      _isLocationSearch = false;
       if (_originalData.isNotEmpty) {
         _restaurantsCache[_cacheKey] = _originalData;
       }
@@ -411,7 +365,6 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     try {
       final useLocation =
           !_userSelectedCity && _userLat != null && _userLng != null;
-      _isLocationSearch = useLocation;
       debugPrint(
         useLocation
             ? '🔍 Searching via API: $keyword near ($_userLat, $_userLng)'

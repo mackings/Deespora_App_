@@ -1,3 +1,4 @@
+import 'package:dspora/App/Services/AppLocationService.dart';
 import 'package:dspora/App/View/RealEstate/Api/realestateService.dart';
 import 'package:dspora/App/View/RealEstate/Model/realestateModel.dart';
 import 'package:dspora/App/View/RealEstate/Widget/realEstate.dart';
@@ -9,9 +10,6 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/images.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/LocPicker.dart';
 import 'package:dspora/Constants/USCities.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 class RealEstateHome extends StatefulWidget {
   const RealEstateHome({super.key});
@@ -36,7 +34,6 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
   String _selectedStatus = 'All';
   bool _isDataLoaded = false;
-  bool _userHasSelectedCity = false; // Track if user manually selected a city
   bool _isApiSearchActive = false; // Track if we're showing API search results
   bool _isLocationSearch = false;
   bool _userSelectedCity = false;
@@ -118,7 +115,7 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   @override
   void initState() {
     super.initState();
-    _worshipFuture = _fetchAndCacheWorship('US');
+    _worshipFuture = Future<List<WorshipModel>>.value(const []);
     _loadUserLocation();
   }
 
@@ -130,39 +127,33 @@ class _RealEstateHomeState extends State<RealEstateHome> {
 
   Future<void> _loadUserLocation() async {
     try {
-      LocationPermission permission = await Geolocator.requestPermission();
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        debugPrint('⚠️ Location permission denied');
+      final location = await AppLocationService.getActiveLocation();
+      if (!mounted) {
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      ).timeout(const Duration(seconds: 10));
-      _userLat = pos.latitude;
-      _userLng = pos.longitude;
+      debugPrint("📍 Using app location for worship: ${location.city}");
+      _userSelectedCity = location.isUserSelected;
+      _userLat = location.isUserSelected ? null : location.lat;
+      _userLng = location.isUserSelected ? null : location.lng;
+      final future = _fetchAndCacheWorship(location.city);
 
-      final placemarks = await placemarkFromCoordinates(
-        pos.latitude,
-        pos.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        final detectedCity = placemarks.first.locality ?? 'US';
-        debugPrint("📍 User city detected: $detectedCity");
-        if (_userSelectedCity || _searchController.text.trim().isNotEmpty) {
-          return;
-        }
-        setState(() {
-          _selectedCity = detectedCity;
-          _isDataLoaded = false;
-          _worshipFuture = _fetchAndCacheWorship(detectedCity);
-        });
-      }
+      setState(() {
+        _selectedCity = location.city;
+        _isDataLoaded = false;
+        _isLocationSearch = !location.isUserSelected && location.hasCoordinates;
+        _worshipFuture = future;
+      });
     } catch (e) {
       debugPrint("❌ Error getting location: $e");
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _selectedCity = 'US';
+        _userSelectedCity = false;
+        _worshipFuture = _fetchAndCacheWorship('US');
+      });
     }
   }
 
@@ -275,12 +266,12 @@ class _RealEstateHomeState extends State<RealEstateHome> {
   }
 
   void _loadWorship(String city) {
+    AppLocationService.saveUserSelectedCity(city);
     setState(() {
       _selectedCity = city;
       _cacheKey = city;
       _isDataLoaded = false;
       _filteredWorship = []; // Clear filtered list
-      _userHasSelectedCity = true; // Mark that user manually selected a city
       _userSelectedCity = true;
       _isApiSearchActive = false; // Reset API search mode
       _isLocationSearch = false;
@@ -726,65 +717,6 @@ class _RealEstateHomeState extends State<RealEstateHome> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSkeletonLoader() {
-    return Skeletonizer(
-      enabled: true,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 180,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 20,
-                        color: Colors.grey[300],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 150,
-                        height: 16,
-                        color: Colors.grey[300],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

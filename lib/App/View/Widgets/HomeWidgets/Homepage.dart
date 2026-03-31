@@ -1,4 +1,5 @@
 import 'package:dspora/App/View/Auth/View/Signin.dart';
+import 'package:dspora/App/Services/DiscoveryPreloader.dart';
 import 'package:dspora/App/View/Auth/View/signup.dart';
 import 'package:dspora/App/View/Interests/Views/home.dart';
 import 'package:dspora/App/View/Notifications/View/Nothome.dart';
@@ -8,9 +9,6 @@ import 'package:dspora/App/View/Widgets/HomeWidgets/GuestSignupAlert.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/NavBar.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,7 +25,7 @@ class _HomePageState extends State<HomePage> {
     const Dashboard(),
     const InterestHome(),
     const Notification_home(),
-    const ProfileView()
+    const ProfileView(),
   ];
 
   @override
@@ -43,6 +41,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _isGuest = userName == null || userName.isEmpty || userName == 'Guest';
     });
+
+    if (!_isGuest) {
+      DiscoveryPreloader.warmUp();
+    }
   }
 
   void _handleNavTap(int index) {
@@ -86,7 +88,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
