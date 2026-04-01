@@ -1,3 +1,4 @@
+import 'package:dspora/App/Services/DiscoveryPreloader.dart';
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
 import 'package:dspora/App/View/Auth/View/onboarding.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';
@@ -5,16 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
-
-
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
-
-
 
 class _SplashScreenState extends State<SplashScreen> {
   late VideoPlayerController _controller;
@@ -50,6 +47,14 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (isLoggedIn) {
+      try {
+        await DiscoveryPreloader.warmUp();
+      } catch (e) {
+        debugPrint('⚠️ Startup personalization preload failed: $e');
+      }
+
+      if (!mounted) return;
+
       // User is logged in, go directly to HomePage
       Navigator.pushReplacement(
         context,

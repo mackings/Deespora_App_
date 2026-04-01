@@ -85,8 +85,6 @@ class _SignInState extends ConsumerState<SignIn> {
         );
       }
 
-      if (mounted) setState(() => _isLoading = false);
-
       if (result['success']) {
         DiscoveryPreloader.warmUp();
 
@@ -99,6 +97,7 @@ class _SignInState extends ConsumerState<SignIn> {
           );
         }
       } else {
+        if (mounted) setState(() => _isLoading = false);
         _showSnackBar(result['message'] ?? "Login failed");
       }
     } catch (e) {

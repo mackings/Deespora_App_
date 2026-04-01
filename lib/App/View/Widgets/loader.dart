@@ -28,7 +28,21 @@ class LoadingOverlay extends StatelessWidget {
                     trackGap: 1.5,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
                   ),
-                  if (text != null) ...[const SizedBox(height: 16)],
+                  if (text != null) ...[
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        text!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

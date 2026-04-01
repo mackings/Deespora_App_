@@ -186,6 +186,7 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
       );
     }
 
+
     // ✅ Adjust the image list
     final displayImages = widget.imageUrls.length == 1
         ? [widget.imageUrls[0], widget.imageUrls[0], widget.imageUrls[0]]
@@ -258,6 +259,7 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
     );
   }
 
+
   // ✅ Safe Image Loader (handles 404s, broken URLs, etc.)
   Widget _buildSafeImage(
     List<String> imageUrls, {
@@ -279,6 +281,7 @@ class _RestaurantGalleryHeaderState extends State<RestaurantGalleryHeader> {
       ),
     );
   }
+
 
   // ✅ Reusable Action Button
   Widget _buildActionButton(IconData icon, String text, VoidCallback? onTap) {

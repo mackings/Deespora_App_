@@ -1,3 +1,4 @@
+import 'package:dspora/App/Services/DiscoveryPreloader.dart';
 import 'package:dspora/App/View/Auth/Api/AuthService.dart';
 import 'package:dspora/App/View/Auth/View/Signin.dart';
 import 'package:dspora/App/View/Widgets/HomeWidgets/Homepage.dart';
@@ -28,6 +29,14 @@ class _AuthCheckState extends State<AuthCheck> {
     if (!mounted) return;
 
     if (isLoggedIn) {
+      try {
+        await DiscoveryPreloader.warmUp();
+      } catch (e) {
+        debugPrint('⚠️ Auth check personalization preload failed: $e');
+      }
+
+      if (!mounted) return;
+
       // User has valid token, go to home
       Navigator.pushReplacement(
         context,
@@ -46,9 +55,7 @@ class _AuthCheckState extends State<AuthCheck> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }
