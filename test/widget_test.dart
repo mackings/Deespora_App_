@@ -1,30 +1,34 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:dspora/SplashScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dspora/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('launch warm-up starts immediately before login flow', (
+    WidgetTester tester,
+  ) async {
+    final callOrder = <String>[];
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SplashScreen(
+          enableVideo: false,
+          navigationDelay: Duration.zero,
+          warmUpOverride: () async {
+            callOrder.add('warmup');
+          },
+          isLoggedInOverride: () async {
+            callOrder.add('auth');
+            return false;
+          },
+        ),
+      ),
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(callOrder, isNotEmpty);
+    expect(callOrder.first, 'warmup');
+    expect(callOrder.where((call) => call == 'warmup').length, 1);
   });
 }

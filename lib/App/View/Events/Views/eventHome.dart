@@ -98,17 +98,34 @@ class _EventHomeState extends State<EventHome> {
 
   /// ✅ Filter events by selected city
   void _applyCityFilter(String city) {
-    final lowerCity = city.toLowerCase();
-
     setState(() {
-      _filteredEvents = _allEvents.where((e) {
-        final venueMatch = e.venues.any(
-          (v) => v.name.toLowerCase().contains(lowerCity),
-        );
-        final nameMatch = e.name.toLowerCase().contains(lowerCity);
-        return venueMatch || nameMatch || city == 'US';
-      }).toList();
+      _filteredEvents = _eventsForCity(city);
     });
+  }
+
+  List<Event> _eventsForCity(String city) {
+    final normalizedCity = city.trim().toLowerCase();
+
+    if (normalizedCity.isEmpty || normalizedCity == 'us') {
+      return List<Event>.from(_allEvents);
+    }
+
+    final cityEvents = _allEvents.where((event) {
+      return event.venues.any((venue) {
+        final venueCity = venue.city.trim().toLowerCase();
+        final venueName = venue.name.trim().toLowerCase();
+        return venueCity == normalizedCity ||
+            venueCity.contains(normalizedCity) ||
+            venueName.contains(normalizedCity);
+      });
+    }).toList();
+
+    if (cityEvents.isEmpty) {
+      debugPrint('ℹ️ No events found for $city; showing all US events');
+      return List<Event>.from(_allEvents);
+    }
+
+    return cityEvents;
   }
 
   /// ✅ Change city without API call
@@ -144,18 +161,16 @@ class _EventHomeState extends State<EventHome> {
       // For short queries, filter locally
       final queryLower = query.toLowerCase();
       setState(() {
-        final cityFiltered = _allEvents.where((e) {
-          final venueMatch = e.venues.any(
-            (v) => v.name.toLowerCase().contains(_selectedCity.toLowerCase()),
-          );
-          final nameMatch = e.name.toLowerCase().contains(
-            _selectedCity.toLowerCase(),
-          );
-          return venueMatch || nameMatch || _selectedCity == 'US';
-        }).toList();
+        final cityFiltered = _eventsForCity(_selectedCity);
 
         _filteredEvents = cityFiltered.where((e) {
           return e.name.toLowerCase().contains(queryLower) ||
+              e.classifications.any(
+                (c) =>
+                    c.genreName.toLowerCase().contains(queryLower) ||
+                    c.segmentName.toLowerCase().contains(queryLower) ||
+                    c.subGenreName.toLowerCase().contains(queryLower),
+              ) ||
               e.venues.any((v) => v.name.toLowerCase().contains(queryLower));
         }).toList();
       });
@@ -172,8 +187,11 @@ class _EventHomeState extends State<EventHome> {
         size: 50,
       );
 
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
-        _allEvents = results;
         _filteredEvents = results;
       });
 

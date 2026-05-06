@@ -22,7 +22,13 @@ class DiscoveryPreloader {
   static Future<List<Advert>>? _advertsFuture;
 
   static Future<void> warmUp() {
-    return _warmUpFuture ??= _runWarmUp();
+    if (_warmUpFuture != null) {
+      debugPrint('♻️ Discovery warm-up already in progress or cached');
+      return _warmUpFuture!;
+    }
+
+    debugPrint('🔥 Starting discovery warm-up');
+    return _warmUpFuture = _runWarmUp();
   }
 
   static Future<List<Event>> getEvents({bool forceRefresh = false}) {
@@ -44,6 +50,9 @@ class DiscoveryPreloader {
 
   static Future<void> _runWarmUp() async {
     final location = await AppLocationService.getActiveLocation();
+    debugPrint(
+      '📍 Discovery warm-up location: city=${location.city}, hasCoords=${location.hasCoordinates}, userSelected=${location.isUserSelected}',
+    );
     final futures = <Future<dynamic>>[
       _restaurantService.fetchRestaurants(city: location.city),
       _cateringService.fetchCaterings(city: location.city),
@@ -53,10 +62,12 @@ class DiscoveryPreloader {
     ];
 
     if (!location.isUserSelected && location.hasCoordinates) {
+      debugPrint('🗺️ Discovery warm-up: adding coordinate-based preload');
       futures.add(_warmLocationBasedDiscovery(location));
     }
 
     await Future.wait(futures.map(_ignoreErrors));
+    debugPrint('✅ Discovery warm-up complete');
   }
 
   static Future<void> _warmLocationBasedDiscovery(

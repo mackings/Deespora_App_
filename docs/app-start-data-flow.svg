@@ -1,0 +1,231 @@
+<svg width="1600" height="1180" viewBox="0 0 1600 1180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1180" fill="#F7F8F4"/>
+  <rect x="40" y="28" width="1520" height="1124" rx="28" fill="#FFFDF8" stroke="#D9DDD2" stroke-width="2"/>
+
+  <text x="70" y="90" fill="#14281D" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">
+    App Start Data Flow
+  </text>
+  <text x="70" y="122" fill="#52635B" font-family="Arial, Helvetica, sans-serif" font-size="18">
+    Current startup behavior after moving discovery preload to app launch
+  </text>
+
+  <rect x="70" y="160" width="690" height="930" rx="24" fill="#F2F7F1" stroke="#C8D6C5" stroke-width="2"/>
+  <rect x="840" y="160" width="690" height="930" rx="24" fill="#F3F8FC" stroke="#C7D9E8" stroke-width="2"/>
+
+  <text x="100" y="205" fill="#173B2D" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    Visible App Flow
+  </text>
+  <text x="870" y="205" fill="#16344A" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    Background Data Warm-up
+  </text>
+
+  <rect x="100" y="240" width="300" height="88" rx="18" fill="#173B2D"/>
+  <text x="124" y="276" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">
+    App Launch
+  </text>
+  <text x="124" y="304" fill="#D7E7DE" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Flutter app starts, SplashScreen mounts
+  </text>
+
+  <rect x="100" y="380" width="300" height="108" rx="18" fill="#FFFFFF" stroke="#9BB7A7" stroke-width="2"/>
+  <text x="124" y="418" fill="#173B2D" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    SplashScreen.initState
+  </text>
+  <text x="124" y="444" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Starts video or fallback loader
+  </text>
+  <text x="124" y="466" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Schedules auth/navigation timer
+  </text>
+
+  <rect x="100" y="540" width="300" height="108" rx="18" fill="#FFFFFF" stroke="#9BB7A7" stroke-width="2"/>
+  <text x="124" y="578" fill="#173B2D" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    Splash Delay
+  </text>
+  <text x="124" y="604" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Default 3s timer
+  </text>
+  <text x="124" y="626" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Does not block preload completion
+  </text>
+
+  <rect x="100" y="700" width="300" height="108" rx="18" fill="#FFFFFF" stroke="#9BB7A7" stroke-width="2"/>
+  <text x="124" y="738" fill="#173B2D" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    Auth Check
+  </text>
+  <text x="124" y="764" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    AuthApi.isLoggedIn()
+  </text>
+  <text x="124" y="786" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Runs independently of preload completion
+  </text>
+
+  <rect x="100" y="860" width="140" height="120" rx="18" fill="#FFFFFF" stroke="#9BB7A7" stroke-width="2"/>
+  <text x="128" y="905" fill="#173B2D" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">
+    Logged In
+  </text>
+  <text x="128" y="935" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="15">
+    Navigate to
+  </text>
+  <text x="128" y="958" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="15">
+    HomePage
+  </text>
+
+  <rect x="260" y="860" width="140" height="120" rx="18" fill="#FFFFFF" stroke="#9BB7A7" stroke-width="2"/>
+  <text x="281" y="905" fill="#173B2D" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">
+    First User
+  </text>
+  <text x="287" y="935" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="15">
+    Navigate to
+  </text>
+  <text x="283" y="958" fill="#51645A" font-family="Arial, Helvetica, sans-serif" font-size="15">
+    Onboarding
+  </text>
+
+  <rect x="450" y="240" width="270" height="88" rx="18" fill="#0F4C5C"/>
+  <text x="474" y="276" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    Parallel Start
+  </text>
+  <text x="474" y="304" fill="#D7EAF0" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Triggered immediately in SplashScreen.initState
+  </text>
+
+  <rect x="870" y="240" width="300" height="108" rx="18" fill="#FFFFFF" stroke="#93B8D4" stroke-width="2"/>
+  <text x="894" y="278" fill="#16344A" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    DiscoveryPreloader.warmUp()
+  </text>
+  <text x="894" y="304" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Fire-and-forget from SplashScreen
+  </text>
+  <text x="894" y="326" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Reuses existing Future if already running
+  </text>
+
+  <rect x="870" y="390" width="300" height="130" rx="18" fill="#FFFFFF" stroke="#93B8D4" stroke-width="2"/>
+  <text x="894" y="428" fill="#16344A" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    AppLocationService.getActiveLocation()
+  </text>
+  <text x="894" y="454" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    1. preferred city from SharedPreferences
+  </text>
+  <text x="894" y="476" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    2. cached detected city + coords
+  </text>
+  <text x="894" y="498" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    3. fresh geolocation, else fallback to US
+  </text>
+
+  <rect x="1210" y="390" width="280" height="130" rx="18" fill="#FFFFFF" stroke="#93B8D4" stroke-width="2"/>
+  <text x="1234" y="428" fill="#16344A" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    First-time User Case
+  </text>
+  <text x="1234" y="454" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    No preferred city
+  </text>
+  <text x="1234" y="476" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    No cached detected location
+  </text>
+  <text x="1234" y="498" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Geolocation attempt or US fallback
+  </text>
+
+  <rect x="870" y="570" width="620" height="160" rx="18" fill="#FFFFFF" stroke="#93B8D4" stroke-width="2"/>
+  <text x="894" y="608" fill="#16344A" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    Fan-out API Calls
+  </text>
+  <text x="894" y="636" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="18">
+    fetchRestaurants(city)
+  </text>
+  <text x="1110" y="636" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="18">
+    fetchCaterings(city)
+  </text>
+  <text x="1320" y="636" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="18">
+    fetchWorship(city)
+  </text>
+  <text x="894" y="670" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="18">
+    getEvents()
+  </text>
+  <text x="1110" y="670" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="18">
+    getAdverts()
+  </text>
+  <text x="894" y="706" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    If coordinates exist and city is not user-selected:
+    fetchRestaurants(lat,lng), fetchCaterings(lat,lng), fetchWorship(lat,lng)
+  </text>
+
+  <rect x="870" y="780" width="300" height="142" rx="18" fill="#FFFFFF" stroke="#93B8D4" stroke-width="2"/>
+  <text x="894" y="818" fill="#16344A" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    API Services
+  </text>
+  <text x="894" y="844" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Restaurants / Catering / Worship
+  </text>
+  <text x="894" y="866" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    cache-first reads via CacheManager
+  </text>
+  <text x="894" y="888" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    backend call if cache miss / force refresh
+  </text>
+  <text x="894" y="910" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    save raw payload back to cache
+  </text>
+
+  <rect x="1190" y="780" width="300" height="142" rx="18" fill="#FFFFFF" stroke="#93B8D4" stroke-width="2"/>
+  <text x="1214" y="818" fill="#16344A" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    SharedPreferences Cache
+  </text>
+  <text x="1214" y="844" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    cache_fetch_v2_...
+  </text>
+  <text x="1214" y="866" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    cache_search_v2_...
+  </text>
+  <text x="1214" y="888" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    7-day expiry
+  </text>
+  <text x="1214" y="910" fill="#526B7E" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    city- or coords-based keys
+  </text>
+
+  <rect x="870" y="970" width="620" height="90" rx="18" fill="#16344A"/>
+  <text x="894" y="1008" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">
+    Later Screen Load Result
+  </text>
+  <text x="894" y="1036" fill="#D4E5F0" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    Restaurants, Catering, Worship screens usually hit warm cache first, then build their own in-memory screen cache.
+  </text>
+
+  <rect x="80" y="1112" width="1440" height="24" rx="12" fill="#E8ECE4"/>
+  <text x="96" y="1129" fill="#5E695F" font-family="Arial, Helvetica, sans-serif" font-size="14">
+    Note: launch preload starts immediately, but onboarding/home navigation does not wait for all API calls to finish.
+  </text>
+
+  <line x1="250" y1="328" x2="250" y2="380" stroke="#2C5A46" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="250,362 242,348 258,348" fill="#2C5A46"/>
+  <line x1="250" y1="488" x2="250" y2="540" stroke="#2C5A46" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="250,522 242,508 258,508" fill="#2C5A46"/>
+  <line x1="250" y1="648" x2="250" y2="700" stroke="#2C5A46" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="250,682 242,668 258,668" fill="#2C5A46"/>
+  <line x1="250" y1="808" x2="250" y2="860" stroke="#2C5A46" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="250,842 242,828 258,828" fill="#2C5A46"/>
+  <line x1="320" y1="808" x2="320" y2="860" stroke="#2C5A46" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="320,842 312,828 328,828" fill="#2C5A46"/>
+
+  <line x1="400" y1="284" x2="450" y2="284" stroke="#0F4C5C" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="432,292 446,284 432,276" fill="#0F4C5C"/>
+  <line x1="585" y1="328" x2="1020" y2="240" stroke="#0F4C5C" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="999,252 1016,241 996,236" fill="#0F4C5C"/>
+
+  <line x1="1020" y1="348" x2="1020" y2="390" stroke="#2B6E99" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1020,372 1012,358 1028,358" fill="#2B6E99"/>
+  <line x1="1170" y1="455" x2="1210" y2="455" stroke="#2B6E99" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1192,463 1206,455 1192,447" fill="#2B6E99"/>
+  <line x1="1020" y1="520" x2="1020" y2="570" stroke="#2B6E99" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1020,552 1012,538 1028,538" fill="#2B6E99"/>
+  <line x1="1180" y1="650" x2="1180" y2="780" stroke="#2B6E99" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1180,762 1172,748 1188,748" fill="#2B6E99"/>
+  <line x1="1170" y1="851" x2="1190" y2="851" stroke="#2B6E99" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1172,859 1186,851 1172,843" fill="#2B6E99"/>
+  <line x1="1340" y1="922" x2="1340" y2="970" stroke="#2B6E99" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1340,952 1332,938 1348,938" fill="#2B6E99"/>
+</svg>

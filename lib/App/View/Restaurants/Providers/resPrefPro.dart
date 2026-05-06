@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:dspora/App/View/Restaurants/Model/saveRes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+
 class RestaurantPreferencesService {
   static const String _restaurantKey = 'saved_restaurants';
 
@@ -20,6 +22,7 @@ class RestaurantPreferencesService {
       return false;
     }
   }
+
 
   static Future<List<SavedRestaurant>> getSavedRestaurants() async {
     try {
